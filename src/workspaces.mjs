@@ -290,7 +290,9 @@ async function onMessage(req, res, params) {
     return;
   }
 
-  while (true) {
+  let agentLoop = true;
+
+  while (agentLoop) {
     let aiResponse;
 
     try {
@@ -305,7 +307,7 @@ async function onMessage(req, res, params) {
 
     history.messages.push(aiResponse);
 
-    if (!aiResponse.tool_calls?.length) break;
+    if (!aiResponse?.tool_calls?.length) break;
 
     for (const call of aiResponse.tool_calls) {
       const functionName = call.function.name;
@@ -331,6 +333,9 @@ async function onMessage(req, res, params) {
           role: "system",
           content: `Error executing function ${functionName} with args ${JSON.stringify(functionArgs)}:\nError: ${error}`,
         });
+
+        agentLoop = false;
+        break;
       }
     }
   }
