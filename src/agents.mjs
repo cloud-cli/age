@@ -53,6 +53,8 @@ export async function getModelResponse(history, model = defaultModel) {
   const body = await response.text();
   const json = JSON.parse(body);
 
+  console.log("AI response", json);
+
   return json.message;
 }
 
