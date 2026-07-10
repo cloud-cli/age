@@ -6,7 +6,7 @@ import { readFile } from "node:fs/promises";
 
 const API_KEY = process.env.API_KEY;
 const modelApi = process.env.API_URL;
-const model = process.env.MODEL;
+const defaultModel = process.env.MODEL;
 const agentSystemPrompt = await readFile(
   new URL("./system.txt", import.meta.url),
   "utf8",
@@ -26,7 +26,7 @@ const toolsByName = {
 
 // call Ollama server to get a response from the model
 // history is an array of messages, each message is an object with role and content, just like an OpenAI chat completion request
-export async function getModelResponse(history) {
+export async function getModelResponse(history, model = defaultModel) {
   const requestBody = JSON.stringify({
     model,
     tools,
@@ -51,8 +51,8 @@ export async function getModelResponse(history) {
   });
 
   const body = await response.text();
-  console.log(body);
   const json = JSON.parse(body);
+
   return json.message;
 }
 

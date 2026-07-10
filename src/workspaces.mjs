@@ -310,7 +310,7 @@ async function onMessage(req, res, params) {
   let aiResponse;
 
   try {
-    aiResponse = await getModelResponse(history.messages);
+    aiResponse = await getModelResponse(history.messages, history.model);
     console.log("AI Responses:", aiResponse);
   } catch (err) {
     console.error(
