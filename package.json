@@ -1,0 +1,7 @@
+{
+  "main": "index.mjs",
+  "dependencies": {
+    "@cloud-cli/gw": "latest",
+    "@cloud-cli/store": "latest"
+  }
+}
