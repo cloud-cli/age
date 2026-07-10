@@ -22,9 +22,8 @@ export const tools = [
 const toolsByName = {
   ...FS,
   ...Git,
+  ...Shell,
 };
-
-// console.log(JSON.stringify(tools, null, 2));
 
 // call Ollama server to get a response from the model
 // history is an array of messages, each message is an object with role and content, just like an OpenAI chat completion request
