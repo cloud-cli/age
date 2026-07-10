@@ -207,7 +207,6 @@ async function onReadWorkspaceHistoryList(req, res, params) {
 async function onCreateWorkspaceHistory(req, res, params) {
   const name = sanitize(params.name);
   const uid = randomUUID();
-  const 
   const workspacePath = join(dataDir, name, "history");
 
   if (!existsSync(workspacePath)) {
