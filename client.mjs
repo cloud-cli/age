@@ -60,6 +60,21 @@ export const history = {
     return res.json();
   },
 
+  async create(name, values = {}) {
+    const res = await fetch(new URL(`/workspaces/${name}/history`, baseUrl), {
+      method: "POST",
+      body: JSON.stringify({ ...values }),
+    });
+
+    if (!res.ok) {
+      throw new Error(
+        `Failed to create history: ${res.status} ${res.statusText}`,
+      );
+    }
+
+    return res.json();
+  },
+
   async read(name, id) {
     const res = await fetch(
       new URL(`/workspaces/${name}/history/${id}`, baseUrl),
