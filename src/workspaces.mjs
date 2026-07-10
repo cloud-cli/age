@@ -267,8 +267,8 @@ async function runAgentLoop(history, workspacePath) {
   try {
     aiResponse = await getModelResponse(history.messages, history.model);
 
-    if (!aiResponse) {
-      throw new Error("Invalid AI response");
+    if (aiResponse.error) {
+      throw new Error("Invalid AI response: " + aiResponse.error);
     }
 
     console.log("AI response", aiResponse);
@@ -283,7 +283,7 @@ async function runAgentLoop(history, workspacePath) {
   history.messages.push(aiResponse);
 
   if (!aiResponse?.tool_calls?.length) {
-    return false;
+    return;
   }
 
   for (const call of aiResponse.tool_calls) {
@@ -300,7 +300,10 @@ async function runAgentLoop(history, workspacePath) {
       history.messages.push({
         role: "tool",
         tool_name: functionName,
-        content: typeof functionResponse === 'object' ? JSON.stringify(functionResponse) : String(functionResponse),
+        content:
+          typeof functionResponse === "object"
+            ? JSON.stringify(functionResponse)
+            : String(functionResponse),
       });
     } catch (error) {
       console.error(
@@ -310,11 +313,11 @@ async function runAgentLoop(history, workspacePath) {
         role: "system",
         content: `Error executing function ${functionName} with args ${JSON.stringify(functionArgs)}:\nError: ${error}`,
       });
-      return false;
+      return;
     }
   }
 
-  return true;
+  return runAgentLoop(history, workspacePath);
 }
 
 // Handle a message sent to the workspace. The message is expected to be a JSON object with the following structure:
@@ -346,10 +349,7 @@ async function onMessage(req, res, params) {
     return;
   }
 
-  while (true) {
-    if (!(await runAgentLoop(history, workspacePath))) break;
-  }
-
+  await runAgentLoop(history, workspacePath);
   await writeFile(historyFile, JSON.stringify(history));
   res.sendJson(history);
 }
