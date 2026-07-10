@@ -74,15 +74,6 @@ function convertValue(value, type) {
 
 // name and args are coming from a model response, and we want to execute the corresponding function from the tools array
 export function executeFunction(functionName, modelArgs, workspacePath) {
-  console.log(
-    "Call function",
-    functionName,
-    "with args",
-    modelArgs,
-    " at ",
-    workspacePath,
-  );
-
   const specs = tools.find((next) => next.function.name === functionName);
 
   if (!specs) {
@@ -107,11 +98,12 @@ export function executeFunction(functionName, modelArgs, workspacePath) {
   const f = toolsByName[functionName];
   const context = {
     getPath(s) {
-      const x = join(workspacePath, resolve("/", s || "."));
+      const x = join(workspacePath, "files", resolve("/", s || "."));
       console.log("GetPath", s, x);
       return x;
     },
   };
 
+  console.log(`Call ${functionName}`, modelArgs, foundArgs, workspacePath);
   return f.apply(context, foundArgs);
 }

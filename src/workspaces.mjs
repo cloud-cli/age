@@ -313,8 +313,10 @@ async function onMessage(req, res, params) {
     return;
   }
 
+  const newMessages = [];
+
   if (aiResponse.tool_calls) {
-    history.messages.push({
+    newMessages.push({
       role: aiResponse.role,
       content: aiResponse.content,
       thinking: aiResponse.thinking,
@@ -331,7 +333,7 @@ async function onMessage(req, res, params) {
           workspacePath,
         );
 
-        history.messages.push({
+        newMessages.push({
           role: "function",
           name: functionName,
           content: functionResponse,
@@ -340,17 +342,20 @@ async function onMessage(req, res, params) {
         console.error(
           `Error executing function: ${functionName} with args: ${JSON.stringify(functionArgs)}:\n ${error}`,
         );
-        history.messages.push({
+        newMessages.push({
           role: "system",
           content: `Error executing function: ${functionName} with args: ${JSON.stringify(functionArgs)}:\n ${error}`,
         });
       }
     }
   } else {
-    history.messages.push(aiResponse);
+    newMessages.push(aiResponse);
   }
 
+  history.messages.push(...newMessages);
   await writeFile(historyFile, JSON.stringify(history));
+  res.writeHead(200, { "Content-Type": "application/json" });
+  res.end(JSON.stringify(newMessages));
 }
 
 export default {
