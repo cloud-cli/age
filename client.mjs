@@ -48,3 +48,40 @@ export const workspaces = {
   },
 };
 
+export const history = {
+  async list(name) {
+    const res = await fetch(new URL(`/workspaces/${name}/history`, baseUrl));
+    if (!res.ok) {
+      throw new Error(
+        `Failed to list workspace history: ${res.status} ${res.statusText}`,
+      );
+    }
+
+    return res.json();
+  },
+
+  async read(name, id) {
+    const res = await fetch(
+      new URL(`/workspaces/${name}/history/${id}`, baseUrl),
+    );
+    if (!res.ok) {
+      throw new Error(
+        `Failed to read workspace history: ${res.status} ${res.statusText}`,
+      );
+    }
+
+    return res.json();
+  },
+
+  async delete(name, id) {
+    const res = await fetch(
+      new URL(`/workspaces/${name}/history/${id}`, baseUrl),
+      { method: "DELETE" },
+    );
+    if (!res.ok) {
+      throw new Error(
+        `Failed to delete workspace history: ${res.status} ${res.statusText}`,
+      );
+    }
+  },
+};

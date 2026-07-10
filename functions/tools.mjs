@@ -9,6 +9,10 @@ function parseDescription(fnString) {
 
 // parse the parameters from the function string representation and extract the type from an inline comment, e.g. /*string*/ paramName
 // returns an array with { name: string, type: string, } objects
+/**
+ * @param {string} fnString A string representation of a function
+ * @returns {Array<{ name: string, type: string }>} An array of parameter objects
+ */
 function parseParameters(fnString) {
   const match = fnString.match(/\(([\s\S]*?)\)/);
   if (match) {
@@ -27,21 +31,21 @@ function parseParameters(fnString) {
 }
 
 // list of tools in a format used by AI function calls
-export const getTools = (functions) =>
+export const convertFunctionsToTools = (functions) =>
   Object.entries(functions).map(([name, fn]) => {
+    const properties = parseParameters(fn.toString()).reduce((acc, param) => {
+      acc[param.name] = { type: param.type };
+      return acc;
+    }, {});
+
     return {
       type: "function",
       function: {
-        name: name,
+        name,
         description: parseDescription(fn.toString()),
         parameters: {
           type: "object",
-          properties: {
-            ...parseParameters(fn.toString()).reduce((acc, param) => {
-              acc[param.name] = { type: param.type };
-              return acc;
-            }, {}),
-          },
+          properties,
         },
       },
     };

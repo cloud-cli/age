@@ -1,5 +1,8 @@
 // functions used by the workspace API via AI function calls to interact with the file system
 
+// const dataDir = process.env.DATA_PATH;
+// const sanitizePath = (path) => path.replace(/(\.\.[/\\])/g, ""); // prevent directory traversal
+
 export function ReadFile(/*string*/ path) {
   "## Reads the content of a file at the given path and returns it as a string. ##";
   const fs = require("fs");

@@ -278,7 +278,7 @@ async function onMessage(req, res, params) {
   const { message } = JSON.parse(body);
 
   history.messages.push({ role: "user", content: message });
-  const aiResponses = await getModelResponse(history.messages);
+  const aiResponses = await getModelResponse(history);
 
   for (const msg of aiResponses) {
     if (!msg.function_call) {
@@ -287,12 +287,14 @@ async function onMessage(req, res, params) {
 
     try {
       const functionName = msg.function_call.name;
-      const args = JSON.parse(msg.function_call.arguments);
-      const functionResponse = await executeFunction(functionName, args);
+      const functionResponse = await executeFunction(
+        functionName,
+        msg.function_call.arguments,
+      );
 
       history.messages.push({
         role: "function",
-        name: fucntionName,
+        name: functionName,
         content: functionResponse,
       });
     } catch (error) {
