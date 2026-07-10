@@ -107,7 +107,7 @@ export function executeFunction(functionName, modelArgs, workspacePath) {
   const f = toolsByName[functionName];
   const context = {
     getPath(s) {
-      const x = resolve(workspacePath, s || '.');
+      const x = join(workspacePath, resolve("/", s || "."));
       console.log("GetPath", s, x);
       return x;
     },
