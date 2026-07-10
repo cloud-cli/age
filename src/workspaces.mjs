@@ -42,8 +42,8 @@ async function onReadWorkspaceList(req, res) {
 
     const json = await Promise.all(
       workspaces.map(async (file) => ({
-        id: file.name,
-        name: await stat(join(dataDir, file.name)).then((stats) =>
+        name: file.name,
+        createdAt: await stat(join(dataDir, file.name)).then((stats) =>
           stats.birthtime.toISOString(),
         ),
       })),
