@@ -49,11 +49,9 @@ async function onReadWorkspaceList(req, res) {
       })),
     );
 
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(json));
+    res.sendJson(json);
   } catch (err) {
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: err.message }));
+    res.sendJson({ error: err.message }, 500);
   }
 }
 
@@ -70,11 +68,9 @@ async function onCreateWorkspace(_req, res) {
       await mkdir(join(workspacePath, folder), { recursive: true });
     }
 
-    res.writeHead(201, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ name }));
+    res.sendJson({ name }, 201);
   } catch (err) {
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: err.message }));
+    res.sendJson({ error: err.message }, 500);
   }
 }
 
@@ -90,8 +86,7 @@ async function onReadWorkspace(req, res, params) {
   const workspacePath = join(dataDir, name, "files");
 
   if (!existsSync(workspacePath)) {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Workspace not found" }));
+    res.sendJson({ error: "Workspace not found" }, 404);
     return;
   }
 
@@ -126,8 +121,7 @@ async function onReadWorkspace(req, res, params) {
 
   const workspaceFiles = await readFolder(workspacePath);
 
-  res.writeHead(200, { "Content-Type": "application/json" });
-  res.end(JSON.stringify(workspaceFiles));
+  res.sendJson(workspaceFiles);
 }
 
 async function onDeleteWorkspace(req, res, params) {
@@ -135,18 +129,15 @@ async function onDeleteWorkspace(req, res, params) {
   const workspacePath = join(dataDir, name);
 
   if (!existsSync(workspacePath)) {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Workspace not found" }));
+    res.sendJson({ error: "Workspace not found" }, 404);
     return;
   }
 
   try {
     await rm(workspacePath, { recursive: true, force: true });
-    res.writeHead(204);
-    res.end();
+    res.writeHead(204).end();
   } catch (err) {
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: err.message }));
+    res.sendJson({ error: err.message }, 500);
   }
 }
 
@@ -164,8 +155,7 @@ async function onReadWorkspaceHistoryList(_req, res, params) {
   const workspacePath = join(dataDir, name, "history");
 
   if (!existsSync(workspacePath)) {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Workspace history not found" }));
+    res.sendJson({ error: "Workspace history not found" }, 404);
     return;
   }
 
@@ -188,8 +178,7 @@ async function onReadWorkspaceHistoryList(_req, res, params) {
     }),
   );
 
-  res.writeHead(200, { "Content-Type": "application/json" });
-  res.end(JSON.stringify(json));
+  res.sendJson(json);
 }
 
 // create an empty session file in the workspace history
@@ -213,8 +202,7 @@ async function onCreateWorkspaceHistory(req, res, params) {
   const workspacePath = join(dataDir, name, "history");
 
   if (!existsSync(workspacePath)) {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Workspace history not found" }));
+    res.sendJson({ error: "Workspace history not found" }, 404);
     return;
   }
 
@@ -231,11 +219,9 @@ async function onCreateWorkspaceHistory(req, res, params) {
     };
     await writeFile(join(workspacePath, `${uid}.json`), JSON.stringify(json));
 
-    res.writeHead(201, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(json, null, 2));
+    res.sendJson(json, 201);
   } catch (err) {
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: err.message }));
+    res.sendJson({ error: err.message }, 500);
   }
 }
 
@@ -245,39 +231,33 @@ async function onReadWorkspaceHistory(_req, res, params) {
   const workspacePath = join(dataDir, name, "history", `${id}.json`);
 
   if (!existsSync(workspacePath)) {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Workspace history not found" }));
+    res.sendJson({ error: "Workspace history not found" }, 404);
     return;
   }
 
   try {
     const content = await readFile(workspacePath, "utf8");
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(content);
+    res.sendJson(content);
   } catch (err) {
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: err.message }));
+    res.sendJson({ error: err.message }, 500);
   }
 }
 
-async function onDeleteWorkspaceHistory(req, res, params) {
+async function onDeleteWorkspaceHistory(_req, res, params) {
   const name = sanitize(params.name);
   const id = sanitize(params.id);
   const workspacePath = join(dataDir, name, "history", `${id}.json`);
 
   if (!existsSync(workspacePath)) {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Workspace history not found" }));
+    res.sendJson({ error: "Workspace history not found" }, 404);
     return;
   }
 
   try {
     await rm(workspacePath, { force: true });
-    res.writeHead(204);
-    res.end();
+    res.writeHead(204).end();
   } catch (err) {
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: err.message }));
+    res.sendJson({ error: err.message }, 500);
   }
 }
 
@@ -291,8 +271,7 @@ async function onMessage(req, res, params) {
 
   if (!existsSync(historyFile)) {
     console.error(`Workspace history not found: ${historyFile}`);
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Workspace history not found" }));
+    res.sendJson({ error: "Workspace history not found" }, 404);
     return;
   }
 
@@ -307,8 +286,7 @@ async function onMessage(req, res, params) {
     console.error(
       `Invalid JSON body for workspace history ${historyFile}: ${err.message}`,
     );
-    res.writeHead(400, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Invalid JSON body" }));
+    res.sendJson({ error: "Invalid JSON body" }, 400);
     return;
   }
 
@@ -321,8 +299,7 @@ async function onMessage(req, res, params) {
     console.error(
       `Error getting model response at ${historyFile}: ${err.message}`,
     );
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: err.message }));
+    res.sendJson({ error: err.message }, 500);
     return;
   }
 
@@ -367,8 +344,7 @@ async function onMessage(req, res, params) {
 
   history.messages.push(...newMessages);
   await writeFile(historyFile, JSON.stringify(history));
-  res.writeHead(200, { "Content-Type": "application/json" });
-  res.end(JSON.stringify(newMessages));
+  res.sendJson(newMessages);
 }
 
 export default {

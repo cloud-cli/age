@@ -7,6 +7,13 @@ const client = readFileSync("./client.mjs", "utf8");
 const handler = router({ ...workspaces });
 
 createServer((req, res) => {
+  res.sendJson = (json, code = 200) => {
+    const text = JSON.stringify(json, null, 2);
+    res
+      .writeHead(code, { "content-type": "application/json", "content-length": text.length, })
+      .end(text);
+  };
+
   if (!(req.method === "GET" && req.url === "/index.mjs")) {
     handler(req, res);
     return;
