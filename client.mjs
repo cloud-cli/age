@@ -84,4 +84,33 @@ export const history = {
       );
     }
   },
+
+  async sendMessage(name, id, message) {
+    const res = await fetch(
+      new URL(`/workspaces/${name}/history/${id}/message`, baseUrl),
+      { method: "POST", body: JSON.stringify({ message }) },
+    );
+
+    if (!res.ok) {
+      throw new Error(
+        `Failed to send message: ${res.status} ${res.statusText}`,
+      );
+    }
+
+    return res.json();
+  },
+};
+
+export const models = {
+  async list() {
+    const res = await fetch(new URL("/models", baseUrl));
+
+    if (!res.ok) {
+      throw new Error(
+        `Failed to list workspace history: ${res.status} ${res.statusText}`,
+      );
+    }
+
+    return res.json();
+  },
 };
