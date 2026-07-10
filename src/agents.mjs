@@ -1,8 +1,9 @@
 import { join, resolve } from "node:path";
+import { readFile } from "node:fs/promises";
+import { convertFunctionsToTools } from "./functions/tools.mjs";
 import { functions as FS } from "./functions/fs.mjs";
 import { functions as Git } from "./functions/git.mjs";
-import { convertFunctionsToTools } from "./functions/tools.mjs";
-import { readFile } from "node:fs/promises";
+import { functions as Shell } from "./functions/shell.mjs";
 
 const API_KEY = process.env.API_KEY;
 const modelApi = process.env.API_URL;
@@ -15,6 +16,7 @@ const agentSystemPrompt = await readFile(
 export const tools = [
   ...convertFunctionsToTools(FS),
   ...convertFunctionsToTools(Git),
+  ...convertFunctionsToTools(Shell),
 ];
 
 const toolsByName = {
@@ -106,4 +108,63 @@ export function executeFunction(functionName, modelArgs, workspacePath) {
 
   console.log(`Call ${functionName}`, modelArgs, foundArgs, workspacePath);
   return f.apply(context, foundArgs);
+}
+
+export async function runAgentLoop(history, workspacePath) {
+  let aiResponse;
+
+  try {
+    aiResponse = await getModelResponse(history.messages, history.model);
+
+    if (aiResponse.error) {
+      throw new Error("Invalid AI response: " + aiResponse.error);
+    }
+
+    console.log("AI response", aiResponse);
+  } catch (err) {
+    console.error(
+      `Error getting model response at ${historyFile}: ${err.message}`,
+    );
+    res.sendJson({ error: err.message }, 500);
+    return;
+  }
+
+  history.messages.push(aiResponse);
+
+  if (!aiResponse?.tool_calls?.length) {
+    return;
+  }
+
+  for (const call of aiResponse.tool_calls) {
+    const functionName = call.function.name;
+    const functionArgs = call.function.arguments;
+
+    try {
+      const functionResponse = await executeFunction(
+        functionName,
+        functionArgs,
+        workspacePath,
+      );
+
+      history.messages.push({
+        role: "tool",
+        tool_name: functionName,
+        content:
+          typeof functionResponse === "object"
+            ? JSON.stringify(functionResponse)
+            : String(functionResponse),
+      });
+    } catch (error) {
+      console.error(
+        `Error executing function: ${functionName} with args: ${JSON.stringify(functionArgs)}:\n ${error}`,
+      );
+      history.messages.push({
+        role: "system",
+        content: `Error executing function ${functionName} with args ${JSON.stringify(functionArgs)}:\nError: ${error}`,
+      });
+      return;
+    }
+  }
+
+  return runAgentLoop(history, workspacePath);
 }

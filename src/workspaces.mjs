@@ -17,7 +17,7 @@ import {
 } from "node:fs/promises";
 import { join } from "node:path";
 
-import { executeFunction, getModelResponse } from "./agents.mjs";
+import { runAgentLoop } from "./agents.mjs";
 
 const dataDir = process.env.DATA_PATH;
 
@@ -259,65 +259,6 @@ async function onDeleteWorkspaceHistory(_req, res, params) {
   } catch (err) {
     res.sendJson({ error: err.message }, 500);
   }
-}
-
-async function runAgentLoop(history, workspacePath) {
-  let aiResponse;
-
-  try {
-    aiResponse = await getModelResponse(history.messages, history.model);
-
-    if (aiResponse.error) {
-      throw new Error("Invalid AI response: " + aiResponse.error);
-    }
-
-    console.log("AI response", aiResponse);
-  } catch (err) {
-    console.error(
-      `Error getting model response at ${historyFile}: ${err.message}`,
-    );
-    res.sendJson({ error: err.message }, 500);
-    return;
-  }
-
-  history.messages.push(aiResponse);
-
-  if (!aiResponse?.tool_calls?.length) {
-    return;
-  }
-
-  for (const call of aiResponse.tool_calls) {
-    const functionName = call.function.name;
-    const functionArgs = call.function.arguments;
-
-    try {
-      const functionResponse = await executeFunction(
-        functionName,
-        functionArgs,
-        workspacePath,
-      );
-
-      history.messages.push({
-        role: "tool",
-        tool_name: functionName,
-        content:
-          typeof functionResponse === "object"
-            ? JSON.stringify(functionResponse)
-            : String(functionResponse),
-      });
-    } catch (error) {
-      console.error(
-        `Error executing function: ${functionName} with args: ${JSON.stringify(functionArgs)}:\n ${error}`,
-      );
-      history.messages.push({
-        role: "system",
-        content: `Error executing function ${functionName} with args ${JSON.stringify(functionArgs)}:\nError: ${error}`,
-      });
-      return;
-    }
-  }
-
-  return runAgentLoop(history, workspacePath);
 }
 
 // Handle a message sent to the workspace. The message is expected to be a JSON object with the following structure:
