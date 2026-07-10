@@ -159,7 +159,7 @@ async function onDeleteWorkspace(req, res, params) {
 //     messages: [ { role: string, content: string } ] // the content of the file parsed as JSON
 //   }
 // ]
-async function onReadWorkspaceHistoryList(req, res, params) {
+async function onReadWorkspaceHistoryList(_req, res, params) {
   const name = sanitize(params.name);
   const workspacePath = join(dataDir, name, "history");
 
@@ -178,6 +178,9 @@ async function onReadWorkspaceHistoryList(req, res, params) {
   const sessions = files.filter(
     (file) => file.isFile() && file.name.endsWith(".json"),
   );
+
+  console.log(name, sessions);
+
   const json = await Promise.all(
     sessions.map(async (file) => {
       const content = await readFile(join(workspacePath, file.name), "utf8");
@@ -216,7 +219,9 @@ async function onCreateWorkspaceHistory(req, res, params) {
   }
 
   try {
-    const body = JSON.parse(Buffer.concat(await req.toArray()).toString("utf8"));
+    const body = JSON.parse(
+      Buffer.concat(await req.toArray()).toString("utf8"),
+    );
     const json = {
       id: uid,
       title: body.title,
@@ -234,7 +239,7 @@ async function onCreateWorkspaceHistory(req, res, params) {
   }
 }
 
-async function onReadWorkspaceHistory(req, res, params) {
+async function onReadWorkspaceHistory(_req, res, params) {
   const name = sanitize(params.name);
   const id = sanitize(params.id);
   const workspacePath = join(dataDir, name, "history", `${id}.json`);
