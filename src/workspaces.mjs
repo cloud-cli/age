@@ -300,7 +300,7 @@ async function runAgentLoop(history) {
       history.messages.push({
         role: "tool",
         tool_name: functionName,
-        content: functionResponse,
+        content: typeof functionResponse === 'object' ? JSON.stringify(functionResponse) : String(functionResponse),
       });
     } catch (error) {
       console.error(
