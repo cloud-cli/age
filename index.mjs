@@ -1,19 +1,15 @@
-import { createServer } from "@cloud-cli/http";
+import createServer from "@cloud-cli/http";
 import router from "micro-router";
-import { Resource, StoreDriver } from "@cloud-cli/store";
 import { readFileSync } from "node:fs";
 import workspaces from "./workspaces.mjs";
 
-const port = Number(process.env.PORT || 0);
 const client = readFileSync("./client.mjs", "utf8");
-
-const api = router({
-  ...workspaces,
-});
+const handler = router({ ...workspaces });
 
 createServer((req, res) => {
   if (!(req.method === "GET" && req.url === "/index.mjs")) {
-    api.dispatch(req, res);
+    handler(req, res);
+    return;
   }
 
   const code = client.replace(
@@ -29,8 +25,4 @@ createServer((req, res) => {
       "Access-Control-Allow-Origin": "*",
     })
     .end(code);
-}).listen(port, () => {
-  console.log(`Bot server running on port ${port}`);
-  Resource.use(new StoreDriver());
-  Resource.create(Bot);
 });

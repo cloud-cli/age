@@ -10,10 +10,14 @@ import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { readdir, stat, mkdir, rm, readFile } from "node:fs/promises";
 
-const randomName = uniqueNamesGenerator({
-  dictionaries: [adjectives, colors, names],
-});
 const dataDir = process.env.DATA_PATH;
+
+const randomName = () =>
+  uniqueNamesGenerator({
+    dictionaries: [adjectives, colors, names],
+  }).toLowerCase();
+
+const sanitize = (str) => str.replace(/[^a-zA-Z0-9-_]/g, "");
 
 existsSync(dataDir) || mkdirSync(dataDir, { recursive: true });
 
@@ -46,8 +50,8 @@ async function onReadWorkspaceList(req, res) {
 
 const workspaceFolders = ["files", "history", "config"];
 
-async function onCreateWorkspace(req, res, args) {
-  const name = randomName();
+async function onCreateWorkspace(_req, res) {
+  const name = sanitize(randomName());
   const workspacePath = join(dataDir, name);
 
   try {
@@ -58,7 +62,7 @@ async function onCreateWorkspace(req, res, args) {
     }
 
     res.writeHead(201, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ id: name }));
+    res.end(JSON.stringify({ name }));
   } catch (err) {
     res.writeHead(500, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: err.message }));
@@ -73,7 +77,7 @@ async function onCreateWorkspace(req, res, args) {
 // file: { name: string, path: string, type: "file" }
 // folder: { name: string, path: string, type: "folder", files: [file | folder] }
 async function onReadWorkspace(req, res, params) {
-  const { name } = params;
+  const name = sanitize(params.name);
   const workspacePath = join(dataDir, name, "files");
 
   if (!existsSync(workspacePath)) {
@@ -118,8 +122,7 @@ async function onReadWorkspace(req, res, params) {
 }
 
 async function onDeleteWorkspace(req, res, params) {
-  const { name } = params;
-
+  const name = sanitize(params.name);
   const workspacePath = join(dataDir, name);
 
   if (!existsSync(workspacePath)) {
@@ -147,8 +150,8 @@ async function onDeleteWorkspace(req, res, params) {
 //     messages: [ { role: string, content: string } ] // the content of the file parsed as JSON
 //   }
 // ]
-async function onReadWorkspaceHistory(req, res, params) {
-  const { name } = params;
+async function onReadWorkspaceHistoryList(req, res, params) {
+  const name = sanitize(params.name);
   const workspacePath = join(dataDir, name, "history");
 
   if (!existsSync(workspacePath)) {
@@ -185,7 +188,7 @@ async function onReadWorkspaceHistory(req, res, params) {
 //   messages: [ { role: string, content: string } ] // the content of the file parsed as JSON
 // }
 async function onCreateWorkspaceHistory(req, res, params) {
-  const { name } = params;
+  const name = sanitize(params.name);
   const uid = randomUUID();
   const workspacePath = join(dataDir, name, "history");
 
@@ -214,11 +217,105 @@ async function onCreateWorkspaceHistory(req, res, params) {
   }
 }
 
+async function onReadWorkspaceHistory(req, res, params) {
+  const name = sanitize(params.name);
+  const id = sanitize(params.id);
+  const workspacePath = join(dataDir, name, "history", `${id}.json`);
+
+  if (!existsSync(workspacePath)) {
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Workspace history not found" }));
+    return;
+  }
+
+  try {
+    const content = await readFile(workspacePath, "utf8");
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(content);
+  } catch (err) {
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+async function onDeleteWorkspaceHistory(req, res, params) {
+  const name = sanitize(params.name);
+  const id = sanitize(params.id);
+  const workspacePath = join(dataDir, name, "history", `${id}.json`);
+
+  if (!existsSync(workspacePath)) {
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Workspace history not found" }));
+    return;
+  }
+
+  try {
+    await rm(workspacePath, { force: true });
+    res.writeHead(204);
+    res.end();
+  } catch (err) {
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+// Handle a message sent to the workspace. The message is expected to be a JSON object with the following structure:
+// { message: string }
+async function onMessage(req, res, params) {
+  const name = sanitize(params.name);
+  const id = sanitize(params.id);
+  const workspacePath = join(dataDir, name, "history", `${id}.json`);
+
+  if (!existsSync(workspacePath)) {
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Workspace history not found" }));
+    return;
+  }
+
+  // read session, append message and run an AI model to generate a response.
+  const history = JSON.parse(await readFile(workspacePath, "utf8"));
+  const body = Buffer.concat(await req.toArray()).toString("utf8");
+  const { message } = JSON.parse(body);
+
+  history.messages.push({ role: "user", content: message });
+  const aiResponses = await getModelResponse(history.messages);
+
+  for (const msg of aiResponses) {
+    if (!msg.function_call) {
+      continue;
+    }
+
+    try {
+      const functionName = msg.function_call.name;
+      const args = JSON.parse(msg.function_call.arguments);
+      const functionResponse = await executeFunction(functionName, args);
+
+      history.messages.push({
+        role: "function",
+        name: fucntionName,
+        content: functionResponse,
+      });
+    } catch (error) {
+      history.messages.push({
+        role: "system",
+        content: `Error executing function: ${functionName} with args: ${JSON.stringify(msg.function_call.arguments)}:\n ${error}`,
+      });
+      break;
+    }
+  }
+}
+
 export default {
   "GET /workspaces": onReadWorkspaceList,
   "POST /workspaces": onCreateWorkspace,
   "GET /workspaces/:name": onReadWorkspace,
   "DELETE /workspaces/:name": onDeleteWorkspace,
-  "GET /workspaces/:name/history": onReadWorkspaceHistory,
+
+  "GET /workspaces/:name/history": onReadWorkspaceHistoryList,
   "POST /workspaces/:name/history": onCreateWorkspaceHistory,
+
+  "GET /workspaces/:name/history/:id": onReadWorkspaceHistory,
+  "DELETE /workspaces/:name/history/:id": onDeleteWorkspaceHistory,
+
+  "POST /workspaces/:name/history/:id/message": onMessage,
 };
