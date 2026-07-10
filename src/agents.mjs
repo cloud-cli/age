@@ -167,3 +167,9 @@ export async function runAgentLoop(history, workspacePath) {
 
   return runAgentLoop(history, workspacePath);
 }
+
+export async function getModelList() {
+  const response = await fetch(new URL("/v1/models", modelApi));
+  const body = await response.json();
+  return body.data.map((d) => ({ id: d.id }));
+}

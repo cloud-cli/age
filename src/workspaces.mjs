@@ -17,7 +17,7 @@ import {
 } from "node:fs/promises";
 import { join } from "node:path";
 
-import { runAgentLoop } from "./agents.mjs";
+import { runAgentLoop, getModelList } from "./agents.mjs";
 
 const dataDir = process.env.DATA_PATH;
 
@@ -295,7 +295,13 @@ async function onMessage(req, res, params) {
   res.sendJson(history);
 }
 
+async function onModelList(_req, res) {
+  const list = await getModelList();
+  res.sendJson(list);
+}
+
 export default {
+  "GET /models": onModelList,
   "GET /workspaces": onReadWorkspaceList,
   "POST /workspaces": onCreateWorkspace,
 
