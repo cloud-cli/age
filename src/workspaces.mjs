@@ -374,14 +374,15 @@ async function onMessage(req, res, params) {
 export default {
   "GET /workspaces": onReadWorkspaceList,
   "POST /workspaces": onCreateWorkspace,
-  "GET /workspaces/:name": onReadWorkspace,
-  "DELETE /workspaces/:name": onDeleteWorkspace,
+
+  "GET /workspaces/:name/history/:id": onReadWorkspaceHistory,
+  "DELETE /workspaces/:name/history/:id": onDeleteWorkspaceHistory,
 
   "GET /workspaces/:name/history": onReadWorkspaceHistoryList,
   "POST /workspaces/:name/history": onCreateWorkspaceHistory,
 
-  "GET /workspaces/:name/history/:id": onReadWorkspaceHistory,
-  "DELETE /workspaces/:name/history/:id": onDeleteWorkspaceHistory,
+  "GET /workspaces/:name": onReadWorkspace,
+  "DELETE /workspaces/:name": onDeleteWorkspace,
 
   "POST /workspaces/:name/history/:id/message": onMessage,
 };
