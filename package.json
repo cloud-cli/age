@@ -1,7 +1,9 @@
 {
   "main": "index.mjs",
   "dependencies": {
-    "@cloud-cli/gw": "latest",
-    "@cloud-cli/store": "latest"
+    "@cloud-cli/http": "latest",
+    "@cloud-cli/store": "latest",
+    "micro-router": "latest",
+    "unique-names-generator": "^4.7.1"
   }
 }

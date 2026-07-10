@@ -1,38 +1,16 @@
-import { createServer } from "http";
-import { Gateway, Resource as RestResource } from "@cloud-cli/gw";
+import { createServer } from "@cloud-cli/http";
+import router from "micro-router";
 import { Resource, StoreDriver } from "@cloud-cli/store";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import workspaces from "./workspaces.mjs";
 
-const api = new Gateway();
-const port = Number(process.env.PORT | 0);
-const dataDir = process.env.DATA_PATH;
+const port = Number(process.env.PORT || 0);
 const client = readFileSync("./client.mjs", "utf8");
 
-api.add(
-  "workspaces",
-  class extends RestResource {
-    get body() {
-      return { json: {} };
-    }
-
-    get(req, res) {
-      const name = /^[^a-z0-9-]$/g.replace(
-        req.url.split("/")[0].toLowerCase(),
-        "",
-      );
-
-      const path = join(dataDir, name);
-
-      if (!existsSync(path)) {
-        res.writeHead(404).end("Not found");
-        return;
-      }
-
-      res.end("OK");
-    }
-  },
-);
+const api = router({
+  ...workspaces,
+});
 
 createServer((req, res) => {
   if (!(req.method === "GET" && req.url === "/index.mjs")) {
