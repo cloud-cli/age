@@ -351,6 +351,8 @@ export default {
   "GET /workspaces": onReadWorkspaceList,
   "POST /workspaces": onCreateWorkspace,
 
+  "POST /workspaces/:name/history/:id/message": onMessage,
+
   "GET /workspaces/:name/history/:id": onReadWorkspaceHistory,
   "DELETE /workspaces/:name/history/:id": onDeleteWorkspaceHistory,
 
@@ -360,5 +362,4 @@ export default {
   "GET /workspaces/:name": onReadWorkspace,
   "DELETE /workspaces/:name": onDeleteWorkspace,
 
-  "POST /workspaces/:name/history/:id/message": onMessage,
 };
