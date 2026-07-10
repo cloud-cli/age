@@ -169,12 +169,12 @@ async function onReadWorkspaceHistoryList(_req, res, params) {
     (file) => file.isFile() && file.name.endsWith(".json"),
   );
 
-  console.log(name, sessions);
-
   const json = await Promise.all(
     sessions.map(async (file) => {
       const content = await readFile(join(workspacePath, file.name), "utf8");
-      return JSON.parse(content);
+      const json = JSON.parse(content);
+      json.messages = [];
+      return json;
     }),
   );
 
