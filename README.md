@@ -10,11 +10,10 @@ Only one agent can run at a time in a workspace to avoid conflicts
 
 A workspace has the following folders:
 
-| folder    | content                                                  |
-| --------- | -------------------------------------------------------- |
-| /sessions | JSON files with chat history (one per session)           |
-| /files    | The actual working area with persistent storage          |
-| /config   | A place for agent runners, e.g. `.gemini`, `.qwen`, etc. |
+| folder   | content                                         |
+| -------- | ----------------------------------------------- |
+| /history | JSON files with chat history (one per session)  |
+| /files   | The actual working area with persistent storage |
 
 ## API
 
@@ -25,5 +24,3 @@ CRUD to manage workspaces
 ### /workspaces/:name/sessions
 
 Manage current session and previous chats
-
-### /workspaces/:name/config/:config

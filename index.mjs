@@ -1,8 +1,7 @@
 import { createServer } from "@cloud-cli/http";
 import router from "micro-router";
 import { Resource, StoreDriver } from "@cloud-cli/store";
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync } from "node:fs";
 import workspaces from "./workspaces.mjs";
 
 const port = Number(process.env.PORT || 0);
