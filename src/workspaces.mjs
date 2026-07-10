@@ -236,7 +236,7 @@ async function onReadWorkspaceHistory(_req, res, params) {
   }
 
   try {
-    const content = await readFile(workspacePath, "utf8");
+    const content = JSON.parse(await readFile(workspacePath, "utf8"));
     res.sendJson(content);
   } catch (err) {
     res.sendJson({ error: err.message }, 500);
