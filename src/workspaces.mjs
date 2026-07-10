@@ -261,7 +261,7 @@ async function onDeleteWorkspaceHistory(_req, res, params) {
   }
 }
 
-async function runAgentLoop(history) {
+async function runAgentLoop(history, workspacePath) {
   let aiResponse;
 
   try {
@@ -347,7 +347,7 @@ async function onMessage(req, res, params) {
   }
 
   while (true) {
-    if (!(await runAgentLoop(history))) break;
+    if (!(await runAgentLoop(history, workspacePath))) break;
   }
 
   await writeFile(historyFile, JSON.stringify(history));
