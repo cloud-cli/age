@@ -261,6 +261,62 @@ async function onDeleteWorkspaceHistory(_req, res, params) {
   }
 }
 
+async function runAgentLoop(history) {
+  let aiResponse;
+
+  try {
+    aiResponse = await getModelResponse(history.messages, history.model);
+
+    if (!aiResponse) {
+      throw new Error("Invalid AI response");
+    }
+
+    console.log("AI response", aiResponse);
+  } catch (err) {
+    console.error(
+      `Error getting model response at ${historyFile}: ${err.message}`,
+    );
+    res.sendJson({ error: err.message }, 500);
+    return;
+  }
+
+  history.messages.push(aiResponse);
+
+  if (!aiResponse?.tool_calls?.length) {
+    return false;
+  }
+
+  for (const call of aiResponse.tool_calls) {
+    const functionName = call.function.name;
+    const functionArgs = call.function.arguments;
+
+    try {
+      const functionResponse = await executeFunction(
+        functionName,
+        functionArgs,
+        workspacePath,
+      );
+
+      history.messages.push({
+        role: "tool",
+        tool_name: functionName,
+        content: functionResponse,
+      });
+    } catch (error) {
+      console.error(
+        `Error executing function: ${functionName} with args: ${JSON.stringify(functionArgs)}:\n ${error}`,
+      );
+      history.messages.push({
+        role: "system",
+        content: `Error executing function ${functionName} with args ${JSON.stringify(functionArgs)}:\nError: ${error}`,
+      });
+      return false;
+    }
+  }
+
+  return true;
+}
+
 // Handle a message sent to the workspace. The message is expected to be a JSON object with the following structure:
 // { message: string }
 async function onMessage(req, res, params) {
@@ -290,58 +346,12 @@ async function onMessage(req, res, params) {
     return;
   }
 
-  let agentLoop = true;
-
-  while (agentLoop) {
-    let aiResponse;
-
-    try {
-      aiResponse = await getModelResponse(history.messages, history.model);
-    } catch (err) {
-      console.error(
-        `Error getting model response at ${historyFile}: ${err.message}`,
-      );
-      res.sendJson({ error: err.message }, 500);
-      return;
-    }
-
-    history.messages.push(aiResponse);
-
-    if (!aiResponse?.tool_calls?.length) break;
-
-    for (const call of aiResponse.tool_calls) {
-      const functionName = call.function.name;
-      const functionArgs = call.function.arguments;
-
-      try {
-        const functionResponse = await executeFunction(
-          functionName,
-          functionArgs,
-          workspacePath,
-        );
-
-        history.messages.push({
-          role: "tool",
-          tool_name: functionName,
-          content: functionResponse,
-        });
-      } catch (error) {
-        console.error(
-          `Error executing function: ${functionName} with args: ${JSON.stringify(functionArgs)}:\n ${error}`,
-        );
-        history.messages.push({
-          role: "system",
-          content: `Error executing function ${functionName} with args ${JSON.stringify(functionArgs)}:\nError: ${error}`,
-        });
-
-        agentLoop = false;
-        break;
-      }
-    }
+  while (true) {
+    if (!(await runAgentLoop(history))) break;
   }
 
   await writeFile(historyFile, JSON.stringify(history));
-  res.sendJson(newMessages);
+  res.sendJson(history);
 }
 
 export default {
