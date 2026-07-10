@@ -1,14 +1,23 @@
 import {
-  uniqueNamesGenerator,
   adjectives,
   colors,
   names,
+  uniqueNamesGenerator,
 } from "unique-names-generator";
 
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
+import {
+  mkdir,
+  readdir,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { join } from "node:path";
-import { readdir, stat, mkdir, rm, readFile } from "node:fs/promises";
+
+import { executeFunction, getModelResponse } from "./agents.mjs";
 
 const dataDir = process.env.DATA_PATH;
 
@@ -205,7 +214,7 @@ async function onCreateWorkspaceHistory(req, res, params) {
       createdAt: new Date().getTime(),
       messages: [],
     };
-    writeFile(join(workspacePath, `${uid}.json`), JSON.stringify(json), {
+    await writeFile(join(workspacePath, `${uid}.json`), JSON.stringify(json), {
       encoding: "utf8",
     });
 
@@ -264,47 +273,84 @@ async function onDeleteWorkspaceHistory(req, res, params) {
 async function onMessage(req, res, params) {
   const name = sanitize(params.name);
   const id = sanitize(params.id);
-  const workspacePath = join(dataDir, name, "history", `${id}.json`);
+  const workspacePath = join(dataDir, name);
+  const historyFile = join(workspacePath, "history", `${id}.json`);
 
-  if (!existsSync(workspacePath)) {
+  if (!existsSync(historyFile)) {
+    console.error(`Workspace history not found: ${historyFile}`);
     res.writeHead(404, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Workspace history not found" }));
     return;
   }
 
   // read session, append message and run an AI model to generate a response.
-  const history = JSON.parse(await readFile(workspacePath, "utf8"));
+  const history = JSON.parse(await readFile(historyFile, "utf8"));
   const body = Buffer.concat(await req.toArray()).toString("utf8");
-  const { message } = JSON.parse(body);
 
-  history.messages.push({ role: "user", content: message });
-  const aiResponses = await getModelResponse(history);
-
-  for (const msg of aiResponses) {
-    if (!msg.function_call) {
-      continue;
-    }
-
-    try {
-      const functionName = msg.function_call.name;
-      const functionResponse = await executeFunction(
-        functionName,
-        msg.function_call.arguments,
-      );
-
-      history.messages.push({
-        role: "function",
-        name: functionName,
-        content: functionResponse,
-      });
-    } catch (error) {
-      history.messages.push({
-        role: "system",
-        content: `Error executing function: ${functionName} with args: ${JSON.stringify(msg.function_call.arguments)}:\n ${error}`,
-      });
-      break;
-    }
+  try {
+    const { message } = JSON.parse(body);
+    history.messages.push({ role: "user", content: message });
+  } catch (err) {
+    console.error(
+      `Invalid JSON body for workspace history ${historyFile}: ${err.message}`,
+    );
+    res.writeHead(400, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Invalid JSON body" }));
+    return;
   }
+
+  let aiResponse;
+
+  try {
+    aiResponse = await getModelResponse(history.messages);
+    console.log("AI Responses:", aiResponse);
+  } catch (err) {
+    console.error(
+      `Error getting model response at ${historyFile}: ${err.message}`,
+    );
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: err.message }));
+    return;
+  }
+
+  if (aiResponse.tool_calls) {
+    history.messages.push({
+      role: aiResponse.role,
+      content: aiResponse.content,
+      thinking: aiResponse.thinking,
+    });
+
+    for (const call of aiResponse.tool_calls) {
+      const functionName = call.function.name;
+      const functionArgs = call.function.arguments;
+
+      try {
+        const functionResponse = await executeFunction(
+          functionName,
+          functionArgs,
+          workspacePath,
+        );
+
+        history.messages.push({
+          role: "function",
+          name: functionName,
+          content: functionResponse,
+        });
+      } catch (error) {
+        console.error(
+          `Error executing function: ${functionName} with args: ${JSON.stringify(functionArgs)}:\n ${error}`,
+        );
+        history.messages.push({
+          role: "system",
+          content: `Error executing function: ${functionName} with args: ${JSON.stringify(functionArgs)}:\n ${error}`,
+        });
+      }
+    }
+  } else {
+    history.messages.push(aiResponse);
+  }
+
+  await writeFile(historyFile, JSON.stringify(history));
 }
 
 export default {

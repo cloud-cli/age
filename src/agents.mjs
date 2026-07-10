@@ -1,10 +1,11 @@
+import { join, resolve } from "node:path";
 import { functions as FS } from "./functions/fs.mjs";
 import { functions as Git } from "./functions/git.mjs";
 import { convertFunctionsToTools } from "./functions/tools.mjs";
 import { readFile } from "node:fs/promises";
 
-const API_KEY = process.env.OPENAI_API_KEY;
-const modelApi = process.env.OPENAI_API_URL;
+const API_KEY = process.env.API_KEY;
+const modelApi = process.env.API_URL;
 const model = process.env.MODEL;
 const agentSystemPrompt = await readFile(
   new URL("./system.txt", import.meta.url),
@@ -21,31 +22,38 @@ const toolsByName = {
   ...Git,
 };
 
-console.log(tools);
+// console.log(JSON.stringify(tools, null, 2));
 
 // call Ollama server to get a response from the model
 // history is an array of messages, each message is an object with role and content, just like an OpenAI chat completion request
 export async function getModelResponse(history) {
-  const response = await fetch(new URL("/v1/chat", modelApi), {
+  const requestBody = JSON.stringify({
+    model,
+    tools,
+    stream: false,
+    think: true,
+    messages: [
+      {
+        role: "system",
+        content: agentSystemPrompt,
+      },
+      ...history,
+    ],
+  });
+
+  const response = await fetch(new URL("/api/chat", modelApi), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
     },
-    body: JSON.stringify({
-      model,
-      tools,
-      messages: [
-        {
-          role: "system",
-          content: agentSystemPrompt,
-        },
-        ...history,
-      ],
-    }),
+    body: requestBody,
   });
 
-  return response.json();
+  const body = await response.text();
+  console.log(body);
+  const json = JSON.parse(body);
+  return json.message;
 }
 
 function convertValue(value, type) {
@@ -65,8 +73,16 @@ function convertValue(value, type) {
 }
 
 // name and args are coming from a model response, and we want to execute the corresponding function from the tools array
-export function executeFunction(functionName, argsString) {
-  const modelArgs = JSON.parse(argsString);
+export function executeFunction(functionName, modelArgs, workspacePath) {
+  console.log(
+    "Call function",
+    functionName,
+    "with args",
+    modelArgs,
+    " at ",
+    workspacePath,
+  );
+
   const specs = tools.find((next) => next.function.name === functionName);
 
   if (!specs) {
@@ -88,5 +104,14 @@ export function executeFunction(functionName, argsString) {
     foundArgs.push(convertValue(value, type));
   }
 
-  return toolsByName[functionName](...foundArgs);
+  const f = toolsByName[functionName];
+  const context = {
+    getPath(s) {
+      const x = resolve(workspacePath, s || '.');
+      console.log("GetPath", s, x);
+      return x;
+    },
+  };
+
+  return f.apply(context, foundArgs);
 }

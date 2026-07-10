@@ -1,10 +1,12 @@
 function parseDescription(fnString) {
-  const match = fnString.match(/'##([\s\S]*?)##'/);
-  if (match) {
-    return match[1].trim();
-  }
-
-  return "";
+  const lines = fnString.split("\n");
+  return (
+    lines
+      .find((line) => line.includes("##"))
+      ?.trim()
+      .replace(/^['"# ]+/g, "")
+      .replace(/[#'"; ]+$/g, "") || ""
+  );
 }
 
 // parse the parameters from the function string representation and extract the type from an inline comment, e.g. /*string*/ paramName
@@ -14,17 +16,27 @@ function parseDescription(fnString) {
  * @returns {Array<{ name: string, type: string }>} An array of parameter objects
  */
 function parseParameters(fnString) {
-  const match = fnString.match(/\(([\s\S]*?)\)/);
+  const start = fnString.indexOf("(") + 1;
+  const end = fnString.indexOf(")", start) ;
+  const match = fnString.slice(start, end).trim();
+
   if (match) {
-    const params = match[1].split(",").map((param) => param.trim());
-    return params.map((param) => {
-      const typeMatch = param.match(/\/\*(.*?)\*\//);
-      const nameMatch = param.match(/([a-zA-Z0-9_]+)/);
-      return {
-        name: nameMatch ? nameMatch[1] : "",
-        type: typeMatch ? typeMatch[1] : "string",
-      };
-    });
+    const params = match.split(",").map((param) => param.trim());
+
+    return params
+      .map((param) => {
+        const [typeString, nameString] = param.split("*/");
+
+        if (!nameString) {
+          return null;
+        }
+
+        const type = typeString.slice(2).trim();
+        const name = (nameString.includes("=") ? nameString.split("=")[0] : nameString).trim();
+
+        return { name, type };
+      })
+      .filter(Boolean);
   }
 
   return [];
