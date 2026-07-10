@@ -290,27 +290,22 @@ async function onMessage(req, res, params) {
     return;
   }
 
-  let aiResponse;
+  while (true) {
+    let aiResponse;
 
-  try {
-    aiResponse = await getModelResponse(history.messages, history.model);
-    console.log("AI Responses:", aiResponse);
-  } catch (err) {
-    console.error(
-      `Error getting model response at ${historyFile}: ${err.message}`,
-    );
-    res.sendJson({ error: err.message }, 500);
-    return;
-  }
+    try {
+      aiResponse = await getModelResponse(history.messages, history.model);
+    } catch (err) {
+      console.error(
+        `Error getting model response at ${historyFile}: ${err.message}`,
+      );
+      res.sendJson({ error: err.message }, 500);
+      return;
+    }
 
-  const newMessages = [];
+    history.messages.push(aiResponse);
 
-  if (aiResponse.tool_calls) {
-    newMessages.push({
-      role: aiResponse.role,
-      content: aiResponse.content,
-      thinking: aiResponse.thinking,
-    });
+    if (!aiResponse.tool_calls?.length) break;
 
     for (const call of aiResponse.tool_calls) {
       const functionName = call.function.name;
@@ -323,26 +318,23 @@ async function onMessage(req, res, params) {
           workspacePath,
         );
 
-        newMessages.push({
-          role: "function",
-          name: functionName,
+        history.messages.push({
+          role: "tool",
+          tool_name: functionName,
           content: functionResponse,
         });
       } catch (error) {
         console.error(
           `Error executing function: ${functionName} with args: ${JSON.stringify(functionArgs)}:\n ${error}`,
         );
-        newMessages.push({
+        history.messages.push({
           role: "system",
-          content: `Error executing function: ${functionName} with args: ${JSON.stringify(functionArgs)}:\n ${error}`,
+          content: `Error executing function ${functionName} with args ${JSON.stringify(functionArgs)}:\nError: ${error}`,
         });
       }
     }
-  } else {
-    newMessages.push(aiResponse);
   }
 
-  history.messages.push(...newMessages);
   await writeFile(historyFile, JSON.stringify(history));
   res.sendJson(newMessages);
 }
@@ -361,5 +353,4 @@ export default {
 
   "GET /workspaces/:name": onReadWorkspace,
   "DELETE /workspaces/:name": onDeleteWorkspace,
-
 };
