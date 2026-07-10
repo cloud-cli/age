@@ -1,4 +1,4 @@
-const baseUrl = "__BASE_URL__";
+const baseUrl = "https://__BASE_URL__";
 
 export const workspaces = {
   async list() {
