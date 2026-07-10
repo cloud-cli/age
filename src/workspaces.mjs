@@ -44,7 +44,7 @@ async function onReadWorkspaceList(req, res) {
       workspaces.map(async (file) => ({
         name: file.name,
         createdAt: await stat(join(dataDir, file.name)).then((stats) =>
-          stats.birthtime.toISOString(),
+          stats.birthtime.getTime(),
         ),
       })),
     );
@@ -189,16 +189,25 @@ async function onReadWorkspaceHistoryList(req, res, params) {
   res.end(JSON.stringify(json));
 }
 
-// create an empty session file in the workspace history folder with a random uuid as the filename and the following structure:
+// create an empty session file in the workspace history
+// the request body may contain:
+// {
+//   title?: string,
+//   model?: string,
+// }
+//
+// returns a session object:
 // {
 //   id: string, // uuid of this session
-//   createdAt: string, // the creation date of the file in ISO format
-//   title: string, // the creation date of the file in ISO format
-//   messages: [ { role: string, content: string } ] // the content of the file parsed as JSON
+//   model?: string, // optional, specified model to use in this session
+//   title?: string, // session title
+//   createdAt: string, // the creation date of the file
+//   messages: []
 // }
 async function onCreateWorkspaceHistory(req, res, params) {
   const name = sanitize(params.name);
   const uid = randomUUID();
+  const 
   const workspacePath = join(dataDir, name, "history");
 
   if (!existsSync(workspacePath)) {
@@ -208,18 +217,18 @@ async function onCreateWorkspaceHistory(req, res, params) {
   }
 
   try {
+    const body = JSON.parse(Buffer.concat(await req.toArray()).toString("utf8"));
     const json = {
       id: uid,
-      title: "",
+      title: body.title,
+      model: body.model,
       createdAt: new Date().getTime(),
       messages: [],
     };
-    await writeFile(join(workspacePath, `${uid}.json`), JSON.stringify(json), {
-      encoding: "utf8",
-    });
+    await writeFile(join(workspacePath, `${uid}.json`), JSON.stringify(json));
 
     res.writeHead(201, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ id: uid }));
+    res.end(JSON.stringify(json, null, 2));
   } catch (err) {
     res.writeHead(500, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: err.message }));
