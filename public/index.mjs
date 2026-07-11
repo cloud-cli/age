@@ -12,9 +12,10 @@ export const workspaces = {
     return res.json();
   },
 
-  async create() {
+  async create(name) {
     const res = await fetch(new URL(`/workspaces`, baseUrl), {
       method: "POST",
+      body: JSON.stringify({ name }),
     });
     if (!res.ok) {
       throw new Error(

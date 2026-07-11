@@ -57,8 +57,12 @@ async function onReadWorkspaceList(req, res) {
 
 const workspaceFolders = ["files", "history", "config"];
 
-async function onCreateWorkspace(_req, res) {
-  const name = sanitize(randomName());
+async function onCreateWorkspace(req, res) {
+  const body = Buffer.concat(await req.toArray()).toString("utf8");
+  const name = sanitize(
+    (body.trim() && JSON.parse(body)?.name) || randomName(),
+  );
+
   const workspacePath = join(dataDir, name);
 
   try {

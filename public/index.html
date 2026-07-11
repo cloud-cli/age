@@ -15,15 +15,11 @@
     </script>
     <script type="module">
       import { load } from "@li3/web";
-      ["lucide-icon", "markdown-block", "code-editor"].map((x) =>
-        load(`https://sodium.static.apphor.de/${x}.html`),
-      );
+      ["lucide-icon", "markdown-block", "code-editor"].map((x) => load(`https://sodium.static.apphor.de/${x}.html`));
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
-  <body
-    class="bg-zinc-950 text-zinc-100 font-sans h-screen flex flex-col overflow-hidden"
-  >
+  <body class="bg-zinc-950 text-zinc-100 font-sans h-screen flex flex-col overflow-hidden">
     <template app>
       <!-- Top Navigation: Multi-API Provider & Control Bar -->
       <app-header class="contents"></app-header>
@@ -31,10 +27,7 @@
       <!-- Main Grid Workspace Layout -->
       <main class="flex-1 flex overflow-hidden">
         <!-- Sidebar: Asynchronous Agent Tasks & Backlog -->
-        <app-sidebar
-          class="contents"
-          on-select="setWs($event.detail)"
-        ></app-sidebar>
+        <app-sidebar class="contents" on-select="onSelectWorkspace($event.detail)"></app-sidebar>
 
         <!-- Center Panel: The Execution Stream (Chat, Prompts & Logs) -->
         <app-chat bind-workspace="ws" class="contents"></app-chat>
@@ -44,28 +37,20 @@
       </main>
       <script setup>
         import { hook } from "@li3/web";
+
         export default function () {
-          const [ws, setWs] = hook("");
-          return { ws, setWs };
+          const [ws, onSelectWorkspace] = hook("");
+          return { ws, onSelectWorkspace };
         }
       </script>
     </template>
 
     <template component="app-chat">
-      <section
-        class="flex-1 flex flex-col bg-zinc-950 border-r border-zinc-800"
-      >
-        <div
-          class="flex items-center justify-between px-4 pt-1"
-          class-hidden="!workspace"
-        >
+      <section class="flex-1 flex flex-col bg-zinc-950 border-r border-zinc-800">
+        <div class="flex items-center justify-between px-4 pt-1" class-hidden="!workspace">
           <div></div>
-          <div
-            class="flex items-center bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1"
-          >
-            <span class="text-[10px] text-zinc-500 font-mono uppercase mr-2"
-              >Sessions:</span
-            >
+          <div class="flex items-center bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1">
+            <span class="text-[10px] text-zinc-500 font-mono uppercase mr-2">Sessions:</span>
             <select
               class="bg-transparent text-xs text-zinc-300 focus:outline-none cursor-pointer"
               on-change="onSetSessionId($event.target.value)"
@@ -77,30 +62,18 @@
             </select>
           </div>
           <div>
-            <button
-              on-click="onDeleteSession()"
-              class="p-2 text-red-500 font-bold"
-            >
-              &times;
-            </button>
+            <button on-click="onDeleteSession()" class="p-2 text-red-500 font-bold">&times;</button>
           </div>
         </div>
 
         <template if="session">
-          <div
-            class="px-4 pb-2 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/10"
-          >
+          <div class="px-4 pb-2 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/10">
             <div>
-              <h2 class="text-sm font-medium text-zinc-200">
-                {{ session.title }}
-              </h2>
-              <p class="text-xs text-zinc-500">
-                {{ new Date(session.createdAt).toISOString().slice(0, 19)}}
-              </p>
+              <h2 class="text-sm font-medium text-zinc-200">{{ session.title }}</h2>
+              <p class="text-xs text-zinc-500">{{ new Date(session.createdAt).toISOString().slice(0, 19)}}</p>
             </div>
             <div class="flex space-x-2">
-              <span
-                class="text-xs text-zinc-400 bg-zinc-900 px-2 py-1 rounded border border-zinc-800"
+              <span class="text-xs text-zinc-400 bg-zinc-900 px-2 py-1 rounded border border-zinc-800"
                 >{{ session.model || 'default' }}</span
               >
             </div>
@@ -128,11 +101,7 @@
                     class-text-zink-300="!m.thinking"
                     class-text-zink-500="m.thinking"
                   >
-                    <span
-                      class="mr-2 animate-spin text-zinc-400"
-                      class-hidden="!m.thinking"
-                      >⚙</span
-                    >
+                    <span class="mr-2 animate-spin text-zinc-400" class-hidden="!m.thinking">⚙</span>
                     {{ m.content || m.thinking }}
                   </div>
                 </template>
@@ -141,14 +110,9 @@
                   <div class="text-xs">
                     <div class="flex items-center text-emerald-500">
                       <span class="mr-2">✓</span>Tool:
-                      <code
-                        class="text-zinc-300 ml-1 bg-zinc-950 px-1 py-0.5 rounded"
-                        >{{ m.tool_name }}</code
-                      >
+                      <code class="text-zinc-300 ml-1 bg-zinc-950 px-1 py-0.5 rounded">{{ m.tool_name }}</code>
                     </div>
-                    <div class="flex items-center text-zinc-500">
-                      {{ m.content }}
-                    </div>
+                    <div class="flex items-center text-zinc-500">{{ m.content }}</div>
                   </div></template
                 >
               </div>
@@ -162,19 +126,9 @@
             class="relative bg-zinc-900 border border-zinc-800 rounded-xl focus-within:border-zinc-700 transition p-2"
           >
             <form on-submit.prevent="onSend()">
-              <div
-                class="flex justify-between items-center pt-2 border-t border-zinc-800/60 mt-1 px-1"
-              >
-                <button
-                  type="button"
-                  on-click="onCreateSession()"
-                  class="text-xs text-zinc-600 font-mono"
-                >
-                  <lucide-icon
-                    icon="plus"
-                    size="16"
-                    title="New chat"
-                  ></lucide-icon>
+              <div class="flex justify-between items-center pt-2 border-t border-zinc-800/60 mt-1 px-1">
+                <button type="button" on-click="onCreateSession()" class="text-xs text-zinc-600 font-mono">
+                  <lucide-icon icon="plus" size="16" title="New chat"></lucide-icon>
                 </button>
                 <button
                   type="submit"
@@ -182,11 +136,7 @@
                   class-animate-pulse.bg-white.opacity-70="sending"
                   bind-disabled="sending"
                 >
-                  <lucide-icon
-                    icon="send-horizontal"
-                    size="16"
-                    title="Send"
-                  ></lucide-icon>
+                  <lucide-icon icon="send-horizontal" size="16" title="Send"></lucide-icon>
                 </button>
               </div>
               <textarea
@@ -203,20 +153,8 @@
       </section>
 
       <script setup>
-        import {
-          ref,
-          computed,
-          hook,
-          watch,
-          onInit,
-          defineProp,
-          defineEvent,
-        } from "@li3/web";
-        import {
-          workspaces,
-          history,
-          models,
-        } from "https://agents.apphor.de/index.mjs";
+        import { ref, computed, hook, watch, onInit, defineProp, defineEvent } from "@li3/web";
+        import { workspaces, history, models } from "https://agents.apphor.de/index.mjs";
 
         export default function () {
           const ws = defineProp("workspace");
@@ -232,11 +170,7 @@
 
             try {
               sending.value = true;
-              const response = await history.sendMessage(
-                ws.value,
-                session.value.id,
-                message,
-              );
+              const response = await history.sendMessage(ws.value, session.value.id, message);
               setMessage("");
               messages.value = response.messages;
             } catch (e) {
@@ -316,25 +250,14 @@
         class="h-14 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur px-4 flex items-center justify-between z-10"
       >
         <div class="flex items-center space-x-3">
-          <span
-            class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"
-          ></span>
-          <span
-            class="font-semibold text-sm tracking-wide uppercase text-zinc-300"
-            >Workspace</span
-          >
+          <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="font-semibold text-sm tracking-wide uppercase text-zinc-300">Workspace</span>
         </div>
 
         <div class="flex items-center space-x-3">
-          <div
-            class="flex items-center bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1"
-          >
-            <span class="text-[10px] text-zinc-500 font-mono uppercase mr-2"
-              >Models:</span
-            >
-            <select
-              class="bg-transparent text-xs text-zinc-300 focus:outline-none cursor-pointer"
-            >
+          <div class="flex items-center bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1">
+            <span class="text-[10px] text-zinc-500 font-mono uppercase mr-2">Models:</span>
+            <select class="bg-transparent text-xs text-zinc-300 focus:outline-none cursor-pointer">
               <template for="m of modelList">
                 <option value="m.id">{{ m.id }}</option>
               </template>
@@ -366,17 +289,14 @@
 
     <template component="app-sidebar">
       <aside class="w-64 border-r border-zinc-800 bg-zinc-900/20 flex flex-col">
-        <div
-          class="p-3 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/40"
-        >
-          <span
-            class="text-xs font-semibold text-zinc-400 uppercase tracking-wider"
-            >Active Droids</span
-          >
+        <div class="p-3 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/40">
+          <span class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Workspaces</span>
           <button
-            class="text-zinc-500 hover:text-zinc-200 text-xs px-1.5 py-0.5 rounded border border-zinc-800 hover:border-zinc-700 bg-zinc-950"
+            class="text-zinc-400 hover:text-white text-xs p-2 w-6 h-6"
+            on-click="onCreateWorkspace()"
+            aria-label="Add workspace"
           >
-            +
+            <lucide-icon icon="plus" size="16"></lucide-icon>
           </button>
         </div>
 
@@ -388,44 +308,34 @@
               class="p-2 block w-full bg-zinc-900/80 border border-emerald-900/30 rounded-lg group cursor-pointer hover:border-zinc-700 transition"
               on-click="onSelect(ws.name)"
             >
-              <div class="flex justify-between items-start">
-                <span class="text-xs font-mono font-medium text-zinc-200"
-                  >{{ ws.name }}</span
-                >
-                <span
-                  class="text-[10px] text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded-md border border-emerald-900/50"
-                  >Running</span
-                >
-                <span
-                  class="text-[10px] text-zinc-400 bg-zinc-800 px-1.5 py-0.5 rounded-md hidden"
-                  >Done</span
-                >
+              <div class="flex justify-between items-center">
+                <span class="text-xs font-mono font-medium text-zinc-200">{{ ws.name }}</span>
+                <span class="w-3 h-3 bg-emerald-800 rounded-full" class-hidden="workspace !== ws.name"></span>
               </div>
-              <!-- <p class="text-xs text-zinc-400 mt-1 line-clamp-1">
-            Refactoring Auth Middleware
-          </p>
-          <div
-            class="mt-2 flex items-center justify-between text-[10px] text-zinc-500 font-mono"
-          >
-            <span>Model: Qwen-2.5</span>
-            <span>{{ new Date(ws.createdAt).toISOString() }}</span>
-          </div>
-        -->
             </button>
           </template>
         </div>
       </aside>
       <script setup>
-        import { ref, onInit, defineEvent } from "@li3/web";
-        import {
-          workspaces,
-          history,
-          models,
-        } from "https://agents.apphor.de/index.mjs";
+        import { ref, onInit, defineEvent, defineProp } from "@li3/web";
+        import { workspaces, history } from "https://agents.apphor.de/index.mjs";
 
         export default function () {
+          const selected = defineProp("workspace");
+          defineProp("list");
+
           const list = ref([]);
           const onSelect = defineEvent("select");
+          const onCreate = defineEvent("create");
+
+          async function onCreateWorkspace() {
+            const nameInput = prompt("Name (optional)", "") || undefined;
+            const { name } = await workspaces.create(nameInput);
+            await updateWorkspaces();
+            onCreate(name);
+            selected.value = name;
+            onSelect(name);
+          }
 
           async function updateWorkspaces() {
             list.value = await workspaces.list();
@@ -443,68 +353,43 @@
     <template component="app-terminal">
       <section class="w-1/3 bg-zinc-900/10 flex flex-col overflow-hidden">
         <!-- Tabs Selector -->
-        <div
-          class="h-10 border-b border-zinc-800 bg-zinc-950/60 flex items-center px-2 space-x-1 font-mono text-xs"
-        >
+        <div class="h-10 border-b border-zinc-800 bg-zinc-950/60 flex items-center px-2 space-x-1 font-mono text-xs">
           <button
             class="px-3 py-1.5 bg-zinc-900 border border-zinc-800 border-b-transparent text-zinc-200 rounded-t-md"
           >
             Workspace: src/auth.py
           </button>
-          <button
-            class="px-3 py-1.5 text-zinc-500 hover:text-zinc-300 transition"
-          >
-            Terminal Stream
-          </button>
-          <button
-            class="px-3 py-1.5 text-zinc-500 hover:text-zinc-300 transition"
-          >
-            Shared Browser
-          </button>
+          <button class="px-3 py-1.5 text-zinc-500 hover:text-zinc-300 transition">Terminal Stream</button>
+          <button class="px-3 py-1.5 text-zinc-500 hover:text-zinc-300 transition">Shared Browser</button>
         </div>
 
         <!-- File Content Workspace Simulation -->
-        <div
-          class="flex-1 overflow-auto p-4 bg-zinc-950 font-mono text-[11px] text-zinc-400 leading-normal"
-        >
+        <div class="flex-1 overflow-auto p-4 bg-zinc-950 font-mono text-[11px] text-zinc-400 leading-normal">
           <div class="flex space-x-4">
-            <div
-              class="text-zinc-700 text-right select-none pr-2 border-r border-zinc-900"
-            >
+            <div class="text-zinc-700 text-right select-none pr-2 border-r border-zinc-900">
               1<br />2<br />3<br />4<br />5<br />6<br />7<br />8<br />9<br />10
             </div>
             <div class="overflow-x-auto text-zinc-300">
               <span class="text-zinc-500">import</span> jwt<br />
-              <span class="text-zinc-500">from</span> fastapi
-              <span class="text-zinc-500">import</span> HTTPException,
+              <span class="text-zinc-500">from</span> fastapi <span class="text-zinc-500">import</span> HTTPException,
               Security<br /><br />
               <span class="text-zinc-400">def</span>
-              <span class="text-emerald-400">verify_access_token</span>(token:
-              str):<br />
-              &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-zinc-500">try</span
-              >:<br />
+              <span class="text-emerald-400">verify_access_token</span>(token: str):<br />
+              &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-zinc-500">try</span>:<br />
               <span class="bg-emerald-950/50 text-emerald-300 block w-full"
-                >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# FIXED BY
-                DROID: Added explicit algorithm constraints</span
+                >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# FIXED BY DROID: Added explicit algorithm
+                constraints</span
               >
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;payload =
-              jwt.decode(token, SECRET_KEY, algorithms=[<span
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;payload = jwt.decode(token, SECRET_KEY, algorithms=[<span
                 class="text-amber-400"
                 >"HS256"</span
               >])<br />
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span
-                class="text-zinc-500"
-                >return</span
-              >
-              payload<br />
-              &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-zinc-500">except</span>
-              jwt.PyJWTError:<br />
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span
-                class="text-zinc-500"
-                >raise</span
-              >
-              HTTPException(status_code=<span class="text-rose-400">401</span>,
-              detail=<span class="text-amber-400">"Invalid token"</span>)
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-zinc-500">return</span> payload<br />
+              &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-zinc-500">except</span> jwt.PyJWTError:<br />
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-zinc-500">raise</span>
+              HTTPException(status_code=<span class="text-rose-400">401</span>, detail=<span class="text-amber-400"
+                >"Invalid token"</span
+              >)
             </div>
           </div>
         </div>
