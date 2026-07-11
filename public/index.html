@@ -54,6 +54,7 @@
             <select
               class="bg-transparent text-xs text-zinc-300 focus:outline-none cursor-pointer"
               on-change="onSetSessionId($event.target.value)"
+              bind-value="session?.id"
             >
               <option disabled>Switch sessions</option>
               <template for="s of sessionList">
@@ -62,6 +63,9 @@
             </select>
             <button type="button" on-click="onCreateSession()" class="text-xs text-zinc-600 font-mono">
               <lucide-icon icon="plus" size="16" title="New session"></lucide-icon>
+            </button>
+            <button type="button" on-click="onReloadSessions()" class="text-xs text-zinc-600 font-mono">
+              <lucide-icon icon="refresh-cw" size="16" title="Reload sessions"></lucide-icon>
             </button>
           </div>
           <div>
@@ -221,7 +225,7 @@
 
             await Sessions.delete(ws.value, sessionId.value);
             onSetSessionId("");
-            await updateSessionList();
+            await onReloadSessions();
           }
 
           async function reloadMessages() {
@@ -235,7 +239,7 @@
             modelList.value = await Models.list();
           }
 
-          async function updateSessionList() {
+          async function onReloadSessions() {
             if (!ws.value) return;
             sessionList.value = await Sessions.list(ws.value);
           }
@@ -249,7 +253,7 @@
             sessionList.value = [];
             setMessage('');
             onSelectModel('');
-            updateSessionList();
+            onReloadSessions();
           });
           watch(sessionList, () => {
             if (sessionList.value.length === 1) {
@@ -267,6 +271,7 @@
             model,
             modelList,
             reloadModelList,
+            onReloadSessions,
 
             onSend,
             onSetSessionId,
