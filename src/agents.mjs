@@ -1,7 +1,7 @@
 import { join, resolve } from "node:path";
 import { readFile } from "node:fs/promises";
 import { tools, toolsByName } from "./tools.mjs";
-import { callModel } from "./functions/utils.mjs";
+import { callModel } from "./ollama-api.mjs";
 
 const defaultModel = process.env.MODEL;
 const agentSystemPrompt = await readFile(new URL("./system.txt", import.meta.url), "utf8");

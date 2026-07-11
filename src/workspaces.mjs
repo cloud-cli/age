@@ -1,12 +1,10 @@
 import { adjectives, colors, names, uniqueNamesGenerator } from "unique-names-generator";
-
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
 import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-
 import { runAgentLoop } from "./agents.mjs";
-import { getModelList } from "./functions/utils.mjs";
+import { getModelList } from "./ollama-api.mjs";
 
 const dataDir = process.env.DATA_PATH;
 
