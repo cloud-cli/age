@@ -1,8 +1,18 @@
 const baseUrl = "https://__BASE_URL__";
 
+let authKey = "";
+
+export function setKey(k) {
+  authKey = k;
+}
+
+function authHeaders() {
+  return { headers: { authorization: authKey } };
+}
+
 export const Workspaces = {
   async list() {
-    const res = await fetch(new URL(`/workspaces`, baseUrl));
+    const res = await fetch(new URL(`/workspaces`, baseUrl), authHeaders());
     if (!res.ok) {
       throw new Error(`Failed to list workspaces: ${res.status} ${res.statusText}`);
     }
@@ -14,6 +24,7 @@ export const Workspaces = {
     const res = await fetch(new URL(`/workspaces`, baseUrl), {
       method: "POST",
       body: JSON.stringify({ name }),
+      ...authHeaders(),
     });
     if (!res.ok) {
       throw new Error(`Failed to create workspace: ${res.status} ${res.statusText}`);
@@ -23,7 +34,7 @@ export const Workspaces = {
   },
 
   async read(name) {
-    const res = await fetch(new URL(`/workspaces/${name}`, baseUrl));
+    const res = await fetch(new URL(`/workspaces/${name}`, baseUrl), authHeaders());
     if (!res.ok) {
       throw new Error(`Failed to read workspace: ${res.status} ${res.statusText}`);
     }
@@ -34,6 +45,7 @@ export const Workspaces = {
   async delete(name) {
     const res = await fetch(new URL(`/workspaces/${name}`, baseUrl), {
       method: "DELETE",
+      ...authHeaders(),
     });
     if (!res.ok) {
       throw new Error(`Failed to delete workspace: ${res.status} ${res.statusText}`);
@@ -43,7 +55,7 @@ export const Workspaces = {
 
 export const Sessions = {
   async list(name) {
-    const res = await fetch(new URL(`/workspaces/${name}/history`, baseUrl));
+    const res = await fetch(new URL(`/workspaces/${name}/history`, baseUrl), authHeaders());
     if (!res.ok) {
       throw new Error(`Failed to list workspace history: ${res.status} ${res.statusText}`);
     }
@@ -55,6 +67,7 @@ export const Sessions = {
     const res = await fetch(new URL(`/workspaces/${name}/history`, baseUrl), {
       method: "POST",
       body: JSON.stringify({ ...values }),
+      ...authHeaders(),
     });
 
     if (!res.ok) {
@@ -65,7 +78,7 @@ export const Sessions = {
   },
 
   async read(name, id) {
-    const res = await fetch(new URL(`/workspaces/${name}/history/${id}`, baseUrl));
+    const res = await fetch(new URL(`/workspaces/${name}/history/${id}`, baseUrl), authHeaders());
     if (!res.ok) {
       throw new Error(`Failed to read workspace history: ${res.status} ${res.statusText}`);
     }
@@ -74,7 +87,10 @@ export const Sessions = {
   },
 
   async delete(name, id) {
-    const res = await fetch(new URL(`/workspaces/${name}/history/${id}`, baseUrl), { method: "DELETE" });
+    const res = await fetch(new URL(`/workspaces/${name}/history/${id}`, baseUrl), {
+      method: "DELETE",
+      ...authHeaders(),
+    });
     if (!res.ok) {
       throw new Error(`Failed to delete workspace history: ${res.status} ${res.statusText}`);
     }
@@ -85,6 +101,7 @@ export const Sessions = {
     const res = await fetch(new URL(`/workspaces/${name}/history/${id}/message`, baseUrl), {
       method: "POST",
       body: JSON.stringify({ message, model }),
+      ...authHeaders(),
     });
 
     if (!res.ok) {
@@ -97,7 +114,7 @@ export const Sessions = {
 
 export const Models = {
   async list() {
-    const res = await fetch(new URL("/models", baseUrl));
+    const res = await fetch(new URL("/models", baseUrl), authHeaders());
 
     if (!res.ok) {
       throw new Error(`Failed to list workspace history: ${res.status} ${res.statusText}`);

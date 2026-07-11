@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="/manifest.json" />
     <title>AI Workspaces</title>
     <script type="importmap">
       {
@@ -367,8 +368,8 @@
 
       <script setup>
         import { ref, computed, onInit, defineProp, defineEvent } from "@li3/web";
-        import { signIn, events, getProfile } from "https://auth.api.apphor.de/index.mjs";
-        import { Workspaces } from "https://agents.apphor.de/index.mjs";
+        import { signIn, events, getProfile, getPropertyNS } from "https://auth.api.apphor.de/index.mjs";
+        import { Workspaces, setKey } from "https://agents.apphor.de/index.mjs";
 
         export default function () {
           const ws = defineProp("workspace");
@@ -390,16 +391,21 @@
             wsList.value = await Workspaces.list();
           }
 
+          async function onSetProfile(v) {
+            profile.value = v;
+            setKey(v ? await getPropertyNS("authKey") : "");
+          }
+
           async function onUpdateProfile() {
-            profile.value = await getProfile();
+            try {
+              onSetProfile(await getProfile());
+            } catch {}
           }
 
           onInit(onReloadWorkspaceList);
           onInit(onUpdateProfile);
 
-          events.addEventListener("state", (e) => {
-            profile.value = e.detail;
-          });
+          events.addEventListener("state", (e) => onSetProfile(e.detail));
 
           return { signIn, profile, wsListMapped, onCreateWorkspace, onReloadWorkspaceList, onSelectWorkspace };
         }

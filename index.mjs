@@ -29,10 +29,7 @@ createServer((req, res) => {
   }
 
   if (route === "GET /index.mjs") {
-    const code = client.replace(
-      "__BASE_URL__",
-      String(req.headers["x-forwarded-for"]),
-    );
+    const code = client.replace("__BASE_URL__", String(req.headers["x-forwarded-for"]));
 
     res
       .writeHead(200, {
@@ -64,6 +61,11 @@ createServer((req, res) => {
     res.write(text);
     res.end();
   };
+
+  if (req.headers.authorization !== process.env.AUTH_KEY) {
+    res.sendJson({ error: "Not authorized" }, 401);
+    return;
+  }
 
   handler(req, res);
 });
