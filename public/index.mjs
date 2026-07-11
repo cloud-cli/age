@@ -4,9 +4,7 @@ export const workspaces = {
   async list() {
     const res = await fetch(new URL(`/workspaces`, baseUrl));
     if (!res.ok) {
-      throw new Error(
-        `Failed to list workspaces: ${res.status} ${res.statusText}`,
-      );
+      throw new Error(`Failed to list workspaces: ${res.status} ${res.statusText}`);
     }
 
     return res.json();
@@ -18,9 +16,7 @@ export const workspaces = {
       body: JSON.stringify({ name }),
     });
     if (!res.ok) {
-      throw new Error(
-        `Failed to create workspace: ${res.status} ${res.statusText}`,
-      );
+      throw new Error(`Failed to create workspace: ${res.status} ${res.statusText}`);
     }
 
     return res.json();
@@ -29,9 +25,7 @@ export const workspaces = {
   async read(name) {
     const res = await fetch(new URL(`/workspaces/${name}`, baseUrl));
     if (!res.ok) {
-      throw new Error(
-        `Failed to read workspace: ${res.status} ${res.statusText}`,
-      );
+      throw new Error(`Failed to read workspace: ${res.status} ${res.statusText}`);
     }
 
     return res.json();
@@ -42,9 +36,7 @@ export const workspaces = {
       method: "DELETE",
     });
     if (!res.ok) {
-      throw new Error(
-        `Failed to delete workspace: ${res.status} ${res.statusText}`,
-      );
+      throw new Error(`Failed to delete workspace: ${res.status} ${res.statusText}`);
     }
   },
 };
@@ -53,9 +45,7 @@ export const history = {
   async list(name) {
     const res = await fetch(new URL(`/workspaces/${name}/history`, baseUrl));
     if (!res.ok) {
-      throw new Error(
-        `Failed to list workspace history: ${res.status} ${res.statusText}`,
-      );
+      throw new Error(`Failed to list workspace history: ${res.status} ${res.statusText}`);
     }
 
     return res.json();
@@ -68,49 +58,37 @@ export const history = {
     });
 
     if (!res.ok) {
-      throw new Error(
-        `Failed to create history: ${res.status} ${res.statusText}`,
-      );
+      throw new Error(`Failed to create history: ${res.status} ${res.statusText}`);
     }
 
     return res.json();
   },
 
   async read(name, id) {
-    const res = await fetch(
-      new URL(`/workspaces/${name}/history/${id}`, baseUrl),
-    );
+    const res = await fetch(new URL(`/workspaces/${name}/history/${id}`, baseUrl));
     if (!res.ok) {
-      throw new Error(
-        `Failed to read workspace history: ${res.status} ${res.statusText}`,
-      );
+      throw new Error(`Failed to read workspace history: ${res.status} ${res.statusText}`);
     }
 
     return res.json();
   },
 
   async delete(name, id) {
-    const res = await fetch(
-      new URL(`/workspaces/${name}/history/${id}`, baseUrl),
-      { method: "DELETE" },
-    );
+    const res = await fetch(new URL(`/workspaces/${name}/history/${id}`, baseUrl), { method: "DELETE" });
     if (!res.ok) {
-      throw new Error(
-        `Failed to delete workspace history: ${res.status} ${res.statusText}`,
-      );
+      throw new Error(`Failed to delete workspace history: ${res.status} ${res.statusText}`);
     }
   },
 
-  async sendMessage(name, id, message) {
-    const res = await fetch(
-      new URL(`/workspaces/${name}/history/${id}/message`, baseUrl),
-      { method: "POST", body: JSON.stringify({ message }) },
-    );
+  async sendMessage(name, id, m) {
+    const { message, model } = m;
+    const res = await fetch(new URL(`/workspaces/${name}/history/${id}/message`, baseUrl), {
+      method: "POST",
+      body: JSON.stringify({ message, model }),
+    });
 
     if (!res.ok) {
-      throw new Error(
-        `Failed to send message: ${res.status} ${res.statusText}`,
-      );
+      throw new Error(`Failed to send message: ${res.status} ${res.statusText}`);
     }
 
     return res.json();
@@ -122,9 +100,7 @@ export const models = {
     const res = await fetch(new URL("/models", baseUrl));
 
     if (!res.ok) {
-      throw new Error(
-        `Failed to list workspace history: ${res.status} ${res.statusText}`,
-      );
+      throw new Error(`Failed to list workspace history: ${res.status} ${res.statusText}`);
     }
 
     return res.json();

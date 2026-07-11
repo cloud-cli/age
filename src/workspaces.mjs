@@ -1,23 +1,12 @@
-import {
-  adjectives,
-  colors,
-  names,
-  uniqueNamesGenerator,
-} from "unique-names-generator";
+import { adjectives, colors, names, uniqueNamesGenerator } from "unique-names-generator";
 
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
-import {
-  mkdir,
-  readdir,
-  readFile,
-  rm,
-  stat,
-  writeFile,
-} from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { runAgentLoop, getModelList } from "./agents.mjs";
+import { runAgentLoop } from "./agents.mjs";
+import { getModelList } from "./functions/utils.mjs";
 
 const dataDir = process.env.DATA_PATH;
 
@@ -43,9 +32,7 @@ async function onReadWorkspaceList(req, res) {
     const json = await Promise.all(
       workspaces.map(async (file) => ({
         name: file.name,
-        createdAt: await stat(join(dataDir, file.name)).then((stats) =>
-          stats.birthtime.getTime(),
-        ),
+        createdAt: await stat(join(dataDir, file.name)).then((stats) => stats.birthtime.getTime()),
       })),
     );
 
@@ -59,9 +46,7 @@ const workspaceFolders = ["files", "history", "config"];
 
 async function onCreateWorkspace(req, res) {
   const body = Buffer.concat(await req.toArray()).toString("utf8");
-  const name = sanitize(
-    (body.trim() && JSON.parse(body)?.name) || randomName(),
-  );
+  const name = sanitize((body.trim() && JSON.parse(body)?.name) || randomName());
 
   const workspacePath = join(dataDir, name);
 
@@ -169,9 +154,7 @@ async function onReadWorkspaceHistoryList(_req, res, params) {
     encoding: "utf8",
   });
 
-  const sessions = files.filter(
-    (file) => file.isFile() && file.name.endsWith(".json"),
-  );
+  const sessions = files.filter((file) => file.isFile() && file.name.endsWith(".json"));
 
   const json = await Promise.all(
     sessions.map(async (file) => {
@@ -211,9 +194,7 @@ async function onCreateWorkspaceHistory(req, res, params) {
   }
 
   try {
-    const body = JSON.parse(
-      Buffer.concat(await req.toArray()).toString("utf8"),
-    );
+    const body = JSON.parse(Buffer.concat(await req.toArray()).toString("utf8"));
     const json = {
       id: uid,
       title: body.title,
@@ -282,19 +263,19 @@ async function onMessage(req, res, params) {
   // read session, append message and run an AI model to generate a response.
   const history = JSON.parse(await readFile(historyFile, "utf8"));
   const body = Buffer.concat(await req.toArray()).toString("utf8");
+  const loopOptions = { workspacePath, model: "" };
 
   try {
-    const { message } = JSON.parse(body);
+    const { message, model = "" } = JSON.parse(body);
     history.messages.push({ role: "user", content: message });
+    loopOptions.model = model;
   } catch (err) {
-    console.error(
-      `Invalid JSON body for workspace history ${historyFile}: ${err.message}`,
-    );
+    console.error(`Invalid JSON body for workspace history ${historyFile}: ${err.message}`);
     res.sendJson({ error: "Invalid JSON body" }, 400);
     return;
   }
 
-  await runAgentLoop(history, workspacePath);
+  await runAgentLoop(history, loopOptions);
   await writeFile(historyFile, JSON.stringify(history));
   res.sendJson(history);
 }

@@ -1,37 +1,15 @@
 import { join, resolve } from "node:path";
 import { readFile } from "node:fs/promises";
-import { convertFunctionsToTools } from "./functions/tools.mjs";
-import * as FS from "./functions/fs.mjs";
-import * as Git from "./functions/git.mjs";
-import * as Shell from "./functions/shell.mjs";
-import * as Deploy from "./functions/deploy.mjs";
+import { tools } from "./tools.mjs";
+import { callModel } from "./functions/utils.mjs";
 
-const API_KEY = process.env.API_KEY;
-const modelApi = process.env.API_URL;
 const defaultModel = process.env.MODEL;
-const agentSystemPrompt = await readFile(
-  new URL("./system.txt", import.meta.url),
-  "utf8",
-);
-
-export const tools = [
-  ...convertFunctionsToTools(FS),
-  ...convertFunctionsToTools(Git),
-  ...convertFunctionsToTools(Shell),
-  ...convertFunctionsToTools(Deploy),
-];
-
-const toolsByName = {
-  ...FS,
-  ...Git,
-  ...Shell,
-  ...Deploy,
-};
+const agentSystemPrompt = await readFile(new URL("./system.txt", import.meta.url), "utf8");
 
 // call Ollama server to get a response from the model
 // history is an array of messages, each message is an object with role and content, just like an OpenAI chat completion request
 export async function getModelResponse(history, model = defaultModel) {
-  const requestBody = JSON.stringify({
+  const requestBody = {
     model,
     tools,
     stream: false,
@@ -43,21 +21,10 @@ export async function getModelResponse(history, model = defaultModel) {
       },
       ...history,
     ],
-  });
+  };
 
-  const response = await fetch(new URL("/api/chat", modelApi), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
-    },
-    body: requestBody,
-  });
-
-  const body = await response.text();
-  const json = JSON.parse(body);
-
-  return json.message;
+  const response = await callModel(requestBody);
+  return response.message;
 }
 
 function convertValue(value, type) {
@@ -112,11 +79,12 @@ export function executeFunction(functionName, modelArgs, workspacePath) {
   return f.apply(context, foundArgs);
 }
 
-export async function runAgentLoop(history, workspacePath) {
+export async function runAgentLoop(history, options) {
+  const { workspacePath, model = "" } = options;
   let aiResponse;
 
   try {
-    aiResponse = await getModelResponse(history.messages, history.model);
+    aiResponse = await getModelResponse(history.messages, model || history.model || defaultModel);
 
     if (aiResponse.error) {
       throw new Error("Invalid AI response: " + aiResponse.error);
@@ -124,9 +92,7 @@ export async function runAgentLoop(history, workspacePath) {
 
     console.log("AI response", aiResponse);
   } catch (err) {
-    console.error(
-      `Error getting model response at ${historyFile}: ${err.message}`,
-    );
+    console.error(`Error getting model response at ${historyFile}: ${err.message}`);
     res.sendJson({ error: err.message }, 500);
     return;
   }
@@ -142,24 +108,15 @@ export async function runAgentLoop(history, workspacePath) {
     const functionArgs = call.function.arguments;
 
     try {
-      const functionResponse = await executeFunction(
-        functionName,
-        functionArgs,
-        workspacePath,
-      );
+      const functionResponse = await executeFunction(functionName, functionArgs, workspacePath);
 
       history.messages.push({
         role: "tool",
         tool_name: functionName,
-        content:
-          typeof functionResponse === "object"
-            ? JSON.stringify(functionResponse)
-            : String(functionResponse),
+        content: typeof functionResponse === "object" ? JSON.stringify(functionResponse) : String(functionResponse),
       });
     } catch (error) {
-      console.error(
-        `Error executing function: ${functionName} with args: ${JSON.stringify(functionArgs)}:\n ${error}`,
-      );
+      console.error(`Error executing function: ${functionName} with args: ${JSON.stringify(functionArgs)}:\n ${error}`);
       history.messages.push({
         role: "system",
         content: `Error executing function ${functionName} with args ${JSON.stringify(functionArgs)}:\nError: ${error}`,
@@ -169,10 +126,4 @@ export async function runAgentLoop(history, workspacePath) {
   }
 
   return runAgentLoop(history, workspacePath);
-}
-
-export async function getModelList() {
-  const response = await fetch(new URL("/v1/models", modelApi));
-  const body = await response.json();
-  return body.data.map((d) => ({ id: d.id }));
 }
