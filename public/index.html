@@ -114,7 +114,7 @@
 
         <!-- Agent Thought & Execution Feed (Scrollable) -->
         <div class="flex-1 overflow-y-auto p-4 space-y-4 font-mono text-xs flex flex-col-reverse gap-2">
-          <template for="m of messages?.reverse()">
+          <template for="m of messages">
             <div class="flex gap-3 max-w-3xl">
               <div
                 class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
@@ -226,13 +226,14 @@
 
             try {
               sending.value = true;
-              messages.value = messages.value.concat([
-                { role: "user", content: message },
+              messages.value = [
                 { role: "assistant", content: "Thinking...", thinking: true },
-              ]);
+                { role: "user", content: message },
+                ...messages.value,
+              ];
               const response = await Sessions.sendMessage(ws.value, sessionId.value, { message, model: model.value });
               setMessage("");
-              messages.value = response.messages;
+              messages.value = response.messages.reverse();
             } catch (e) {
               console.log(e);
             } finally {
@@ -266,7 +267,7 @@
           async function reloadMessages() {
             if (ws.value && sessionId.value) {
               const json = await Sessions.read(ws.value, sessionId.value);
-              messages.value = json.messages;
+              messages.value = json.messages.reverse();
             }
           }
 
