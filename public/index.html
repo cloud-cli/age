@@ -346,7 +346,7 @@
       </header>
 
       <script setup>
-        import { ref, onInit, defineProp, defineEvent } from "@li3/web";
+        import { ref, computed, onInit, defineProp, defineEvent } from "@li3/web";
         import { signIn, events, getProfile } from "https://auth.api.apphor.de/index.mjs";
         import { Workspaces } from "https://agents.apphor.de/index.mjs";
 
@@ -370,14 +370,15 @@
             wsList.value = await Workspaces.list();
           }
 
-          onInit(onReloadWorkspaceList());
+          async function onUpdateProfile() {
+            profile.value = await getProfile();
+          }
+
+          onInit(onReloadWorkspaceList);
+          onInit(onUpdateProfile);
 
           events.addEventListener("state", (e) => {
             profile.value = e.detail;
-          });
-
-          onInit(async () => {
-            profile.value = await getProfile();
           });
 
           return { signIn, profile, wsListMapped, onCreateWorkspace, onReloadWorkspaceList, onSelectWorkspace };
