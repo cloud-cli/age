@@ -27,7 +27,7 @@
       <!-- Main Grid Workspace Layout -->
       <main class="flex-1 flex overflow-hidden">
         <!-- Sidebar: Asynchronous Agent Tasks & Backlog -->
-        <app-sidebar class="contents" on-select="onSelectWorkspace($event.detail)"></app-sidebar>
+        <app-sidebar class="contents" bind-workspace="ws" on-select="onSelectWorkspace($event.detail)"></app-sidebar>
 
         <!-- Center Panel: The Execution Stream (Chat, Prompts & Logs) -->
         <app-chat bind-workspace="ws" class="contents"></app-chat>
