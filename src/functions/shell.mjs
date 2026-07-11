@@ -5,7 +5,3 @@ export function ShellExec(/*string*/ command) {
   const options = { cwd: this.getPath("."), encoding: "utf8" };
   return String(execSync(command, options));
 }
-
-export const functions = {
-  ShellExec,
-};

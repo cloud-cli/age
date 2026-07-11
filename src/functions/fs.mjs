@@ -1,4 +1,4 @@
-import * as fs from 'node:fs';
+import * as fs from "node:fs";
 
 // functions used by the workspace API via AI function calls to interact with the file system
 
@@ -60,16 +60,3 @@ export function GetFileStats(/*string*/ path) {
     modifiedAt: stats.mtime,
   };
 }
-
-export const functions = {
-  ReadFile,
-  WriteFile,
-  ListFiles,
-  DeleteFile,
-  CreateFolder,
-  DeleteFolder,
-  RenameFile,
-  RenameFolder,
-  GetFileStats,
-};
-

@@ -1,9 +1,10 @@
 import { join, resolve } from "node:path";
 import { readFile } from "node:fs/promises";
 import { convertFunctionsToTools } from "./functions/tools.mjs";
-import { functions as FS } from "./functions/fs.mjs";
-import { functions as Git } from "./functions/git.mjs";
-import { functions as Shell } from "./functions/shell.mjs";
+import * as FS from "./functions/fs.mjs";
+import * as Git from "./functions/git.mjs";
+import * as Shell from "./functions/shell.mjs";
+import * as Deploy from "./functions/deploy.mjs";
 
 const API_KEY = process.env.API_KEY;
 const modelApi = process.env.API_URL;
@@ -17,12 +18,14 @@ export const tools = [
   ...convertFunctionsToTools(FS),
   ...convertFunctionsToTools(Git),
   ...convertFunctionsToTools(Shell),
+  ...convertFunctionsToTools(Deploy),
 ];
 
 const toolsByName = {
   ...FS,
   ...Git,
   ...Shell,
+  ...Deploy,
 };
 
 // call Ollama server to get a response from the model
