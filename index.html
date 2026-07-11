@@ -16,6 +16,14 @@
     <script type="module">
       import "@li3/web";
     </script>
+    <link
+      rel="component"
+      href="https://sodium.static.apphor.de/lucide-icon.html"
+    />
+    <link
+      rel="component"
+      href="https://sodium.static.apphor.de/code-editor.html"
+    />
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body
@@ -159,14 +167,6 @@
             class="relative bg-zinc-900 border border-zinc-800 rounded-xl focus-within:border-zinc-700 transition p-2"
           >
             <form on-submit.prevent="onSend()">
-              <textarea
-                rows="2"
-                placeholder="Next step"
-                bind-value="newMessage"
-                bind-disabled="sending"
-                class="w-full bg-transparent text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none resize-none px-2 py-1"
-                on-input.stop="setMessage($event.target.value)"
-              ></textarea>
               <div
                 class="flex justify-between items-center pt-2 border-t border-zinc-800/60 mt-1 px-1"
               >
@@ -175,17 +175,29 @@
                   on-click="onCreateSession()"
                   class="text-xs text-zinc-600 font-mono"
                 >
-                  new chat
+                  <lucide-icon
+                    icon="plus"
+                    size="16"
+                    title="New chat"
+                  ></lucide-icon>
                 </button>
                 <button
                   type="submit"
                   class="bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-semibold text-xs px-3 py-1 rounded-md transition"
-                  class-animate-pulse="sending"
+                  class-animate-pulse.bg-white.opacity-70="sending"
                   bind-disabled="sending"
                 >
-                  Dispatch
+                  <lucide-icon icon="send-horizontal" size="16" title="Send"></lucide-icon>
                 </button>
               </div>
+              <textarea
+                rows="2"
+                placeholder="Next step"
+                bind-value="newMessage"
+                bind-disabled="sending"
+                class="w-full bg-transparent text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none resize-none px-2 py-1"
+                on-input.stop="setMessage($event.target.value)"
+              ></textarea>
             </form>
           </div>
         </div>
@@ -194,6 +206,7 @@
       <script setup>
         import {
           ref,
+          computed,
           hook,
           watch,
           onInit,
@@ -209,7 +222,7 @@
         export default function () {
           const ws = defineProp("workspace");
           const session = ref(null);
-          const sessionId = ref("");
+          const sessionId = computed((x) => x.id);
           const sessionList = ref([]);
           const sending = ref(false);
           const [newMessage, setMessage] = hook("");
@@ -238,23 +251,18 @@
             const item = sessionList.value.find((s) => s.id === id);
 
             if (!item) {
-              sessionId.value = "";
               session.value = null;
               messages.value = [];
               return;
             }
 
             session.value = item;
-            sessionId.value = id;
-
-            reloadMessages();
           }
 
           async function onCreateSession() {
             const newSession = await history.create(ws.value);
-            sessionId.value = newSession.id;
+            sessionList.value = sessionList.value.concat(newSession);
             session.value = newSession;
-            await updateSessionList();
           }
 
           async function onDeleteSession() {
@@ -284,9 +292,8 @@
             sessionList.value = await history.list(ws.value);
           }
 
-          watch(ws, () => {
-            updateSessionList();
-          });
+          watch(session, () => reloadMessages());
+          watch(ws, () => updateSessionList());
 
           return {
             messages,
