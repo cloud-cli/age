@@ -12,15 +12,16 @@ export async function DeployPush(/*string*/ name) {
     execSync(`tar cz -f ${sourceFilePath} .`, { cwd: workspaceDir });
     const source = readFileSync(sourceFilePath);
     const blob = new Blob([source], { type: "application/gzip" });
-    const res = await fetch("https://deploy.static.apphor.de/", {
+    const res = await fetch(deployUrl, {
       method: "POST",
       body: blob,
       headers: {
         authorization: deployKey,
         "content-type": "application/gzip",
+        "x-deploy-alias": name,
       },
     });
-    return res.ok;
+    return await res.json();
   } catch (e) {
     throw e;
   } finally {
@@ -45,5 +46,11 @@ export async function DeployPull(/*string*/ name) {
   target.stdin.write(buffer);
   target.stdin.end();
 
-  return Buffer.concat(target.stdout.toArray()).toString("utf8");
+  return new Promise((resolve) => {
+    const chunks = [];
+    target.stdout.on("data", (c) => chunks.push(c));
+    target.stdout.on("close", () => {});
+
+    resolve(Buffer.concat(chunks).toString("utf8"));
+  });
 }

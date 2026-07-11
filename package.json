@@ -1,6 +1,7 @@
 {
   "main": "index.mjs",
   "dependencies": {
+    "@cloud-cli/exec": "^1.2.1",
     "@cloud-cli/http": "latest",
     "@cloud-cli/store": "latest",
     "micro-router": "latest",

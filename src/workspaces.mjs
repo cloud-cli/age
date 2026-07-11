@@ -153,11 +153,11 @@ async function onReadWorkspaceHistoryList(_req, res, params) {
   });
 
   const sessions = files.filter((file) => file.isFile() && file.name.endsWith(".json"));
-
   const json = await Promise.all(
     sessions.map(async (file) => {
       const content = await readFile(join(workspacePath, file.name), "utf8");
       const json = JSON.parse(content);
+      // delete messages from list API to reduce response length
       json.messages = [];
       return json;
     }),

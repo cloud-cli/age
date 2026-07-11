@@ -69,9 +69,7 @@ export function executeFunction(functionName, modelArgs, workspacePath) {
   const f = toolsByName[functionName];
   const context = {
     getPath(s) {
-      const x = join(workspacePath, "files", resolve("/", s || "."));
-      console.log("GetPath", s, x);
-      return x;
+      return join(workspacePath, "files", resolve("/", s || "."));
     },
   };
 
@@ -92,7 +90,7 @@ export async function runAgentLoop(history, options) {
 
     console.log("AI response", aiResponse);
   } catch (err) {
-    console.error(`Error getting model response at ${historyFile}: ${err.message}`);
+    console.error(`Error getting model response: ${err.message}`);
     res.sendJson({ error: err.message }, 500);
     return;
   }
