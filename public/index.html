@@ -80,6 +80,7 @@
         }
       </script>
     </template>
+
     <template component="app-chat">
       <section class="flex-1 flex flex-col bg-zinc-950 border-r border-zinc-800">
         <div class="flex items-center justify-between px-4 pt-1" class-hidden="!workspace">
@@ -162,23 +163,20 @@
           >
             <form on-submit.prevent="onSend()">
               <div class="flex justify-between items-center p-2 px-1">
-                <div class="flex items-center bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1">
-                  <span class="text-[10px] text-zinc-500 font-mono uppercase mr-2">Models:</span>
-                  <select
-                    class="bg-transparent text-xs text-zinc-300 focus:outline-none cursor-pointer"
-                    on-change="onSelectModel($event.target.value)"
-                    bind-value="model"
-                  >
-                    <option>Models</option>
-                    <template for="m of modelList">
-                      <option value="m.id">{{ m.id }}</option>
-                    </template>
-                  </select>
-                </div>
+                <dynamic-list
+                  label="Model"
+                  placeholder="Model to use"
+                  bind-list="modelListMapped"
+                  bind-selected="model"
+                  on-reload="onReloadModelList()"
+                  on-select="onSelectModel($event.detail)"
+                ></dynamic-list>
+
                 <button
                   type="submit"
-                  class="bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-semibold text-xs px-3 py-1 rounded-md transition"
+                  class="hover:bg-zinc-200 text-zinc-950 font-semibold text-xs px-3 py-1 rounded-md transition"
                   class-animate-pulse.bg-white.opacity-70="sending"
+                  class-bg-zinc-100="!sending && newMessage.trim()"
                   bind-disabled="sending"
                 >
                   <lucide-icon icon="send-horizontal" size="16" title="Send"></lucide-icon>
@@ -215,12 +213,16 @@
             (sessionList.value || []).map((s) => ({ label: s.title || s.id, value: s.id })),
           );
 
+          const modelListMapped = computed(() => (modeList.value || []).map((m) => ({ label: m.id, value: m.id })));
+
           async function onSend() {
             const message = newMessage.value;
 
+            if (!(ws.value && sessionId.value && message)) return;
+
             try {
               sending.value = true;
-              const response = await Sessions.sendMessage(ws.value, session.value.id, { message, model: model.value });
+              const response = await Sessions.sendMessage(ws.value, sessionId.value, { message, model: model.value });
               setMessage("");
               messages.value = response.messages;
             } catch (e) {
@@ -260,7 +262,7 @@
             }
           }
 
-          async function reloadModelList() {
+          async function onReloadModelList() {
             modelList.value = await Models.list();
           }
 
@@ -270,7 +272,7 @@
             }
           }
 
-          onInit(reloadModelList);
+          onInit(onReloadModelList);
 
           watch(session, (v) => v && reloadMessages());
           watch(ws, () => {
@@ -304,8 +306,9 @@
             session,
             sessionList,
             model,
-            modelList,
+            modelListMapped,
             sessionListMapped,
+            onReloadModelList,
             onReloadSessions,
             onSend,
             onSetSessionId,
