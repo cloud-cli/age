@@ -264,8 +264,9 @@
           }
 
           async function onReloadSessions() {
-            if (!ws.value) return;
-            sessionList.value = await Sessions.list(ws.value);
+            if (ws.value) {
+              sessionList.value = await Sessions.list(ws.value);
+            }
           }
 
           onInit(reloadModelList);
@@ -281,12 +282,16 @@
           });
 
           watch(sessionList, (list = []) => {
+            const firstId = sessionList[0]?.id;
+
+            if (!firstId) return;
+
             if (list.length === 1) {
-              onSetSessionId(sessionList[0].id);
+              onSetSessionId(firstId);
             }
 
             if (list.length && !list.find((s) => s.id === sessionId.value)) {
-              onSetSessionId(sessionList[0].id);
+              onSetSessionId(firstId);
             }
           });
 
@@ -299,9 +304,8 @@
             sessionList,
             model,
             modelList,
-            reloadModelList,
+            sessionListMapped,
             onReloadSessions,
-
             onSend,
             onSetSessionId,
             onDeleteSession,
