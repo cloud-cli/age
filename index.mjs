@@ -10,12 +10,14 @@ const handler = router({ ...workspaces });
 createServer((req, res) => {
   res.sendJson = (json, code = 200) => {
     const text = JSON.stringify(json, null, 2);
-    res
-      .writeHead(code, { "content-type": "application/json", "content-length": text.length, })
-      .end(text);
+    res.writeHead(code, {
+      "content-type": "application/json",
+    });
+    res.write(text);
+    res.end();
   };
 
-  if (req.method === 'GET' && req.url === '/') {
+  if (req.method === "GET" && req.url === "/") {
     res.end(indexPage);
     return;
   }
