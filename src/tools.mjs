@@ -4,11 +4,12 @@ import * as Git from "./functions/git.mjs";
 import * as Shell from "./functions/shell.mjs";
 import * as Deploy from "./functions/deploy.mjs";
 import * as Ollama from "./functions/ollama.mjs";
+import * as Markdown from "./functions/markdown.mjs";
 
 export const tools = [];
 export const toolsByName = {};
 
-for (const t of [FS, Git, Shell, Deploy, Ollama]) {
+for (const t of [FS, Git, Shell, Deploy, Ollama, Markdown]) {
   tools.push(...convertFunctionsToTools(t));
   Object.assign(toolsByName, t);
 }
