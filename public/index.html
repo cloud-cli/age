@@ -128,13 +128,18 @@
 
               <div class="flex-1 mb-1">
                 <template if="m.role !== 'tool'">
-                  <div
-                    class="bg-zinc-900 p-3 rounded-lg border border-zinc-800 leading-relaxed flex-1"
-                    class-text-zink-300="!m.thinking"
-                    class-text-zink-500="m.thinking"
-                  >
-                    <span class="mr-2 animate-spin text-zinc-400" class-hidden="!m.thinking">⚙</span>
-                    <markdown-block bind-src="m.content || m.thinking"></markdown-block>
+                  <div class="bg-zinc-900 p-3 rounded-lg border border-zinc-800 leading-relaxed flex-1">
+                    <lucide-icon
+                      icon="loader"
+                      size="12"
+                      class="mr-2 text-zinc-400"
+                      bind-class="{ 'block.animate-spin': m.thinking === true, 'hidden': m.thinking !== true }"
+                    ></lucide-icon>
+                    <markdown-block
+                      bind-src="m.content || m.thinking"
+                      class-text-zink-300="!m.thinking"
+                      class-text-zink-500="m.thinking"
+                    ></markdown-block>
                   </div>
                 </template>
 
@@ -183,8 +188,11 @@
                 placeholder="Next step"
                 bind-value="newMessage"
                 bind-disabled="sending"
-                class="w-full bg-transparent text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none resize-none px-2 py-1"
+                class="w-full bg-transparent text-sm placeholder-zinc-600 focus:outline-none resize-none px-2 py-1"
+                class-text-zinc-200="!sending"
+                class-text-zinc-600="sending"
                 on-input.stop="setMessage($event.target.value)"
+                on-keydown="onKeyDown($event)"
               ></textarea>
             </form>
           </div>
@@ -218,6 +226,10 @@
 
             try {
               sending.value = true;
+              messages.value = messages.value.concat([
+                { role: "user", content: message },
+                { role: "assistant", content: "Thinking...", thinking: true },
+              ]);
               const response = await Sessions.sendMessage(ws.value, sessionId.value, { message, model: model.value });
               setMessage("");
               messages.value = response.messages;
@@ -268,6 +280,12 @@
             }
           }
 
+          function onKeyDown(e) {
+            if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+              e.preventDefault();
+              onSend();
+            }
+          }
           onInit(onReloadModelList);
 
           watch(session, (v) => v && reloadMessages());

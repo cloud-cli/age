@@ -1,6 +1,6 @@
 import { join, resolve } from "node:path";
 import { readFile } from "node:fs/promises";
-import { tools } from "./tools.mjs";
+import { tools, toolsByName } from "./tools.mjs";
 import { callModel } from "./functions/utils.mjs";
 
 const defaultModel = process.env.MODEL;

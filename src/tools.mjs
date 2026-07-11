@@ -6,7 +6,7 @@ import * as Deploy from "./functions/deploy.mjs";
 import * as Ollama from "./functions/ollama.mjs";
 
 export const tools = [];
-const toolsByName = {};
+export const toolsByName = {};
 
 for (const t of [FS, Git, Shell, Deploy, Ollama]) {
   tools.push(...convertFunctionsToTools(t));
