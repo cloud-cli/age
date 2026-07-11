@@ -125,5 +125,5 @@ export async function runAgentLoop(history, options) {
     }
   }
 
-  return runAgentLoop(history, workspacePath);
+  return runAgentLoop(history, options);
 }
