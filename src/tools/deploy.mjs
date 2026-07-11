@@ -5,8 +5,9 @@ import { existsSync, readFileSync, rmSync } from "node:fs";
 const deployUrl = new URL(process.env.DEPLOY_API_URL);
 const deployKey = process.env.DEPLOY_API_KEY;
 
-export async function DeployPush(/*string*/ name) {
-  const workspaceDir = this.getPath(".");
+export async function DeployPush(/*string*/ name, /*string*/ path = ".") {
+  "##Deploy a folder at 'path' as a static page in AppHorde deploy server. If not specified, deploy the entire workspace.##";
+  const workspaceDir = this.getPath(path);
   const sourceFilePath = "/tmp/" + randomUUID() + ".tgz";
   try {
     execSync(`tar cz -f ${sourceFilePath} .`, { cwd: workspaceDir });
@@ -29,7 +30,8 @@ export async function DeployPush(/*string*/ name) {
   }
 }
 
-export async function DeployPull(/*string*/ name) {
+export async function DeployPull(/*string*/ name, /*string*/ targetPath = ".") {
+  "##Pull an entire AppHorde static page into a folder##";
   const res = await fetch(new URL(name, deployUrl), {
     method: "COPY",
     headers: {
@@ -37,7 +39,7 @@ export async function DeployPull(/*string*/ name) {
     },
   });
 
-  const workspaceDir = this.getPath(".");
+  const workspaceDir = this.getPath(targetPath);
   const buffer = Buffer.from(await res.arrayBuffer());
   const target = spawn("tar", ["-xz", "-f", "-", "--keep-newer-files"], {
     cwd: workspaceDir,
