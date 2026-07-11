@@ -1,6 +1,6 @@
 const baseUrl = "https://__BASE_URL__";
 
-export const workspaces = {
+export const Workspaces = {
   async list() {
     const res = await fetch(new URL(`/workspaces`, baseUrl));
     if (!res.ok) {
@@ -41,7 +41,7 @@ export const workspaces = {
   },
 };
 
-export const history = {
+export const Sessions = {
   async list(name) {
     const res = await fetch(new URL(`/workspaces/${name}/history`, baseUrl));
     if (!res.ok) {
@@ -95,7 +95,7 @@ export const history = {
   },
 };
 
-export const models = {
+export const Models = {
   async list() {
     const res = await fetch(new URL("/models", baseUrl));
 

@@ -167,7 +167,7 @@
 
       <script setup>
         import { ref, computed, hook, watch, onInit, defineProp, defineEvent } from "@li3/web";
-        import { workspaces, history, models } from "https://agents.apphor.de/index.mjs";
+        import { Workspaces, Sessions, Models } from "https://agents.apphor.de/index.mjs";
 
         export default function () {
           const ws = defineProp("workspace");
@@ -178,14 +178,14 @@
           const [newMessage, setMessage] = hook("");
           const messages = ref([]);
           const modelList = ref([]);
-          const [model, onSelectModel] = hook('');
+          const [model, onSelectModel] = hook("");
 
           async function onSend() {
             const message = newMessage.value;
 
             try {
               sending.value = true;
-              const response = await history.sendMessage(ws.value, session.value.id, { message, model: model.value });
+              const response = await Sessions.sendMessage(ws.value, session.value.id, { message, model: model.value });
               setMessage("");
               messages.value = response.messages;
             } catch (e) {
@@ -208,7 +208,7 @@
           }
 
           async function onCreateSession() {
-            const newSession = await history.create(ws.value);
+            const newSession = await Sessions.create(ws.value);
             sessionList.value = sessionList.value.concat(newSession);
             session.value = newSession;
           }
@@ -217,37 +217,34 @@
             if (!sessionId.value) return;
             if (!confirm("Are you sure?")) return;
 
-            await history.delete(ws.value, sessionId.value);
+            await Sessions.delete(ws.value, sessionId.value);
             onSetSessionId("");
             await updateSessionList();
           }
 
           async function reloadMessages() {
-            const json = await history.read(ws.value, sessionId.value);
+            const json = await Sessions.read(ws.value, sessionId.value);
             messages.value = json.messages;
           }
 
-          async function reloadModelList () {
-            modelList.value = await models.list();
-          }
-
-          function autoSelectSession() {
-            const first = sessionList.value.at(0);
-
-            if (first) {
-              onSetSessionId(first.id);
-            }
+          async function reloadModelList() {
+            modelList.value = await Models.list();
           }
 
           async function updateSessionList() {
             if (!ws.value) return;
-            sessionList.value = await history.list(ws.value);
+            sessionList.value = await Sessions.list(ws.value);
           }
 
           onInit(reloadModelList);
 
           watch(session, () => reloadMessages());
           watch(ws, () => updateSessionList());
+          watch(sessionList, () => {
+            if (sessionList.value.length === 1) {
+              onSetSessionId(sessionList[0].id);
+            }
+          });
 
           return {
             messages,
@@ -340,19 +337,18 @@
       </aside>
       <script setup>
         import { ref, onInit, defineEvent, defineProp } from "@li3/web";
-        import { workspaces, history } from "https://agents.apphor.de/index.mjs";
+        import { Workspaces } from "https://agents.apphor.de/index.mjs";
 
         export default function () {
-          const selected = defineProp("workspace");
           defineProp("list");
-
-          const list = ref([]);
+          const selected = defineProp("workspace");
           const onSelect = defineEvent("select");
           const onCreate = defineEvent("create");
 
+          const list = ref([]);
           async function onCreateWorkspace() {
             const nameInput = prompt("Name (optional)", "") || undefined;
-            const { name } = await workspaces.create(nameInput);
+            const { name } = await Workspaces.create(nameInput);
             await updateWorkspaces();
             onCreate(name);
             selected.value = name;
@@ -360,14 +356,14 @@
           }
 
           async function updateWorkspaces() {
-            list.value = await workspaces.list();
+            list.value = await Workspaces.list();
           }
 
           onInit(() => {
             updateWorkspaces();
           });
 
-          return { workspaces: list, onSelect };
+          return { workspaces: list, onSelect, onCreateWorkspace };
         }
       </script>
     </template>
