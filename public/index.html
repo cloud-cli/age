@@ -131,7 +131,7 @@
             class="relative bg-zinc-900 border border-zinc-800 rounded-xl focus-within:border-zinc-700 transition p-2"
           >
             <form on-submit.prevent="onSend()">
-              <div class="flex justify-between items-center pt-2 px-1">
+              <div class="flex justify-between items-center p-2 px-1">
                 <div class="flex items-center bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1">
                   <span class="text-[10px] text-zinc-500 font-mono uppercase mr-2">Models:</span>
                   <select
@@ -243,7 +243,14 @@
           onInit(reloadModelList);
 
           watch(session, (v) => v && reloadMessages());
-          watch(ws, () => updateSessionList());
+          watch(ws, () => {
+            messages.value = [];
+            session.value = null;
+            sessionList.value = [];
+            setMessage('');
+            onSelectModel('');
+            updateSessionList();
+          });
           watch(sessionList, () => {
             if (sessionList.value.length === 1) {
               onSetSessionId(sessionList[0].id);
