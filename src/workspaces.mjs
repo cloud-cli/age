@@ -279,12 +279,19 @@ async function onMessage(req, res, params) {
 }
 
 async function onModelList(_req, res) {
-  const list = await getModelList();
-  res.sendJson(list);
+  res.sendJson(await getModelList());
+}
+
+async function onModelPull(_req, res, params) {
+  const { name } = params;
+  const { success } = await pullModel(name);
+  res.sendJson(success, success ? 200 : 500);
 }
 
 export default {
   "GET /models": onModelList,
+  "GET /models/:name": onModelPull,
+
   "GET /workspaces": onReadWorkspaceList,
   "POST /workspaces": onCreateWorkspace,
 

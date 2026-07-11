@@ -24,3 +24,15 @@ export async function callModel(requestBody) {
   const body = await response.text();
   return JSON.parse(body);
 }
+
+export async function pullModel(model) {
+  const response = await fetch(new URL("/api/pull", apiUrl), {
+    method: "POST",
+    body: JSON.stringify({ model }),
+    headers: {
+      ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+    },
+  });
+
+  return await response.json();
+}
