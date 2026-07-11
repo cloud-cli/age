@@ -48,7 +48,7 @@
           on-change="onSelect($event.target.value)"
           bind-value="selected"
         >
-          <option disabled>{{ placeholder }}</option>
+          <option bind-disabled="list?.length > 1">{{ placeholder }}</option>
           <template for="s of list">
             <option bind-value="s.value">{{ s.label }}</option>
           </template>
