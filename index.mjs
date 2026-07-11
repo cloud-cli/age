@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import workspaces from "./src/workspaces.mjs";
 
 const client = readFileSync("./client.mjs", "utf8");
+const indexPage = readFileSync("./index.html", "utf8");
 const handler = router({ ...workspaces });
 
 createServer((req, res) => {
@@ -13,6 +14,11 @@ createServer((req, res) => {
       .writeHead(code, { "content-type": "application/json", "content-length": text.length, })
       .end(text);
   };
+
+  if (req.method === 'GET' && req.url === '/') {
+    res.end(indexPage);
+    return;
+  }
 
   if (!(req.method === "GET" && req.url === "/index.mjs")) {
     handler(req, res);
