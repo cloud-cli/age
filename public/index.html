@@ -22,7 +22,13 @@
   </head>
   <body class="bg-zinc-950 text-zinc-100 font-sans h-screen flex flex-col overflow-hidden">
     <template app>
-      <app-header class="contents" bind-workspace="ws" on-profile="onSetProfile($event.detail)" on-select="onSelectWorkspace($event.detail)" on-></app-header>
+      <app-header
+        class="contents"
+        bind-workspace="ws"
+        on-profile="onSetProfile($event.detail)"
+        on-select="onSelectWorkspace($event.detail)"
+        on-
+      ></app-header>
 
       <template if="profile">
         <main class="flex-1 flex overflow-hidden">
@@ -93,6 +99,9 @@
           ></dynamic-list>
 
           <div>
+            <button type="button" on-click="onReloadMessages()" class="text-xs text-zinc-600 font-mono">
+              <lucide-icon icon="refresh-cw" size="16" title="Reload"></lucide-icon>
+            </button>
             <button on-click="onDeleteSession()" class="p-2 text-red-500 font-bold" class-hidden="!session">
               <lucide-icon icon="x" size="16" title="Delete session"></lucide-icon>
             </button>
@@ -138,8 +147,8 @@
                     ></lucide-icon>
                     <markdown-block
                       bind-src="m.content || m.thinking"
-                      class-text-zink-300="!m.thinking"
-                      class-text-zink-500="m.thinking"
+                      class-text-zinc-300="!m.thinking"
+                      class-text-zinc-500="m.thinking"
                     ></markdown-block>
                   </div>
                 </template>
@@ -265,7 +274,7 @@
             await onReloadSessions();
           }
 
-          async function reloadMessages() {
+          async function onReloadMessages() {
             if (ws.value && sessionId.value) {
               const json = await Sessions.read(ws.value, sessionId.value);
               messages.value = json.messages.reverse();
@@ -290,7 +299,7 @@
           }
           onInit(onReloadModelList);
 
-          watch(session, (v) => v && reloadMessages());
+          watch(session, (v) => v && onReloadMessages());
           watch(ws, () => {
             messages.value = [];
             session.value = null;
@@ -332,6 +341,7 @@
             onDeleteSession,
             onCreateSession,
             onSelectModel,
+            onReloadMessages,
           };
         }
       </script>
