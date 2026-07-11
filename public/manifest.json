@@ -4,14 +4,9 @@
   "description": "Agents",
   "icons": [
     {
-      "src": "/assets/icon.svg",
+      "src": "/icon.svg",
       "sizes": "512x512",
       "type": "image/svg+xml"
-    },
-    {
-      "src": "/assets/icon.png",
-      "sizes": "512x512",
-      "type": "image/png"
     }
   ],
   "start_url": "/",

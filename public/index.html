@@ -14,16 +14,11 @@
       }
     </script>
     <script type="module">
-      import "@li3/web";
+      import { load } from "@li3/web";
+      ["lucide-icon", "markdown-block", "code-editor"].map((x) =>
+        load(`https://sodium.static.apphor.de/${x}.html`),
+      );
     </script>
-    <link
-      rel="component"
-      href="https://sodium.static.apphor.de/lucide-icon.html"
-    />
-    <link
-      rel="component"
-      href="https://sodium.static.apphor.de/code-editor.html"
-    />
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body
@@ -187,7 +182,11 @@
                   class-animate-pulse.bg-white.opacity-70="sending"
                   bind-disabled="sending"
                 >
-                  <lucide-icon icon="send-horizontal" size="16" title="Send"></lucide-icon>
+                  <lucide-icon
+                    icon="send-horizontal"
+                    size="16"
+                    title="Send"
+                  ></lucide-icon>
                 </button>
               </div>
               <textarea

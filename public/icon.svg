@@ -1,0 +1,26 @@
+<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+ <defs>
+  <filter id="svg_8_blur">
+   <feGaussianBlur stdDeviation="0" in="SourceGraphic"/>
+  </filter>
+ </defs>
+ <g>
+  <title>Layer 1</title>
+  <g id="svg_9">
+   <path id="svg_1" stroke-dasharray=" none" stroke-miterlimit="4" stroke-width="30" stroke="#88c057" fill="#629438" d="m348.66104,416.49364c-22.76489,13.14332 -162.55722,13.14331 -185.32211,-0.00001c-22.76489,-13.14332 -92.66105,-134.20703 -92.66105,-160.49366c0,-26.28664 69.89617,-147.35034 92.66106,-160.49366c22.7649,-13.14331 162.55722,-13.1433 185.32212,0.00001c22.76489,13.14332 92.66105,134.20703 92.66105,160.49367c0,26.28663 -69.89617,147.35033 -92.66107,160.49365z"/>
+   <path id="svg_2" fill="none" d="m348.66104,416.49367c-22.76489,13.14332 -162.55722,13.14331 -185.32211,-0.00001c-22.76489,-13.14332 -92.66105,-134.20703 -92.66105,-160.49366c0,-26.28664 69.89617,-147.35034 92.66106,-160.49366c22.7649,-13.14331 162.55722,-13.1433 185.32212,0.00001c22.76489,13.14332 92.66105,134.20703 92.66105,160.49367c0,26.28663 -69.89617,147.35033 -92.66107,160.49365z"/>
+  </g>
+  <g id="svg_13">
+   <line stroke="#d13834" stroke-width="16" id="svg_7" y2="134.61618" x2="202.32919" y1="180.33047" x1="202.32919" fill="#d13834"/>
+   <line stroke="#d13834" stroke-width="16" id="svg_10" y2="134.61618" x2="309.67081" y1="180.33047" x1="309.67081" fill="#d13834"/>
+  </g>
+  <rect x="155.5" stroke="#d13834" rx="10" filter="url(#svg_8_blur)" id="svg_8" height="150" width="201" y="180.40828" stroke-width="16" fill="#ffffff"/>
+  <g id="svg_14">
+   <g id="svg_5">
+    <ellipse fill="#88c057" stroke=" none" stroke-width="0" stroke-dasharray="2,2" cx="207.5" cy="222.90828" id="svg_3" rx="13" ry="13"/>
+    <ellipse fill="#88c057" stroke=" none" stroke-width="0" stroke-dasharray="2,2" cx="304.5" cy="224.90828" id="svg_4" rx="13" ry="13"/>
+   </g>
+   <rect rx="10" id="svg_6" height="22.22222" width="73.33333" y="278.59346" x="244.16667" stroke-dasharray="2,2" stroke-width="0" stroke=" none" fill="#88c057"/>
+  </g>
+ </g>
+</svg>
