@@ -202,15 +202,11 @@
           }
 
           async function onSetSessionId(id) {
-            const item = sessionList.value.find((s) => s.id === id);
+            session.value = sessionList.value.find((s) => s.id === id);
 
-            if (!item) {
-              session.value = null;
+            if (!session.value) {
               messages.value = [];
-              return;
             }
-
-            session.value = item;
           }
 
           async function onCreateSession() {
@@ -251,12 +247,17 @@
             messages.value = [];
             session.value = null;
             sessionList.value = [];
-            setMessage('');
-            onSelectModel('');
+            setMessage("");
+            onSelectModel("");
             onReloadSessions();
           });
-          watch(sessionList, () => {
-            if (sessionList.value.length === 1) {
+
+          watch(sessionList, (list = []) => {
+            if (list.length === 1) {
+              onSetSessionId(sessionList[0].id);
+            }
+
+            if (list.length && !list.find((s) => s.id === sessionId.value)) {
               onSetSessionId(sessionList[0].id);
             }
           });
