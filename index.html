@@ -222,7 +222,7 @@
         export default function () {
           const ws = defineProp("workspace");
           const session = ref(null);
-          const sessionId = computed((x) => x.id);
+          const sessionId = computed(() => session.value?.id);
           const sessionList = ref([]);
           const sending = ref(false);
           const [newMessage, setMessage] = hook("");
