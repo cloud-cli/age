@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
 import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { runAgentLoop } from "./agents.mjs";
+import { addToQueue, runAgentLoop } from "./agents.mjs";
 import { getModelList } from "./ollama-api.mjs";
 
 const dataDir = process.env.DATA_PATH;
@@ -261,19 +261,21 @@ async function onMessage(req, res, params) {
   // read session, append message and run an AI model to generate a response.
   const history = JSON.parse(await readFile(historyFile, "utf8"));
   const body = Buffer.concat(await req.toArray()).toString("utf8");
-  const loopOptions = { workspacePath, model: "" };
+  const loopOptions = { history, name, id, workspacePath, historyFile, model: "" };
 
   try {
-    const { message, model = "" } = JSON.parse(body);
+    const { message, model = "", files } = JSON.parse(body);
     history.messages.push({ role: "user", content: message });
     loopOptions.model = model;
+    loopOptions.files = files;
   } catch (err) {
     console.error(`Invalid JSON body for workspace history ${historyFile}: ${err.message}`);
     res.sendJson({ error: "Invalid JSON body" }, 400);
     return;
   }
 
-  await runAgentLoop(history, loopOptions);
+  // addToQueue(loopOptions);
+  await runAgentLoop(loopOptions);
   await writeFile(historyFile, JSON.stringify(history));
   res.sendJson(history);
 }

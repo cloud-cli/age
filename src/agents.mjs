@@ -2,6 +2,7 @@ import { join, resolve } from "node:path";
 import { readFile } from "node:fs/promises";
 import { tools, toolsByName } from "./tools.mjs";
 import { callModel } from "./ollama-api.mjs";
+import { publish } from "./events.mjs";
 
 const defaultModel = process.env.MODEL;
 const agentSystemPrompt = await readFile(new URL("./system.txt", import.meta.url), "utf8");
@@ -77,7 +78,8 @@ export function executeFunction(functionName, modelArgs, workspacePath) {
   return f.apply(context, foundArgs);
 }
 
-export async function runAgentLoop(history, options) {
+export async function runAgentLoop(options) {
+  const { history } = options;
   const { workspacePath, model = "" } = options;
   let aiResponse;
 
@@ -96,6 +98,7 @@ export async function runAgentLoop(history, options) {
   }
 
   history.messages.push(aiResponse);
+  // publish({  })
 
   if (!aiResponse?.tool_calls?.length) {
     return;
@@ -123,5 +126,9 @@ export async function runAgentLoop(history, options) {
     }
   }
 
-  return runAgentLoop(history, options);
+  return runAgentLoop(options);
+}
+
+export function addToQueue(job) {
+  // const { name, id, }
 }

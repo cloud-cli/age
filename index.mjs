@@ -3,6 +3,7 @@ import router from "micro-router";
 import { readFileSync, existsSync, statSync, createReadStream } from "node:fs";
 import { resolve, parse } from "node:path";
 import workspaces from "./src/workspaces.mjs";
+import { subscribe } from "./src/events.mjs";
 
 const client = readFileSync("./public/index.mjs", "utf8");
 const indexPage = readFileSync("./public/index.html", "utf8");
@@ -31,6 +32,17 @@ createServer((req, res) => {
 
   if (route === "GET /") {
     res.end(indexPage);
+    return;
+  }
+
+  if (route === 'GET /:events') {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+
+    const detach = () => res.detached = true;
+    req.on("close", detach);
+    req.on("error", detach);
+    subscribe(res);
     return;
   }
 
