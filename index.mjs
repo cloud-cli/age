@@ -12,6 +12,7 @@ const handler = router(workspaces);
 createServer((req, res) => {
   const url = new URL(req.url, "http://a");
   const route = `${req.method} ${url.pathname}`;
+  res.setHeader('cache-control': 'max-age=1, must-revalidate')
 
   if (route === "GET /favicon.ico") {
     res.writeHead(404).end();
