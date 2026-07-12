@@ -19,7 +19,7 @@ createServer((req, res) => {
   }
 
   if (route === "GET /icon.svg") {
-    res.writeHead(200, { "content-type": "image/svg" }).end(icon);
+    res.writeHead(200, { "content-type": "image/svg+xml" }).end(icon);
     return;
   }
 
