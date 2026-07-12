@@ -248,9 +248,9 @@ async function onDeleteWorkspaceHistory(_req, res, params) {
 // { message: string }
 async function onMessage(req, res, params) {
   const name = sanitize(params.name);
-  const id = sanitize(params.id);
+  const sessionId = sanitize(params.id);
   const workspacePath = join(dataDir, name);
-  const historyFile = join(workspacePath, "history", `${id}.json`);
+  const historyFile = join(workspacePath, "history", `${sessionId}.json`);
 
   if (!existsSync(historyFile)) {
     console.error(`Workspace history not found: ${historyFile}`);
@@ -261,7 +261,7 @@ async function onMessage(req, res, params) {
   // read session, append message and run an AI model to generate a response.
   const history = JSON.parse(await readFile(historyFile, "utf8"));
   const body = Buffer.concat(await req.toArray()).toString("utf8");
-  const loopOptions = { history, name, id, workspacePath, historyFile, model: "" };
+  const loopOptions = { history, name, sessionId, workspacePath, historyFile, model: "" };
 
   try {
     const { message, model = "", files } = JSON.parse(body);

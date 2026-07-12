@@ -4,6 +4,7 @@ import { tools, toolsByName } from "./tools.mjs";
 import { callModel } from "./ollama-api.mjs";
 import { publish } from "./events.mjs";
 
+const dataDir = process.env.DATA_PATH;
 const defaultModel = process.env.MODEL;
 const agentSystemPrompt = await readFile(new URL("./system.txt", import.meta.url), "utf8");
 
@@ -79,8 +80,9 @@ export function executeFunction(functionName, modelArgs, workspacePath) {
 }
 
 export async function runAgentLoop(options) {
-  const { history } = options;
+  const { history, sessionId } = options;
   const { workspacePath, model = "" } = options;
+  const historyFile = join(workspacePath, "history", `${sessionId}.json`);
   let aiResponse;
 
   try {
@@ -90,15 +92,20 @@ export async function runAgentLoop(options) {
       throw new Error("Invalid AI response: " + aiResponse.error);
     }
 
-    console.log("AI response", aiResponse);
+    // console.log("AI response", aiResponse);
   } catch (err) {
     console.error(`Error getting model response: ${err.message}`);
     res.sendJson({ error: err.message }, 500);
     return;
   }
 
-  history.messages.push(aiResponse);
-  // publish({  })
+  async function addMessage(message) {
+    history.messages.push(message);
+    await writeFile(historyFile, JSON.stringify(history));
+    publish({ type: "message", sessionId, message });
+  }
+
+  await addMessage(aiResponse);
 
   if (!aiResponse?.tool_calls?.length) {
     return;
@@ -111,14 +118,14 @@ export async function runAgentLoop(options) {
     try {
       const functionResponse = await executeFunction(functionName, functionArgs, workspacePath);
 
-      history.messages.push({
+      addMessage({
         role: "tool",
         tool_name: functionName,
         content: typeof functionResponse === "object" ? JSON.stringify(functionResponse) : String(functionResponse),
       });
     } catch (error) {
       console.error(`Error executing function: ${functionName} with args: ${JSON.stringify(functionArgs)}:\n ${error}`);
-      history.messages.push({
+      addMessage({
         role: "system",
         content: `Error executing function ${functionName} with args ${JSON.stringify(functionArgs)}:\nError: ${error}`,
       });

@@ -1,6 +1,5 @@
 /** @type {Set<WeakRef>} */
 const listeners = new Set();
-// const events = new EventTarget();
 
 /** @param {import('http').ServerResponse} client */
 export function subscribe(client) {
