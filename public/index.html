@@ -381,7 +381,6 @@
           const eventSource = new EventSource('/:events');
           onDestroy(() => eventSource.close());
 
-          eventSource.addEventListener('')
           const ws = defineProp("workspace");
           const onSelectWorkspace = defineEvent("select");
           const onProfile = defineEvent("profile");
