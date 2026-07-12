@@ -1,7 +1,7 @@
 import createServer from "@cloud-cli/http";
 import router from "micro-router";
 import { readFileSync, existsSync, statSync, createReadStream } from "node:fs";
-import { resolve, parse } from "node:path";
+import { resolve, parse, join } from "node:path";
 import workspaces from "./src/workspaces.mjs";
 import { subscribe } from "./src/events.mjs";
 
