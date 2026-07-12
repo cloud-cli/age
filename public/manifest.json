@@ -4,7 +4,7 @@
   "description": "Agents",
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "/public/icon.svg",
       "sizes": "512x512",
       "type": "image/svg+xml"
     }

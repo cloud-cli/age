@@ -65,3 +65,75 @@
     </div>
   </section>
 </template>
+
+<template component="file-tree">
+  <script setup>
+    import { ref, defineProp } from "@li3/web";
+    // File structure from your project
+    const fileStructure = defineProp("files");
+    let selectedFile = null;
+
+    // Icon generators
+    function getFolderIcon(expanded) {
+      return expanded ? "▼" : "▶";
+    }
+
+    function getFileIcon() {
+      return "○";
+    }
+
+    function onFolderClick(item) {
+      item.expanded = !item.expanded;
+      // const childrenContainer = itemEl.nextElementSibling;
+
+      // if (childrenContainer && childrenContainer.classList.contains('folder-children')) {
+      //   childrenContainer.style.display = item.expanded ? 'block' : 'none';
+      // }
+    }
+
+    function updateMainContent(fileName) {
+      // const mainContent = document.querySelector('main');
+      // if (!mainContent) return;
+      // mainContent.innerHTML = `
+      //   <div class="max-w-2xl">
+      //     <div class="flex items-center gap-2 mb-4">
+      //       <span class="text-slate-500 text-[10px] font-bold">○</span>
+      //       <h1 class="text-2xl font-bold text-slate-50">${fileName}</h1>
+      //     </div>
+      //     <div class="bg-slate-800 rounded p-4 font-mono text-xs text-slate-300 space-y-1 border border-slate-700">
+      //       <div class="text-slate-500">// File: ${fileName}</div>
+      //       <div class="text-slate-400">// Last modified: ${new Date().toLocaleDateString()}</div>
+      //       <div class="text-slate-500">// Size: <span class="text-slate-400">${Math.floor(Math.random() * 50) + 1} KB</span></div>
+      //     </div>
+      //   </div>
+      // `;
+    }
+  </script>
+  <template for="item of items">
+    <div
+      class="py-0.5 px-2 rounded transition-colors hover:bg-slate-800 cursor-pointer group"
+      style-padding-left="`${level * 12 + 8}px`"
+    >
+      <div class="flex items-center gap-1.5">
+        <template if="item.type === 'folder'">
+          <button
+            class="w-4 h-4 flex items-center justify-center text-slate-500 hover:text-slate-400 flex-shrink-0 text-[10px] font-bold"
+            on-click.stop="onFolderClick(item)"
+          >
+            {{getFolderIcon(item.expanded)}}
+          </button>
+          <span class="text-slate-400 flex-shrink-0 text-sm">📁</span>
+          <span class="text-slate-300 text-xs font-medium truncate select-none" bind-title="item.path"
+            >{{ item.name }}</span
+          >
+        </template>
+        <template if="item.type === 'file'">
+          <span class="text-slate-500 flex-shrink-0 text-[10px] font-bold ml-5">{{ getFileIcon() }}</span>
+          <span class="text-slate-400 text-xs truncate select-none hover:text-slate-200" bind-title="item.path"
+            >{{ item.name }}</span
+          >
+        </template>
+      </div>
+    </div>
+  </template>
+</template>

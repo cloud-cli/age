@@ -1,6 +1,7 @@
 import createServer from "@cloud-cli/http";
 import router from "micro-router";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync, statSync, createReadStream } from "node:fs";
+import { resolve, parse } from "node:path";
 import workspaces from "./src/workspaces.mjs";
 
 const client = readFileSync("./public/index.mjs", "utf8");
@@ -8,19 +9,23 @@ const indexPage = readFileSync("./public/index.html", "utf8");
 const manifest = readFileSync("./public/manifest.json", "utf8");
 const icon = readFileSync("./public/icon.svg", "utf8");
 const handler = router(workspaces);
+const mimeTypes = {
+  ".css": "text/css",
+  ".html": "text/html",
+  ".js": "text/javascript",
+  ".mjs": "text/javascript",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".jpeg": "image/jpeg",
+  ".jpg": "image/jpeg",
+};
 
 createServer((req, res) => {
   const url = new URL(req.url, "http://a");
   const route = `${req.method} ${url.pathname}`;
-  res.setHeader('cache-control': 'max-age=1, must-revalidate')
 
   if (route === "GET /favicon.ico") {
     res.writeHead(404).end();
-    return;
-  }
-
-  if (route === "GET /icon.svg") {
-    res.writeHead(200, { "content-type": "image/svg+xml" }).end(icon);
     return;
   }
 
@@ -51,6 +56,21 @@ createServer((req, res) => {
         "Access-Control-Allow-Origin": "*",
       })
       .end(manifest);
+    return;
+  }
+
+  if (route.startsWith("GET /public/")) {
+    const fullPath = join(process.cwd(), "public", resolve("/", url.pathname));
+    const extension = parse(fullPath).ext.toLowerCase();
+
+    res.setHeader("Cache-Control", `max-age=${url.searchParams.has("nocache") ? 1 : 86400}, must-revalidate`);
+
+    if (existsSync(fullPath) && statSync(fullPath).isFile()) {
+      response.setHeader("Content-Type", mimeTypes[extension] || "text/plain");
+      createReadStream(fullPath).pipe(res);
+    } else {
+      res.writeHead(404).end("Not found");
+    }
     return;
   }
 
