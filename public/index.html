@@ -9,8 +9,7 @@
       {
         "imports": {
           "@li3/": "https://at-li3.static.apphor.de/",
-          "@sodium/": "https://at-s.static.apphor.de/",
-          "@app/": "./public/"
+          "@sodium/": "https://at-s.static.apphor.de/"
         }
       }
     </script>
@@ -225,7 +224,7 @@
           );
 
           const modelListMapped = computed(() => (modelList.value || []).map((m) => ({ label: m.id, value: m.id })));
-
+          
           async function onSend() {
             const message = newMessage.value;
 

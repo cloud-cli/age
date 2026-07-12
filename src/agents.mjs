@@ -102,7 +102,7 @@ export async function runAgentLoop(options) {
   async function addMessage(message) {
     history.messages.push(message);
     await writeFile(historyFile, JSON.stringify(history));
-    publish({ type: "message", sessionId, message });
+    publish("message", { sessionId, message });
   }
 
   await addMessage(aiResponse);
@@ -137,5 +137,5 @@ export async function runAgentLoop(options) {
 }
 
 export function addToQueue(job) {
-  // const { name, id, }
+  
 }

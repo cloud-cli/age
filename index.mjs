@@ -8,7 +8,6 @@ import { subscribe } from "./src/events.mjs";
 const client = readFileSync("./public/index.mjs", "utf8");
 const indexPage = readFileSync("./public/index.html", "utf8");
 const manifest = readFileSync("./public/manifest.json", "utf8");
-const icon = readFileSync("./public/icon.svg", "utf8");
 const handler = router(workspaces);
 const mimeTypes = {
   ".css": "text/css",
