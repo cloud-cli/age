@@ -48,7 +48,7 @@
 
     <template component="dynamic-list">
       <div class="flex items-center bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 gap-1">
-        <span class="text-[10px] text-zinc-500 font-mono uppercase mr-2 md:hidden">{{ label || '' }}</span>
+        <span class="text-[10px] text-zinc-500 font-mono uppercase mr-2 hidden md:block">{{ label || '' }}</span>
         <select
           class="bg-transparent text-xs text-zinc-300 focus:outline-none cursor-pointer"
           on-change="onSelect($event.target.value)"
@@ -242,7 +242,7 @@
             try {
               sending.value = true;
               messages.value = [
-                { role: "assistant", content: "Thinking...", thinking: true },
+                { role: "assistant", content: "", thinking: true },
                 { role: "user", content: message },
                 ...messages.value,
               ];
@@ -357,10 +357,10 @@
       <header
         class="h-14 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur px-4 flex items-center justify-between z-10"
       >
-        <div class="flex items-center space-x-3">
+        <button class="flex items-center space-x-3" on-click="window.reload()">
           <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span class="font-semibold text-sm tracking-wide uppercase text-zinc-300 md:hidden">Workspaces</span>
-        </div>
+          <span class="font-semibold text-sm tracking-wide uppercase text-zinc-300 hidden md:block">Workspaces</span>
+        </button>
 
         <dynamic-list
           label="Workspace"
