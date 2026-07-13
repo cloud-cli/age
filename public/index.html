@@ -246,10 +246,11 @@
                 { role: "user", content: message },
                 ...messages.value,
               ];
-              const response = await Sessions.sendMessage(ws.value, sessionId.value, { message, model: model.value });
               setMessage("");
+              const response = await Sessions.sendMessage(ws.value, sessionId.value, { message, model: model.value });
               messages.value = response.messages.reverse();
             } catch (e) {
+              setMessage(message);
               console.log(e);
             } finally {
               sending.value = false;
