@@ -206,8 +206,8 @@
       </section>
 
       <script setup>
-        import { ref, computed, hook, templateRef, watch, onInit, defineProp, defineEvent } from "@li3/web";
-        import { Workspaces, Sessions, Models } from "https://agents.apphor.de/index.mjs";
+        import { ref, computed, hook, templateRef, watch, onInit, onDestroy, defineProp, defineEvent } from "@li3/web";
+        import { Workspaces, Sessions, Models, events } from "https://agents.apphor.de/index.mjs";
 
         export default function () {
           const ws = defineProp("workspace");
@@ -224,7 +224,16 @@
           );
 
           const modelListMapped = computed(() => (modelList.value || []).map((m) => ({ label: m.id, value: m.id })));
-          
+
+          function onIncomingMessage({ sessionId, message }) {
+            if (sessionId.value === sessionId) {
+              messages.value = [message, ...messages.value];
+            }
+          }
+
+          events.addEventListener("message", onIncomingMessage);
+          onDestroy(() => events.removeEventListener("message", onIncomingMessage));
+
           async function onSend() {
             const message = newMessage.value;
 
@@ -378,7 +387,7 @@
         import { Workspaces, setKey } from "https://agents.apphor.de/index.mjs";
 
         export default function () {
-          const eventSource = new EventSource('/:events');
+          const eventSource = new EventSource("/:events");
           onDestroy(() => eventSource.close());
 
           const ws = defineProp("workspace");

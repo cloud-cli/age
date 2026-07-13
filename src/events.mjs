@@ -6,7 +6,7 @@ export function subscribe(client) {
   listeners.add(new WeakRef(client));
 }
 
-export function publish(type, event) {
+export function publish(eventName, data) {
   for (const ref of listeners) {
     const stream = ref.deref();
     if (!stream || stream.detached || !stream.writable) {
@@ -14,6 +14,6 @@ export function publish(type, event) {
       continue;
     }
 
-    stream.write(`data: ${JSON.stringify({ type, data: event })}\n\n`);
+    stream.write(`data: ${JSON.stringify({ eventName, data })}\n\n`);
   }
 }

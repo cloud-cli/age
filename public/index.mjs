@@ -123,3 +123,20 @@ export const Models = {
     return res.json();
   },
 };
+
+export const events = new EventTarget();
+
+const source = new EventSource("/:events");
+source.addEventListener("message", (e) => {
+  const { eventName, data } = e.data;
+
+  switch (eventName) {
+    case "message":
+      const { sessionId, message } = data;
+      events.dispatchEvent(new CustomEvent("message", { detail: { sessionId, message } }));
+      break;
+
+    default:
+      events.dispatchEvent(new CustomEvent("event", { detail: data }));
+  }
+});

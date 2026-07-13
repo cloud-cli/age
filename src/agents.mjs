@@ -1,16 +1,16 @@
 import { join, resolve } from "node:path";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { tools, toolsByName } from "./tools.mjs";
 import { callModel } from "./ollama-api.mjs";
 import { publish } from "./events.mjs";
+import { History } from "./history.mjs";
 
-const dataDir = process.env.DATA_PATH;
 const defaultModel = process.env.MODEL;
 const agentSystemPrompt = await readFile(new URL("./system.txt", import.meta.url), "utf8");
 
 // call Ollama server to get a response from the model
 // history is an array of messages, each message is an object with role and content, just like an OpenAI chat completion request
-export async function getModelResponse(history, model = defaultModel) {
+export async function getModelResponse(history, model) {
   const requestBody = {
     model,
     tools,
@@ -80,17 +80,24 @@ export function executeFunction(functionName, modelArgs, workspacePath) {
 }
 
 export async function runAgentLoop(options) {
-  const { history, historyFile, sessionId, workspacePath, model = "" } = options;
+  const { workspacePath, model = "", name, sessionId } = options;
+  const history = new History(name, sessionId);
   let aiResponse;
 
   try {
-    aiResponse = await getModelResponse(history.messages, model || history.model || defaultModel);
+    aiResponse = await getModelResponse(
+      history.getMessagesForModel(),
+      model || (await history.getModel()) || defaultModel,
+    );
 
     if (aiResponse.error) {
-      throw new Error("Invalid AI response: " + aiResponse.error);
+      console.error(aiResponse);
+      throw new Error("Invalid AI response");
     }
 
-    // console.log("AI response", aiResponse);
+    if (model) {
+      await history.setModel(model);
+    }
   } catch (err) {
     console.error(`Error getting model response: ${err.message}`);
     res.sendJson({ error: err.message }, 500);
@@ -98,8 +105,7 @@ export async function runAgentLoop(options) {
   }
 
   async function addMessage(message) {
-    history.messages.push(message);
-    await writeFile(historyFile, JSON.stringify(history));
+    await history.push(message);
     publish("message", { sessionId, message });
   }
 
@@ -116,14 +122,14 @@ export async function runAgentLoop(options) {
     try {
       const functionResponse = await executeFunction(functionName, functionArgs, workspacePath);
 
-      addMessage({
+      await addMessage({
         role: "tool",
         tool_name: functionName,
         content: typeof functionResponse === "object" ? JSON.stringify(functionResponse) : String(functionResponse),
       });
     } catch (error) {
       console.error(`Error executing function: ${functionName} with args: ${JSON.stringify(functionArgs)}:\n ${error}`);
-      addMessage({
+      await addMessage({
         role: "system",
         content: `Error executing function ${functionName} with args ${JSON.stringify(functionArgs)}:\nError: ${error}`,
       });
@@ -134,6 +140,4 @@ export async function runAgentLoop(options) {
   return runAgentLoop(options);
 }
 
-export function addToQueue(job) {
-  
-}
+export function addToQueue(job) {}

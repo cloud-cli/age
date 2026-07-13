@@ -1,12 +1,11 @@
 import { adjectives, colors, names, uniqueNamesGenerator } from "unique-names-generator";
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { addToQueue, runAgentLoop } from "./agents.mjs";
 import { getModelList } from "./ollama-api.mjs";
-
-const dataDir = process.env.DATA_PATH;
+import { dataDir } from "./env.mjs";
 
 const randomName = () =>
   uniqueNamesGenerator({
@@ -14,8 +13,6 @@ const randomName = () =>
   }).toLowerCase();
 
 const sanitize = (str) => str.replace(/[^a-zA-Z0-9-_]/g, "");
-
-existsSync(dataDir) || mkdirSync(dataDir, { recursive: true });
 
 // returns a list of directories in the dataDir
 async function onReadWorkspaceList(req, res) {
@@ -250,34 +247,30 @@ async function onMessage(req, res, params) {
   const name = sanitize(params.name);
   const sessionId = sanitize(params.id);
   const workspacePath = join(dataDir, name);
-  const historyFile = join(workspacePath, "history", `${sessionId}.json`);
+  const history = new History(name, sessionId);
 
-  if (!existsSync(historyFile)) {
-    console.error(`Workspace history not found: ${historyFile}`);
-    res.sendJson({ error: "Workspace history not found" }, 404);
+  if (!history.exists()) {
+    console.error(`Workspace history not found: ${history.file}`);
+    res.sendJson({ error: `Session ${sessionId} not found` }, 404);
     return;
   }
 
-  // read session, append message and run an AI model to generate a response.
-  const history = JSON.parse(await readFile(historyFile, "utf8"));
   const body = Buffer.concat(await req.toArray()).toString("utf8");
-  const loopOptions = { history, name, sessionId, workspacePath, historyFile, model: "" };
+  const loopOptions = { history, name, sessionId, workspacePath, model: "" };
 
   try {
     const { message, model = "", files } = JSON.parse(body);
-    history.messages.push({ role: "user", content: message });
     loopOptions.model = model;
     loopOptions.files = files;
+    await history.push({ role: "user", content: message, meta: { model, files } });
   } catch (err) {
-    console.error(`Invalid JSON body for workspace history ${historyFile}: ${err.message}`);
-    res.sendJson({ error: "Invalid JSON body" }, 400);
+    console.error(`Failed to add message in session ${history.file}: ${err}`);
+    res.sendJson({ error: "Failed to push message" }, 400);
     return;
   }
 
-  // addToQueue(loopOptions);
   await runAgentLoop(loopOptions);
-  // await writeFile(historyFile, JSON.stringify(history));
-  res.sendJson(history);
+  res.sendJson(await history.read());
 }
 
 async function onModelList(_req, res) {
