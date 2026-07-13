@@ -9,6 +9,7 @@
   </div>
   <script setup>
     import { ref, hook, defineProp } from "@li3/web";
+    import { Workspaces } from "https://agents.apphor.de/index.mjs";
 
     export default function () {
       const ws = defineProp("workspace");
@@ -19,12 +20,16 @@
         selected.value.content = value;
       }
 
-      function onUpdateFileList() {
-        if (!ws.value) {
+      async function onUpdateFileList() {
+        selected.value = null;
+        const name = ws.value;
+
+        if (!name) {
           files.value = [];
-          selected.value = null;
           return;
         }
+
+        files.value = await Workspaces.read(name);
       }
 
       watch(ws, () => onUpdateFileList());
