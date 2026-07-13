@@ -99,9 +99,8 @@ export async function runAgentLoop(options) {
       await history.setModel(model);
     }
   } catch (err) {
-    console.error(`Error getting model response: ${err.message}`);
-    res.sendJson({ error: err.message }, 500);
-    return;
+    console.error("Error getting model response", err);
+    throw err;
   }
 
   async function addMessage(message) {

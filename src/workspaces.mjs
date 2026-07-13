@@ -270,8 +270,12 @@ async function onMessage(req, res, params) {
     return;
   }
 
-  await runAgentLoop(loopOptions);
-  res.sendJson(await history.read());
+  try {
+    await runAgentLoop(loopOptions);
+    res.sendJson(await history.read());
+  } catch (e) {
+    res.sendJson({ error: e.message }, 500);
+  }
 }
 
 async function onModelList(_req, res) {
