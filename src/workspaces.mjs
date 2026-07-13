@@ -276,7 +276,7 @@ async function onMessage(req, res, params) {
 
   // addToQueue(loopOptions);
   await runAgentLoop(loopOptions);
-  await writeFile(historyFile, JSON.stringify(history));
+  // await writeFile(historyFile, JSON.stringify(history));
   res.sendJson(history);
 }
 
