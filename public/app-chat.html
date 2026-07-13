@@ -1,0 +1,262 @@
+<template component="app-chat">
+  <section class="flex-1 flex flex-col bg-zinc-950 border-r border-zinc-800">
+    <div class="flex items-center justify-between px-4 pt-1" class-hidden="!workspace">
+      <template if="session">
+        <div
+          class="px-4 pb-2 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/10 hidden md:block"
+        >
+          <div>
+            <h2 class="text-sm font-medium text-zinc-200">{{ session.title || session.id || '' }}</h2>
+            <p class="text-xs text-zinc-500">{{ new Date(session.createdAt).toISOString().slice(0, 19)}}</p>
+          </div>
+          <div class="flex space-x-2">
+            <span class="text-xs text-zinc-400 bg-zinc-900 px-2 py-1 rounded border border-zinc-800"
+              >{{ session.model || 'default' }}</span
+            >
+          </div>
+        </div>
+      </template>
+
+      <dynamic-list
+        label="Session"
+        placeholder="Switch sessions"
+        on-add="onCreateSession()"
+        on-reload="onReloadSessions()"
+        on-select="onSetSessionId($event.detail)"
+        bind-selected="session?.id"
+        bind-list="sessionListMapped"
+      ></dynamic-list>
+
+      <div class="flex items-center bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 gap-1">
+        <button type="button" on-click="onReloadMessages()" class="text-xs text-zinc-600 font-mono">
+          <lucide-icon icon="refresh-cw" size="16" title="Reload"></lucide-icon>
+        </button>
+        <button on-click="onDeleteSession()" class="p-2 text-red-500 font-bold" class-hidden="!session">
+          <lucide-icon icon="x" size="16" title="Delete session"></lucide-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Agent Thought & Execution Feed (Scrollable) -->
+    <div class="flex-1 overflow-y-auto p-4 space-y-4 font-mono text-xs flex flex-col-reverse gap-2">
+      <template for="m of messages">
+        <div>
+          <template if="m.role !== 'tool'">
+            <div class="bg-zinc-900 p-3 rounded-lg border border-zinc-800 leading-relaxed max-w-3xl">
+              <lucide-icon
+                icon="loader"
+                size="12"
+                class="mr-2 text-zinc-400"
+                bind-class="{ 'inline-block.animate-spin': m.thinking === true, 'hidden': m.thinking !== true }"
+              ></lucide-icon>
+              <div class="flex justify-end" class-hidden="!m.meta?.model">
+                <span class="inline-block p-1 border border-zinc-700 rounded">{{ m.meta?.model }}</span>
+              </div>
+              <markdown-block bind-src="m.content || m.thinking" class="text-zinc-300"></markdown-block>
+            </div>
+          </template>
+
+          <template if="m.role === 'tool'">
+            <div class="text-xs">
+              <div class="flex items-center text-emerald-500">
+                <span class="mr-2">✓</span>Tool:
+                <code class="text-zinc-300 ml-1 px-1 py-0.5">{{ m.tool_name }}</code>
+              </div>
+              <collapsed-text
+                bind-content="m.content"
+                class="block text-zinc-500 border border-zinc-700 rounded-md p-2"
+              ></collapsed-text>
+            </div>
+          </template>
+        </div>
+      </template>
+    </div>
+
+    <!-- Persistent Prompt Input Box -->
+    <div class="p-3 border-t border-zinc-800 bg-zinc-900/20">
+      <div class="relative bg-zinc-900 border border-zinc-800 rounded-xl focus-within:border-zinc-700 transition p-2">
+        <form on-submit.prevent="onSend()">
+          <textarea
+            rows="2"
+            name="prompt"
+            placeholder="Next step"
+            bind-value="newMessage"
+            bind-disabled="sending"
+            class="w-full bg-transparent text-sm placeholder-zinc-600 focus:outline-none resize-none px-2 py-1"
+            class-text-zinc-200="!sending"
+            class-text-zinc-600="sending"
+            on-input.stop="setMessage($event.target.value)"
+            on-keydown="onKeyDown($event)"
+          ></textarea>
+          <div class="flex justify-between items-center p-2 px-1">
+            <dynamic-list
+              label="Model"
+              placeholder="Model to use"
+              bind-list="modelListMapped"
+              bind-selected="model"
+              on-reload="onReloadModelList()"
+              on-select="onSelectModel($event.detail)"
+            ></dynamic-list>
+
+            <button
+              type="submit"
+              class="hover:bg-zinc-200 text-zinc-950 font-semibold text-xs px-3 py-1 rounded-md transition"
+              class-animate-pulse.bg-white.opacity-70="sending"
+              class-bg-zinc-100="!sending && newMessage.trim()"
+              bind-disabled="sending"
+            >
+              <lucide-icon icon="send-horizontal" size="16" title="Send"></lucide-icon>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <script setup>
+    import { ref, computed, hook, templateRef, watch, onInit, onDestroy, defineProp, defineEvent } from "@li3/web";
+    import { Workspaces, Sessions, Models, events } from "https://agents.apphor.de/index.mjs";
+
+    export default function () {
+      const ws = defineProp("workspace");
+      const session = ref(null);
+      const sessionId = computed(() => session.value?.id);
+      const sessionList = ref([]);
+      const sending = ref(false);
+      const [newMessage, setMessage] = hook("");
+      const messages = ref([]);
+      const modelList = ref([]);
+      const [model, onSelectModel] = hook("");
+      const sessionListMapped = computed(() =>
+        (sessionList.value || []).map((s) => ({ label: s.title || s.id, value: s.id })),
+      );
+
+      const modelListMapped = computed(() => (modelList.value || []).map((m) => ({ label: m.id, value: m.id })));
+
+      function onIncomingMessage({ sessionId, message }) {
+        if (sessionId.value === sessionId) {
+          messages.value = [message, ...messages.value];
+        }
+      }
+
+      events.addEventListener("message", onIncomingMessage);
+      onDestroy(() => events.removeEventListener("message", onIncomingMessage));
+
+      async function onSend() {
+        const message = newMessage.value;
+
+        if (!(ws.value && sessionId.value && message)) return;
+
+        try {
+          sending.value = true;
+          messages.value = [
+            { role: "assistant", content: "", thinking: true },
+            { role: "user", content: message },
+            ...messages.value,
+          ];
+          setMessage("");
+          const response = await Sessions.sendMessage(ws.value, sessionId.value, { message, model: model.value });
+          messages.value = response.messages.reverse();
+        } catch (e) {
+          setMessage(message);
+          console.log(e);
+        } finally {
+          sending.value = false;
+        }
+      }
+
+      async function onSetSessionId(id) {
+        session.value = sessionList.value.find((s) => s.id === id);
+
+        if (!session.value) {
+          messages.value = [];
+        }
+      }
+
+      async function onCreateSession() {
+        const newSession = await Sessions.create(ws.value);
+        sessionList.value = sessionList.value.concat(newSession);
+        session.value = newSession;
+      }
+
+      async function onDeleteSession() {
+        if (!sessionId.value) return;
+        if (!confirm("Are you sure?")) return;
+
+        await Sessions.delete(ws.value, sessionId.value);
+        onSetSessionId("");
+        await onReloadSessions();
+      }
+
+      async function onReloadMessages() {
+        if (ws.value && sessionId.value) {
+          const json = await Sessions.read(ws.value, sessionId.value);
+          messages.value = json.messages.reverse();
+        }
+      }
+
+      async function onReloadModelList() {
+        modelList.value = await Models.list();
+      }
+
+      async function onReloadSessions() {
+        if (ws.value) {
+          sessionList.value = await Sessions.list(ws.value);
+        }
+      }
+
+      function onKeyDown(e) {
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          onSend();
+        }
+      }
+      onInit(onReloadModelList);
+
+      watch(session, (v) => v && onReloadMessages());
+      watch(ws, () => {
+        messages.value = [];
+        session.value = null;
+        sessionList.value = [];
+        setMessage("");
+        onSelectModel("");
+        onReloadSessions();
+      });
+
+      watch(sessionList, (list = []) => {
+        const firstId = sessionList[0]?.id;
+
+        if (!firstId) return;
+
+        if (list.length === 1) {
+          onSetSessionId(firstId);
+        }
+
+        if (list.length && !list.find((s) => s.id === sessionId.value)) {
+          onSetSessionId(firstId);
+        }
+      });
+
+      return {
+        messages,
+        newMessage,
+        setMessage,
+        sending,
+        session,
+        sessionList,
+        model,
+        modelListMapped,
+        sessionListMapped,
+        onReloadModelList,
+        onReloadSessions,
+        onSend,
+        onKeyDown,
+        onSetSessionId,
+        onDeleteSession,
+        onCreateSession,
+        onSelectModel,
+        onReloadMessages,
+      };
+    }
+  </script>
+</template>

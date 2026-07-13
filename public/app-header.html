@@ -1,0 +1,82 @@
+<template component="app-header">
+  <header
+    class="h-14 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur px-4 flex items-center justify-between z-10"
+  >
+    <button class="flex items-center space-x-3" on-click="window.reload()">
+      <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+      <span class="font-semibold text-sm tracking-wide uppercase text-zinc-300 hidden md:block">Workspaces</span>
+    </button>
+
+    <dynamic-list
+      label="Workspace"
+      placeholder="Select"
+      bind-list="wsListMapped"
+      bind-selected="workspace"
+      on-reload="onReloadWorkspaceList()"
+      on-add="onCreateWorkspace()"
+      on-select="onSelectWorkspace($event.detail)"
+    ></dynamic-list>
+
+    <div class="flex items-center space-x-3">
+      <button
+        on-click="signIn(true)"
+        class="text-emerald-600 hover:text-emerald-500 border border-zinc-950 p-2 rounded-full transition"
+      >
+        <lucide-icon icon="user"></lucide-icon>
+      </button>
+    </div>
+  </header>
+
+  <script setup>
+    import { ref, computed, onInit, onDestroy, defineProp, defineEvent } from "@li3/web";
+    import { signIn, events, getProfile, getPropertyNS } from "https://auth.api.apphor.de/index.mjs";
+    import { Workspaces, setKey } from "https://agents.apphor.de/index.mjs";
+
+    export default function () {
+      const eventSource = new EventSource("/:events");
+      onDestroy(() => eventSource.close());
+
+      const ws = defineProp("workspace");
+      const onSelectWorkspace = defineEvent("select");
+      const onProfile = defineEvent("profile");
+      const profile = ref(null);
+      const wsList = ref([]);
+      const wsListMapped = computed(() => (wsList.value || []).map((ws) => ({ label: ws.name, value: ws.name })));
+
+      async function onCreateWorkspace() {
+        const nameInput = prompt("Name (optional)", "") || undefined;
+        const { name } = await Workspaces.create(nameInput);
+        await onReloadWorkspaceList();
+        onCreate(name);
+        selected.value = name;
+        onSelect(name);
+      }
+
+      async function onReloadWorkspaceList() {
+        wsList.value = await Workspaces.list();
+      }
+
+      async function onSetProfile(v) {
+        profile.value = v;
+        setKey(v ? await getPropertyNS("authKey") : "");
+        onProfile(v);
+
+        if (v) {
+          onReloadWorkspaceList();
+        }
+      }
+
+      async function onUpdateProfile() {
+        try {
+          onSetProfile(await getProfile());
+        } catch {}
+      }
+
+      onInit(onUpdateProfile);
+
+      events.addEventListener("state", (e) => onSetProfile(e.detail));
+
+      return { signIn, profile, wsListMapped, onCreateWorkspace, onReloadWorkspaceList, onSelectWorkspace };
+    }
+  </script>
+</template>

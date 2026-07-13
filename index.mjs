@@ -34,11 +34,11 @@ createServer((req, res) => {
     return;
   }
 
-  if (route === 'GET /:events') {
+  if (route === "GET /:events") {
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
 
-    const detach = () => res.detached = true;
+    const detach = () => (res.detached = true);
     req.on("close", detach);
     req.on("error", detach);
     subscribe(res);
@@ -59,11 +59,11 @@ createServer((req, res) => {
     return;
   }
 
-  if (route === "GET /manifest.json") {
+  if (route === "GET /public/manifest.json") {
     res
       .writeHead(200, {
         "Content-Type": "application/json",
-        "Cache-Control": "max-age=604800, must-revalidate",
+        "Cache-Control": "max-age=1, must-revalidate",
         "Access-Control-Allow-Origin": "*",
       })
       .end(manifest);
@@ -72,14 +72,15 @@ createServer((req, res) => {
 
   if (route.startsWith("GET /public/")) {
     const fullPath = join(process.cwd(), "public", resolve("/", url.pathname));
-    const extension = parse(fullPath).ext.toLowerCase();
 
     res.setHeader("Cache-Control", `max-age=${url.searchParams.has("nocache") ? 1 : 86400}, must-revalidate`);
 
     if (existsSync(fullPath) && statSync(fullPath).isFile()) {
+      const extension = parse(fullPath).ext.toLowerCase();
       response.setHeader("Content-Type", mimeTypes[extension] || "text/plain");
       createReadStream(fullPath).pipe(res);
     } else {
+      console.log("404", fullPath);
       res.writeHead(404).end("Not found");
     }
     return;
