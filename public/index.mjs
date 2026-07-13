@@ -110,6 +110,17 @@ export const Sessions = {
 
     return res.json();
   },
+
+  async deleteMessage(name, sessionId, uid) {
+    const res = await fetch(new URL(`/workspaces/${name}/history/${sessionId}/message/${uid}`, baseUrl), {
+      method: "DELETE",
+      ...authHeaders(),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to send message: ${res.status} ${res.statusText}`);
+    }
+  },
 };
 
 export const Models = {

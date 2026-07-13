@@ -4,6 +4,7 @@ import { tools, toolsByName } from "./tools.mjs";
 import { callModel } from "./ollama-api.mjs";
 import { publish } from "./events.mjs";
 import { History } from "./history.mjs";
+import { randomUUID } from "node:crypto";
 
 const defaultModel = process.env.MODEL;
 const agentSystemPrompt = await readFile(new URL("./system.txt", import.meta.url), "utf8");
@@ -104,6 +105,9 @@ export async function runAgentLoop(options) {
   }
 
   async function addMessage(message) {
+    message.meta = {
+      uid: randomUUID(),
+    };
     await history.push(message);
     publish("message", { sessionId, message });
   }

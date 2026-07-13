@@ -263,7 +263,7 @@ async function onMessage(req, res, params) {
     const { message, model = "", files } = JSON.parse(body);
     loopOptions.model = model;
     loopOptions.files = files;
-    await history.push({ role: "user", content: message, meta: { model, files } });
+    await history.push({ role: "user", content: message, meta: { model, files, uid: randomUUID() } });
   } catch (err) {
     console.error(`Failed to add message in session ${history.file}: ${err}`);
     res.sendJson({ error: "Failed to push message" }, 400);
@@ -275,6 +275,29 @@ async function onMessage(req, res, params) {
     res.sendJson(await history.read());
   } catch (e) {
     res.sendJson({ error: e.message }, 500);
+  }
+}
+
+async function onDeleteMessage(req, res, params) {
+  const name = sanitize(params.name);
+  const sessionId = sanitize(params.id);
+  const history = new History(name, sessionId);
+
+  if (!history.exists()) {
+    console.error(`Workspace history not found: ${history.file}`);
+    res.sendJson({ error: `Session ${sessionId} not found` }, 404);
+    return;
+  }
+
+  try {
+    const content = await history.read();
+    content.messages = content.messages.filter((m) => m.meta?.uid === uid);
+    await history.write(content);
+
+    res.writeHead(202).end();
+  } catch (e) {
+    console.log(e);
+    res.writeHead(500).end();
   }
 }
 
@@ -295,6 +318,7 @@ export default {
   "GET /workspaces": onReadWorkspaceList,
   "POST /workspaces": onCreateWorkspace,
 
+  "DELETE /workspaces/:name/history/:id/message/:uid": onDeleteMessage,
   "POST /workspaces/:name/history/:id/message": onMessage,
 
   "GET /workspaces/:name/history/:id": onReadWorkspaceHistory,

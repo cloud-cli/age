@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { dataDir } from "./env.mjs";
 import { readFile, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 
 export class History {
   #cache;
@@ -45,6 +46,14 @@ export class History {
     const f = await readFile(this.file, "utf8");
     const json = JSON.parse(f);
     this.#cache = json;
+
+    for (const m of json.messages) {
+      if (!m.meta?.uid) {
+        m.meta ||= {};
+        m.meta.uid = randomUUID();
+      }
+    }
+
     return json;
   }
 

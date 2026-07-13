@@ -23,35 +23,43 @@
 
     <div class="flex-1 overflow-y-auto p-4 space-y-4 font-mono text-xs flex flex-col-reverse gap-2">
       <template for="m of messages">
-        <div>
-          <template if="m.role !== 'tool'">
-            <div class="bg-zinc-900 p-3 rounded-lg border border-zinc-800 leading-relaxed max-w-3xl">
-              <lucide-icon
-                icon="loader"
-                size="12"
-                class="mr-2 text-zinc-400"
-                bind-class="{ 'inline-block.animate-spin': m.thinking === true, 'hidden': m.thinking !== true }"
-              ></lucide-icon>
-              <div class="flex justify-end" class-hidden="!m.meta?.model">
-                <span class="inline-block p-1 border border-zinc-700 rounded">{{ m.meta?.model }}</span>
-              </div>
-              <markdown-block bind-src="m.content || m.thinking" class="text-zinc-300"></markdown-block>
-            </div>
-          </template>
-
-          <template if="m.role === 'tool'">
-            <div class="text-xs">
-              <div class="flex items-center text-emerald-500">
-                <span class="mr-2">✓</span>Tool:
-                <code class="text-zinc-300 ml-1 px-1 py-0.5">{{ m.tool_name }}</code>
-              </div>
-              <collapsed-text
-                bind-content="m.content"
-                class="block text-zinc-500 border border-zinc-700 rounded-md p-2"
-              ></collapsed-text>
-            </div>
-          </template>
+        <div class="flex items-center justify-end">
+          <button on-click="onDeleteMessage(m.meta?.uid)" class="p-2 text-red-400">
+            <lucide-icon icon="x" size="16" title="Delete message"></lucide-icon>
+          </button>
         </div>
+        <template if="m.role !== 'tool'">
+          <div class="bg-zinc-900 p-3 rounded-lg border border-zinc-800 leading-relaxed max-w-3xl">
+            <lucide-icon
+              icon="loader"
+              size="12"
+              class="mr-2 text-zinc-400"
+              bind-class="{ 'inline-block.animate-spin': m.thinking === true, 'hidden': m.thinking !== true }"
+            ></lucide-icon>
+            <div class="flex justify-end" class-hidden="!m.meta?.model">
+              <span class="inline-block p-1 border border-zinc-700 rounded">{{ m.meta?.model }}</span>
+            </div>
+            <markdown-block bind-src="m.content"></markdown-block>
+            <markdown-block
+              class-hidden="m.thinking === true"
+              bind-src="m.thinking"
+              class="text-zinc-300"
+            ></markdown-block>
+          </div>
+        </template>
+
+        <template if="m.role === 'tool'">
+          <div class="text-xs">
+            <div class="flex items-center text-emerald-500">
+              <span class="mr-2">✓</span>Tool:
+              <code class="text-zinc-300 ml-1 px-1 py-0.5">{{ m.tool_name }}</code>
+            </div>
+            <collapsed-text
+              bind-content="m.content"
+              class="block text-zinc-500 border border-zinc-700 rounded-md p-2"
+            ></collapsed-text>
+          </div>
+        </template>
       </template>
     </div>
 
@@ -187,6 +195,17 @@
         }
       }
 
+      async function onDeleteMessage(uid) {
+        if (!uid || !confirm("Are you sure?")) {
+          return;
+        }
+
+        if (ws.value && sessionId.value) {
+          await Sessions.deleteMessage(ws.value, sessionId.value, uid);
+          await onReloadMessages();
+        }
+      }
+
       function onKeyDown(e) {
         if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
           e.preventDefault();
@@ -238,6 +257,7 @@
         onCreateSession,
         onSelectModel,
         onReloadMessages,
+        onDeleteMessage,
       };
     }
   </script>
