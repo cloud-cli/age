@@ -133,6 +133,19 @@ export const Models = {
 
     return res.json();
   },
+
+  async pull(name) {
+    const res = await fetch(new URL("/models/" + name, baseUrl), {
+      method: "POST",
+      ...authHeaders(),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to pull model:  ${res.status} ${res.statusText}`);
+    }
+
+    return true;
+  },
 };
 
 export const events = new EventTarget();

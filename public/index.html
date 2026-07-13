@@ -72,7 +72,7 @@
       <div class="flex items-center bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 gap-1">
         <span class="text-[10px] text-zinc-500 font-mono uppercase mr-2 hidden md:block">{{ label || '' }}</span>
         <select
-          class="bg-transparent text-xs text-zinc-300 focus:outline-none cursor-pointer"
+          class="bg-transparent text-xs text-zinc-300 cursor-pointer"
           on-change="onSelect($event.target.value)"
           bind-value="selected"
         >
@@ -85,16 +85,18 @@
           <lucide-icon icon="plus" size="16" title="Add"></lucide-icon>
         </button>
         <button type="button" on-click="onReload()" class="text-xs text-zinc-600 font-mono">
-          <lucide-icon icon="refresh-cw" size="16" title="Reload"></lucide-icon>
+          <lucide-icon class="block" class-animate-spin="spinning" icon="refresh-cw" size="16" title="Reload"></lucide-icon>
         </button>
       </div>
       <script setup>
         import { defineProp, defineEvent } from "@li3/web";
+
         export default function () {
           const list = defineProp("list");
           const label = defineProp("label");
           const selected = defineProp("selected");
           const placeholder = defineProp("placeholder");
+          const spinning = defineProp('spinning');
           const onAdd = defineEvent("add");
           const onReload = defineEvent("reload");
           const onSelect = defineEvent("select");

@@ -2,6 +2,7 @@
   <section class="flex-1 flex flex-col bg-zinc-950 border-r border-zinc-800">
     <div class="flex items-center justify-between px-4 py-2 gap-2" class-hidden="!workspace">
       <dynamic-list
+        ref="modelSelector"
         label="Session"
         placeholder="Switch sessions"
         on-add="onCreateSession()"
@@ -89,6 +90,7 @@
               bind-selected="model"
               on-reload="onReloadModelList()"
               on-select="onSelectModel($event.detail)"
+              on-add="onPullModel()"
             ></dynamic-list>
 
             <button
@@ -111,6 +113,7 @@
     import { Workspaces, Sessions, Models, events } from "https://agents.apphor.de/index.mjs";
 
     export default function () {
+      const modelSelector = templateRef("modelSelector");
       const ws = defineProp("workspace");
       const session = ref(null);
       const sessionId = computed(() => session.value?.id || null);
@@ -215,8 +218,24 @@
           onSend();
         }
       }
-      onInit(onReloadModelList);
 
+      async function onPullModel() {
+        const name = prompt("Model name", "");
+
+        if (!name) {
+          return;
+        }
+
+        try {
+          modelSelector.value.spinning = true;
+          await Models.pull(name);
+        } catch {
+        } finally {
+          modelSelector.value.spinning = false;
+        }
+      }
+
+      onInit(onReloadModelList);
       watch(session, (v) => v && onReloadMessages());
       watch(ws, () => {
         messages.value = [];
@@ -259,6 +278,7 @@
         onDeleteSession,
         onCreateSession,
         onSelectModel,
+        onPullModel,
         onReloadMessages,
         onDeleteMessage,
       };

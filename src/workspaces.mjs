@@ -314,7 +314,7 @@ async function onModelPull(_req, res, params) {
 
 export default {
   "GET /models": onModelList,
-  "GET /models/:name": onModelPull,
+  "POST /models/:name": onModelPull,
 
   "GET /workspaces": onReadWorkspaceList,
   "POST /workspaces": onCreateWorkspace,
