@@ -3,7 +3,7 @@ const listeners = new Set();
 
 /** @param {import('http').ServerResponse} client */
 export function subscribe(client) {
-  listeners.push(new WeakRef(client));
+  listeners.add(new WeakRef(client));
 }
 
 export function publish(type, event) {

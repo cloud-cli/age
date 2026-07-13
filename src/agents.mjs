@@ -1,5 +1,5 @@
 import { join, resolve } from "node:path";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { tools, toolsByName } from "./tools.mjs";
 import { callModel } from "./ollama-api.mjs";
 import { publish } from "./events.mjs";
@@ -80,9 +80,7 @@ export function executeFunction(functionName, modelArgs, workspacePath) {
 }
 
 export async function runAgentLoop(options) {
-  const { history, sessionId } = options;
-  const { workspacePath, model = "" } = options;
-  const historyFile = join(workspacePath, "history", `${sessionId}.json`);
+  const { history, historyFile, sessionId, workspacePath, model = "" } = options;
   let aiResponse;
 
   try {
