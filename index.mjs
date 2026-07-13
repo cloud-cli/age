@@ -65,7 +65,7 @@ createServer((req, res) => {
 
     if (existsSync(fullPath) && statSync(fullPath).isFile()) {
       const extension = parse(fullPath).ext.toLowerCase();
-      response.setHeader("Content-Type", mimeTypes[extension] || "text/plain");
+      res.setHeader("Content-Type", mimeTypes[extension] || "text/plain");
       createReadStream(fullPath).pipe(res);
     } else {
       console.log("404", fullPath);
