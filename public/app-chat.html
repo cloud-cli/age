@@ -12,12 +12,12 @@
         bind-list="sessionListMapped"
       ></dynamic-list>
 
-      <div class="flex items-center bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 gap-1">
+      <div class="flex items-center gap-2">
         <button type="button" on-click="onReloadMessages()" class="text-xs text-zinc-600 font-mono">
           <lucide-icon icon="refresh-cw" size="16" title="Reload"></lucide-icon>
         </button>
         <button on-click="onDeleteSession()" class="p-2 text-red-500 font-bold" class-hidden="!session">
-          <lucide-icon icon="x" size="16" title="Delete session"></lucide-icon>
+          <lucide-icon icon="trash-2" size="16" title="Delete session"></lucide-icon>
         </button>
       </div>
     </div>
