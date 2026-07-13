@@ -60,7 +60,7 @@
 
         export default function () {
           defineProp("content");
-          const [expanded, onToggle] = ref(false);
+          const [expanded, onToggle] = hook(false);
           return { expanded, onToggle };
         }
       </script>
