@@ -1,22 +1,6 @@
 <template component="app-chat">
   <section class="flex-1 flex flex-col bg-zinc-950 border-r border-zinc-800">
-    <div class="flex items-center justify-between px-4 pt-1" class-hidden="!workspace">
-      <template if="session">
-        <div
-          class="px-4 pb-2 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/10 hidden md:block"
-        >
-          <div>
-            <h2 class="text-sm font-medium text-zinc-200">{{ session.title || session.id || '' }}</h2>
-            <p class="text-xs text-zinc-500">{{ new Date(session.createdAt).toISOString().slice(0, 19)}}</p>
-          </div>
-          <div class="flex space-x-2">
-            <span class="text-xs text-zinc-400 bg-zinc-900 px-2 py-1 rounded border border-zinc-800"
-              >{{ session.model || 'default' }}</span
-            >
-          </div>
-        </div>
-      </template>
-
+    <div class="flex items-center justify-between px-4 py-2 gap-2" class-hidden="!workspace">
       <dynamic-list
         label="Session"
         placeholder="Switch sessions"
@@ -37,7 +21,6 @@
       </div>
     </div>
 
-    <!-- Agent Thought & Execution Feed (Scrollable) -->
     <div class="flex-1 overflow-y-auto p-4 space-y-4 font-mono text-xs flex flex-col-reverse gap-2">
       <template for="m of messages">
         <div>
@@ -72,8 +55,7 @@
       </template>
     </div>
 
-    <!-- Persistent Prompt Input Box -->
-    <div class="p-3 border-t border-zinc-800 bg-zinc-900/20">
+    <div class="p-3 border-t border-zinc-800 bg-zinc-900/20" class-hidden="!workspace">
       <div class="relative bg-zinc-900 border border-zinc-800 rounded-xl focus-within:border-zinc-700 transition p-2">
         <form on-submit.prevent="onSend()">
           <textarea
@@ -120,7 +102,7 @@
     export default function () {
       const ws = defineProp("workspace");
       const session = ref(null);
-      const sessionId = computed(() => session.value?.id);
+      const sessionId = computed(() => session.value?.id || null);
       const sessionList = ref([]);
       const sending = ref(false);
       const [newMessage, setMessage] = hook("");

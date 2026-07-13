@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { addToQueue, runAgentLoop } from "./agents.mjs";
 import { getModelList } from "./ollama-api.mjs";
 import { dataDir } from "./env.mjs";
+import { History } from "./history.mjs";
 
 const randomName = () =>
   uniqueNamesGenerator({
