@@ -12,7 +12,7 @@ export class History {
   }
 
   get file() {
-    return join(dataDir, this.workspaceName, "history", `${sessionId}.json`);
+    return join(dataDir, this.workspaceName, "history", `${this.sessionId}.json`);
   }
 
   async getModel() {
