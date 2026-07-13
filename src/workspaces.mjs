@@ -292,7 +292,7 @@ async function onDeleteMessage(_req, res, params) {
 
   try {
     const content = await history.read();
-    content.messages = content.messages.filter((m) => m.meta?.uid === uid);
+    content.messages = content.messages.filter((m) => m.meta?.uid !== uid);
     await history.write(content);
 
     res.writeHead(202).end();
