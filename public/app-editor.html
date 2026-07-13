@@ -8,7 +8,7 @@
     <file-tree class="w-1/3" bind-files="files" on-select="onSelectFile($event.detail)"></file-tree>
   </div>
   <script setup>
-    import { ref, hook, defineProp } from "@li3/web";
+    import { ref, hook, watch, defineProp } from "@li3/web";
     import { Workspaces } from "https://agents.apphor.de/index.mjs";
 
     export default function () {
