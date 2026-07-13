@@ -35,9 +35,9 @@
       ></app-header>
 
       <template if="profile">
-        <main class="flex-1 flex overflow-hidden justify-stretch items-start">
-          <app-chat class="w-1/2" bind-workspace="ws"></app-chat>
-          <app-editor class="w-1/2" bind-workspace="ws"></app-editor>
+        <main class="flex-1 flex overflow-hidden justify-stretch items-stretch">
+          <app-chat class="w-1/2 h-full contents" bind-workspace="ws"></app-chat>
+          <app-editor class="w-1/2 h-full contents" bind-workspace="ws"></app-editor>
         </main>
       </template>
       <script setup>
