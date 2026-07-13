@@ -16,6 +16,8 @@
         on-reload="onReloadWorkspaceList()"
         on-add="onCreateWorkspace()"
         on-select="onSelectWorkspace($event.detail)"
+        on-remove="onRemoveWorkspace()"
+        bind-actions="[{ icon: 'trash-2',, action: 'remove', label: 'remove' }]"
       ></dynamic-list
     ></template>
 
@@ -74,11 +76,27 @@
         } catch {}
       }
 
+      async function onRemoveWorkspace() {
+        if (!confirm("Are you sure?")) return;
+        const name = ws.value;
+        await Workspaces.remove(name);
+        wsList.value = wsList.value.filter((x) => x !== name);
+        ws.value = "";
+      }
+
       onInit(onUpdateProfile);
 
       events.addEventListener("state", (e) => onSetProfile(e.detail));
 
-      return { signIn, profile, wsListMapped, onCreateWorkspace, onReloadWorkspaceList, onSelectWorkspace };
+      return {
+        signIn,
+        profile,
+        wsListMapped,
+        onCreateWorkspace,
+        onReloadWorkspaceList,
+        onSelectWorkspace,
+        onRemoveWorkspace,
+      };
     }
   </script>
 </template>
