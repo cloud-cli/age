@@ -2,20 +2,22 @@
   <header
     class="h-14 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur px-4 flex items-center justify-between z-10"
   >
-    <button class="flex items-center space-x-3" on-click="window.reload()">
+    <button class="flex items-center space-x-3" on-click="window.location.reload()">
       <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
       <span class="font-semibold text-sm tracking-wide uppercase text-zinc-300 hidden md:block">Workspaces</span>
     </button>
 
-    <dynamic-list
-      label="Workspace"
-      placeholder="Select"
-      bind-list="wsListMapped"
-      bind-selected="workspace"
-      on-reload="onReloadWorkspaceList()"
-      on-add="onCreateWorkspace()"
-      on-select="onSelectWorkspace($event.detail)"
-    ></dynamic-list>
+    <template if="profile">
+      <dynamic-list
+        label="Workspace"
+        placeholder="Select"
+        bind-list="wsListMapped"
+        bind-selected="workspace"
+        on-reload="onReloadWorkspaceList()"
+        on-add="onCreateWorkspace()"
+        on-select="onSelectWorkspace($event.detail)"
+      ></dynamic-list
+    ></template>
 
     <div class="flex items-center space-x-3">
       <button
