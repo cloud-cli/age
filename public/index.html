@@ -46,6 +46,26 @@
       </script>
     </template>
 
+    <template component="collapsed-text">
+      <div class="flex items-center">
+        <div class="whitespace-pre overflow-hidden" style-max-height="expanded ? '' : '200px'">{{ content }}</div>
+        <div class="flex text-xs items-center justify-end">
+          <button on-click="onToggle(!expanded)" class="text-zinc-500 p-1">
+            <lucide-icon size="16" bind-icon="expanded ? 'chevron-up' : 'chevron-down'"></lucide-icon>
+          </button>
+        </div>
+      </div>
+      <script setup>
+        import { defineProp, hook } from "@li3/web";
+
+        export default function () {
+          defineProp("content");
+          const [expanded, onToggle] = ref(false);
+          return { expanded, onToggle };
+        }
+      </script>
+    </template>
+
     <template component="dynamic-list">
       <div class="flex items-center bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 gap-1">
         <span class="text-[10px] text-zinc-500 font-mono uppercase mr-2 hidden md:block">{{ label || '' }}</span>
@@ -154,7 +174,7 @@
                       <span class="mr-2">✓</span>Tool:
                       <code class="text-zinc-300 ml-1 bg-zinc-950 px-1 py-0.5 rounded">{{ m.tool_name }}</code>
                     </div>
-                    <div class="flex items-center text-zinc-500">{{ m.content }}</div>
+                    <collapsed-text bind-content="m.content"></collapsed-text>
                   </div>
                 </template>
               </div>
