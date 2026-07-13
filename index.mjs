@@ -7,7 +7,6 @@ import { subscribe } from "./src/events.mjs";
 
 const client = readFileSync("./public/index.mjs", "utf8");
 const indexPage = readFileSync("./public/index.html", "utf8");
-const manifest = readFileSync("./public/manifest.json", "utf8");
 const handler = router(workspaces);
 const mimeTypes = {
   ".css": "text/css",
@@ -59,19 +58,8 @@ createServer((req, res) => {
     return;
   }
 
-  if (route === "GET /public/manifest.json") {
-    res
-      .writeHead(200, {
-        "Content-Type": "application/json",
-        "Cache-Control": "max-age=1, must-revalidate",
-        "Access-Control-Allow-Origin": "*",
-      })
-      .end(manifest);
-    return;
-  }
-
   if (route.startsWith("GET /public/")) {
-    const fullPath = join(process.cwd(), "public", resolve("/", url.pathname));
+    const fullPath = join(process.cwd(), "public", resolve("/", url.pathname.replace('/public/', '')));
 
     res.setHeader("Cache-Control", `max-age=${url.searchParams.has("nocache") ? 1 : 86400}, must-revalidate`);
 
