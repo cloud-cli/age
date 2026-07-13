@@ -278,9 +278,10 @@ async function onMessage(req, res, params) {
   }
 }
 
-async function onDeleteMessage(req, res, params) {
+async function onDeleteMessage(_req, res, params) {
   const name = sanitize(params.name);
   const sessionId = sanitize(params.id);
+  const uid = sanitize(params.uid);
   const history = new History(name, sessionId);
 
   if (!history.exists()) {
