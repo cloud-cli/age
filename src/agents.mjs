@@ -87,7 +87,7 @@ export async function runAgentLoop(options) {
 
   try {
     aiResponse = await getModelResponse(
-      history.getMessagesForModel(),
+      await history.getMessagesForModel(),
       model || (await history.getModel()) || defaultModel,
     );
 
