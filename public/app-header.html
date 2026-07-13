@@ -79,7 +79,7 @@
       async function onRemoveWorkspace() {
         if (!confirm("Are you sure?")) return;
         const name = ws.value;
-        await Workspaces.remove(name);
+        await Workspaces.delete(name);
         wsList.value = wsList.value.filter((x) => x !== name);
         ws.value = "";
       }
