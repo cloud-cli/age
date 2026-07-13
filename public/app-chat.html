@@ -21,9 +21,16 @@
       </div>
     </div>
 
-    <div class="flex-1 overflow-y-auto p-4 space-y-4 font-mono text-xs flex flex-col-reverse gap-2">
+    <div class="flex-1 overflow-y-auto p-4 font-mono text-xs flex flex-col-reverse gap-2">
       <template for="m of messages">
-        <div class="max-w-3xl bg-zinc-900 border border-zinc-700 rounded-md p-2 leading-relaxed relative mx-auto">
+        <span
+          class="absolute inline-block rounded p-1 -mt-7 bg-zinc-700"
+          class-hidden="!m.meta?.model || m.meta?.thinking === true"
+          >{{ m.meta?.model }}</span
+        >
+        <div
+          class="max-w-3xl bg-zinc-900 border border-zinc-700 rounded-md p-2 leading-relaxed relative mx-auto w-full"
+        >
           <div class="absolute right-0 top-0 m-2" class-hidden="m.meta?.thinking === true">
             <button on-click="onDeleteMessage(m.meta?.uid)" class="p-1 text-red-400 bg-zinc-900 rounded">
               <lucide-icon icon="trash-2" size="16" title="Delete message"></lucide-icon>
@@ -37,9 +44,6 @@
                 class="mr-2 text-zinc-400"
                 bind-class="{ 'inline-block.animate-spin': m.meta?.thinking === true, 'hidden': m.thinking !== true }"
               ></lucide-icon>
-              <div class="flex justify-end" class-hidden="!m.meta?.model || m.meta?.thinking === true">
-                <span class="inline-block p-1 border border-zinc-700 rounded">{{ m.meta?.model }}</span>
-              </div>
 
               <markdown-block
                 bind-src="m.content || m.thinking"
