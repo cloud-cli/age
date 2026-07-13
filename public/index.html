@@ -81,11 +81,11 @@
             <option bind-value="s.value">{{ s.label }}</option>
           </template>
         </select>
-        <button type="button" on-click="onAdd()" class="text-xs text-zinc-600 font-mono">
+        <button type="button" on-click="onAdd()" class="text-xs text-zinc-600">
           <lucide-icon icon="plus" size="16" title="Add"></lucide-icon>
         </button>
-        <button type="button" on-click="onReload()" class="text-xs text-zinc-600 font-mono">
-          <lucide-icon class="block" class-animate-spin="spinning" icon="refresh-cw" size="16" title="Reload"></lucide-icon>
+        <button type="button" on-click="onReload()" class="text-xs text-zinc-600">
+          <lucide-icon class="block" class-animate-spin="!!spinning" icon="refresh-cw" size="16" title="Reload"></lucide-icon>
         </button>
       </div>
       <script setup>
