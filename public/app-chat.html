@@ -23,10 +23,10 @@
 
     <div class="flex-1 overflow-y-auto p-4 space-y-4 font-mono text-xs flex flex-col-reverse gap-2">
       <template for="m of messages">
-        <div class="max-w-3xl bg-zinc-900 border border-zinc-700 rounded-md p-2 leading-relaxed relative">
-          <div class="absolute right-0 top-0 m-2" class-hidden="m.thinking === true">
+        <div class="max-w-3xl bg-zinc-900 border border-zinc-700 rounded-md p-2 leading-relaxed relative mx-auto">
+          <div class="absolute right-0 top-0 m-2" class-hidden="m.meta?.thinking === true">
             <button on-click="onDeleteMessage(m.meta?.uid)" class="p-1 text-red-400 bg-zinc-900 rounded">
-              <lucide-icon icon="x" size="16" title="Delete message"></lucide-icon>
+              <lucide-icon icon="trash-2" size="16" title="Delete message"></lucide-icon>
             </button>
           </div>
           <template if="m.role !== 'tool'">
@@ -35,19 +35,17 @@
                 icon="loader"
                 size="12"
                 class="mr-2 text-zinc-400"
-                bind-class="{ 'inline-block.animate-spin': m.thinking === true, 'hidden': m.thinking !== true }"
+                bind-class="{ 'inline-block.animate-spin': m.meta?.thinking === true, 'hidden': m.thinking !== true }"
               ></lucide-icon>
-              <div class="flex justify-end" class-hidden="!m.meta?.model || m.thinking === true">
+              <div class="flex justify-end" class-hidden="!m.meta?.model || m.meta?.thinking === true">
                 <span class="inline-block p-1 border border-zinc-700 rounded">{{ m.meta?.model }}</span>
               </div>
 
               <markdown-block
-                class-hidden="m.thinking === true"
-                bind-src="m.thinking"
-                class="text-zinc-300 block"
+                bind-src="m.content || m.thinking"
+                class-text-zinc-300="m.thinking"
+                class="block"
               ></markdown-block>
-
-              <markdown-block class="block" bind-src="m.content"></markdown-block>
             </div>
           </template>
 
@@ -141,7 +139,7 @@
         try {
           sending.value = true;
           messages.value = [
-            { role: "assistant", content: "", thinking: true },
+            { role: "assistant", content: "", meta: { thinking: true } },
             { role: "user", content: message },
             ...messages.value,
           ];
