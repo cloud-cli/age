@@ -29,6 +29,15 @@
           <app-editor class="w-full md:w-1/2"></app-editor>
         </main>
       </template>
+      <script setup>
+        import { storeToRefs } from "@li3/store";
+        import { useStore } from "@app/store.mjs";
+        export default function () {
+          const store = useStore();
+          const { profile } = storeToRefs(store);
+          return { profile };
+        }
+      </script>
     </template>
 
     <script type="module" async defer src="https://console.apphor.de/index.mjs"></script>
