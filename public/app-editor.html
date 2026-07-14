@@ -10,7 +10,7 @@
   <script setup>
     import { ref, hook, watch, defineProp } from "@li3/web";
     import { Workspaces } from "https://agents.apphor.de/index.mjs";
-    import { buildFileTree } from 'https://sodium.static.apphor.de/file-tree.mjs';
+    import { buildFileTree } from "https://sodium.static.apphor.de/file-tree.mjs";
 
     export default function () {
       const ws = defineProp("workspace");
@@ -30,8 +30,7 @@
           return;
         }
 
-        const wsFiles = await Workspaces.read(name);
-        files.value = buildFileTree(wsFiles);
+        files.value = await Workspaces.read(name);
       }
 
       watch(ws, () => onUpdateFileList());
