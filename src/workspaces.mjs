@@ -59,13 +59,6 @@ async function onCreateWorkspace(req, res) {
   }
 }
 
-// Reads all files in the workspace and returns them as a JSON object with the entire file tree
-// - each entry can be either a file or folder.
-// - files do not have content. we have a separate endpoint for reading file content.
-// - folders have a list of files and folders inside them. the structure is recursive.
-// the structure is as follows:
-// file: { name: string, path: string, type: "file" }
-// folder: { name: string, path: string, type: "folder", files: [file | folder] }
 async function onReadWorkspace(_req, res, params) {
   const name = sanitize(params.name);
   const workspacePath = join(dataDir, name, "files");
@@ -88,14 +81,14 @@ async function onReadWorkspace(_req, res, params) {
           return {
             name: file.name,
             path: filePath.replace(workspacePath, ''),
-            type: "folder",
+            type: "d",
             files: await readFolder(filePath),
           };
         } else {
           return {
             name: file.name,
             path: filePath.replace(workspacePath, ''),
-            type: "file",
+            type: "f",
           };
         }
       }),
