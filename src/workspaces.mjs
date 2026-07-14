@@ -1,8 +1,8 @@
 import { adjectives, colors, names, uniqueNamesGenerator } from "unique-names-generator";
 import { randomUUID } from "node:crypto";
-import { existsSync } from "node:fs";
+import { createReadStream, existsSync } from "node:fs";
 import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { addToQueue, runAgentLoop } from "./agents.mjs";
 import { getModelList } from "./ollama-api.mjs";
 import { dataDir } from "./env.mjs";
@@ -80,14 +80,14 @@ async function onReadWorkspace(_req, res, params) {
         if (file.isDirectory()) {
           return {
             name: file.name,
-            path: filePath.replace(workspacePath, ''),
+            path: filePath.replace(workspacePath, ""),
             type: "d",
             files: await readFolder(filePath),
           };
         } else {
           return {
             name: file.name,
-            path: filePath.replace(workspacePath, ''),
+            path: filePath.replace(workspacePath, ""),
             type: "f",
           };
         }
@@ -100,6 +100,26 @@ async function onReadWorkspace(_req, res, params) {
   const workspaceFiles = await readFolder(workspacePath);
 
   res.sendJson(workspaceFiles);
+}
+
+async function onReadFile(req, res, params, searchParams) {
+  const name = sanitize(params.name);
+  const file = searchParams.get(file);
+
+  if (!file) {
+    res.sendJson("Not found", 404);
+    return;
+  }
+
+  const workspacePath = join(dataDir, name, "files");
+  const realPath = join(workspacePath, resolve("/", file));
+
+  if (existsSync(realPath)) {
+    res.sendJson("Not found", 404);
+    return;
+  }
+
+  createReadStream(realPath).pipe(res);
 }
 
 async function onDeleteWorkspace(req, res, params) {
@@ -320,6 +340,8 @@ export default {
 
   "GET /workspaces/:name/history": onReadWorkspaceHistoryList,
   "POST /workspaces/:name/history": onCreateWorkspaceHistory,
+
+  "GET /workspaces/:name/file": onReadFile,
 
   "GET /workspaces/:name": onReadWorkspace,
   "DELETE /workspaces/:name": onDeleteWorkspace,

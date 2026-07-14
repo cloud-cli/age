@@ -51,6 +51,18 @@ export const Workspaces = {
       throw new Error(`Failed to delete workspace: ${res.status} ${res.statusText}`);
     }
   },
+
+  async readFile(name, path) {
+    const url = new URL(`/workspaces/${name}/file`, baseUrl);
+    url.searchParams.set("file", path);
+    const res = await fetch(url, authHeaders());
+
+    if (!res.ok) {
+      throw new Error(`Failed to load workspace file: ${res.status} ${res.statusText}`);
+    }
+
+    return res.text();
+  },
 };
 
 export const Sessions = {
