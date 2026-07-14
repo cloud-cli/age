@@ -31,6 +31,7 @@ export const useStore = defineStore("app", function () {
 
     if (v) {
       await reloadWorkspaceList();
+      await reloadModelList();
     }
   }
 
