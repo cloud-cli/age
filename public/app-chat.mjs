@@ -69,7 +69,6 @@ export default function () {
     session,
     model,
     modelListMapped,
-    sessionListMapped,
     onSend,
     onKeyDown,
     onDeleteSession,
