@@ -2,7 +2,7 @@ import { execSync, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 
-const deployUrl = new URL(process.env.DEPLOY_API_URL);
+const deployUrl = new URL(process.env.DEPLOY_API_URL || "http://a");
 const deployKey = process.env.DEPLOY_API_KEY;
 
 export async function DeployPush(/*string*/ name, /*string*/ path = ".") {

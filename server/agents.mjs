@@ -5,15 +5,14 @@ import { callModel } from "./ollama-api.mjs";
 import { publish } from "./events.mjs";
 import { History } from "./history.mjs";
 import { randomUUID } from "node:crypto";
+import { dataDir } from "./env.mjs";
 
 const defaultModel = process.env.MODEL;
 const agentSystemPrompt = await readFile(new URL("./system.txt", import.meta.url), "utf8");
 
-// call Ollama server to get a response from the model
-// history is an array of messages, each message is an object with role and content, just like an OpenAI chat completion request
-export async function getModelResponse(history, model) {
+export async function getModelResponse(history) {
   const requestBody = {
-    model,
+    model: (await history.getModel()) || defaultModel,
     tools,
     stream: false,
     think: true,
@@ -22,7 +21,7 @@ export async function getModelResponse(history, model) {
         role: "system",
         content: agentSystemPrompt,
       },
-      ...history,
+      ...(await history.getMessagesForModel()),
     ],
   };
 
@@ -46,7 +45,6 @@ function convertValue(value, type) {
   }
 }
 
-// name and args are coming from a model response, and we want to execute the corresponding function from the tools array
 export function executeFunction(functionName, modelArgs, workspacePath) {
   const specs = tools.find((next) => next.function.name === functionName);
 
@@ -54,7 +52,6 @@ export function executeFunction(functionName, modelArgs, workspacePath) {
     throw new Error(`Function not found: ${functionName}`);
   }
 
-  // an array with [name, { type: x }]
   const args = Object.entries(specs.function.parameters.properties);
   const foundArgs = [];
 
@@ -80,16 +77,13 @@ export function executeFunction(functionName, modelArgs, workspacePath) {
   return f.apply(context, foundArgs);
 }
 
-export async function runAgentLoop(options) {
-  const { workspacePath, model = "", name, sessionId } = options;
-  const history = new History(name, sessionId);
+export async function runAgentLoop(workspace, sessionId) {
+  const workspacePath = join(dataDir, workspace);
+  const history = new History(workspace, sessionId);
   let aiResponse;
 
   try {
-    aiResponse = await getModelResponse(
-      await history.getMessagesForModel(),
-      model || (await history.getModel()) || defaultModel,
-    );
+    aiResponse = await getModelResponse(history);
 
     if (aiResponse.error) {
       console.error(aiResponse);
@@ -140,7 +134,19 @@ export async function runAgentLoop(options) {
     }
   }
 
-  return runAgentLoop(options);
+  return runAgentLoop(workspace, sessionId);
 }
 
-export function addToQueue(job) {}
+async function main() {
+  const [workspace, sessionId] = process.argv.slice(2);
+
+  try {
+    await runAgentLoop(workspace, sessionId);
+    process.exit(0);
+  } catch (e) {
+    console.log(e);
+    process.exit(1);
+  }
+}
+
+main();

@@ -3,10 +3,10 @@ import { randomUUID } from "node:crypto";
 import { createReadStream, existsSync } from "node:fs";
 import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { addToQueue, runAgentLoop } from "./agents.mjs";
 import { getModelList } from "./ollama-api.mjs";
 import { dataDir } from "./env.mjs";
 import { History } from "./history.mjs";
+import { spawn } from "node:child_process";
 
 const randomName = () =>
   uniqueNamesGenerator({
@@ -104,7 +104,7 @@ async function onReadWorkspace(_req, res, params) {
 
 async function onReadFile(req, res, params, searchParams) {
   const name = sanitize(params.name);
-  const file = searchParams.get('file');
+  const file = searchParams.get("file");
 
   if (!file) {
     res.sendJson("Not found", 404);
@@ -270,12 +270,9 @@ async function onMessage(req, res, params) {
   }
 
   const body = Buffer.concat(await req.toArray()).toString("utf8");
-  const loopOptions = { history, name, sessionId, workspacePath, model: "" };
 
   try {
     const { message, model = "", files } = JSON.parse(body);
-    loopOptions.model = model;
-    loopOptions.files = files;
     await history.push({ role: "user", content: message, meta: { model, files, uid: randomUUID() } });
   } catch (err) {
     console.error(`Failed to add message in session ${history.file}: ${err}`);
@@ -284,7 +281,7 @@ async function onMessage(req, res, params) {
   }
 
   try {
-    await runAgentLoop(loopOptions);
+    await runAgentLoop(name, sessionId);
     res.sendJson(await history.read());
   } catch (e) {
     res.sendJson({ error: e.message }, 500);
@@ -346,3 +343,23 @@ export default {
   "GET /workspaces/:name": onReadWorkspace,
   "DELETE /workspaces/:name": onDeleteWorkspace,
 };
+
+async function runAgentLoop(name, sessionId) {
+  return new Promise((resolve, reject) => {
+    const agent = spawn("./agents.mjs", [name, sessionId]);
+
+    agent.on("exit", () => {
+    reject(new Error("Agent crashed"));
+    });
+
+    agent.on("close", () => {
+      if (agent.exitCode > 0) {
+        reject(new Error(agent.exitCode));
+      }
+
+      resolve(sessionId);
+    });
+
+    agent.send({ event: "run", data: options });
+  });
+}

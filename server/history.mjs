@@ -21,7 +21,7 @@ export class History {
       await this.read();
     }
 
-    return this.#cache.model;
+    return this.#cache.model || this.#cache.messages.at(-1)?.meta?.model;
   }
 
   async setModel(model) {

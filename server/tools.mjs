@@ -32,7 +32,7 @@ function parseParameters(fnString) {
 
     return params
       .map((param) => {
-        const [typeString, nameString] = param.includes('*/') ? param.split("*/") : ['/*string', param];
+        const [typeString, nameString] = param.includes("*/") ? param.split("*/") : ["/*string", param];
 
         if (!nameString) {
           return null;

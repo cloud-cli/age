@@ -2,8 +2,8 @@ import createServer from "@cloud-cli/http";
 import router from "micro-router";
 import { readFileSync, existsSync, statSync, createReadStream } from "node:fs";
 import { resolve, parse, join } from "node:path";
-import workspaces from "./src/workspaces.mjs";
-import { subscribe } from "./src/events.mjs";
+import workspaces from "./server/workspaces.mjs";
+import { subscribe } from "./server/events.mjs";
 
 const client = readFileSync("./public/index.mjs", "utf8");
 const indexPage = readFileSync("./public/index.html", "utf8");
