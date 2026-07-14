@@ -115,7 +115,7 @@ async function onReadFile(_req, res, params, searchParams) {
   const workspacePath = join(dataDir, name, "files");
   const realPath = join(workspacePath, resolve("/", file));
 
-  if (existsSync(realPath)) {
+  if (!existsSync(realPath)) {
     res.sendJson("Not found", 404);
     return;
   }
