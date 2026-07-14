@@ -1,7 +1,7 @@
 import { ref, hook } from "@li3/web";
-import { defineStore } from "@li3/store";
 import { events as authEvents, getProfile, getPropertyNS } from "https://auth.api.apphor.de/index.mjs";
-import { Workspaces, Sessions, setKey, events } from "@app/api.mjs";
+import { defineStore } from "@li3/store";
+import { Workspaces, Sessions, Models, setKey, events } from "@app/api.mjs";
 
 export const useStore = defineStore("app", function () {
   const profile = ref(null);
@@ -38,7 +38,7 @@ export const useStore = defineStore("app", function () {
     const name = workspace.value;
 
     if (!name) {
-      store.setFiles([]);
+      setFiles([]);
       return;
     }
 
@@ -148,8 +148,7 @@ export const useStore = defineStore("app", function () {
     const b = { role: "user", content: message };
     setMessages([a, b, ...messages.value]);
     const response = await Sessions.sendMessage(workspace.value, session.value.id, { message, model: model.value });
-    setMessages([b, ...list]);
-    store.setMessages(response.messages.reverse());
+    setMessages(response.messages.reverse());
   }
 
   async function reloadProfile() {

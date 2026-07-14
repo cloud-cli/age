@@ -14,6 +14,9 @@ importers:
       '@cloud-cli/http':
         specifier: latest
         version: 1.1.0
+      '@li3/store':
+        specifier: 0.x
+        version: 0.2.0
       '@li3/web':
         specifier: 0.x
         version: 0.2.32
@@ -35,6 +38,9 @@ packages:
   '@cloud-cli/proxy@1.11.1':
     resolution: {integrity: sha512-bEKtqrDI2NY/fYHf+WJO1qz3dcnMooiFfh3cbJpDJYba4fPDCl41MxAxHFh2meKv7500JxJ9JhYi5oOoN2mJJQ==}
     hasBin: true
+
+  '@li3/store@0.2.0':
+    resolution: {integrity: sha512-kpZpTCqJ2CzwRnmcmegGFc8TH49YgecmUVh6lMtkpGiuLU1Kjezxfb6m0JrXrHW8nbNW/cywEY0icS0XW1qxZQ==}
 
   '@li3/web@0.2.32':
     resolution: {integrity: sha512-zipZmbYkpCl35vOp+w1WcaWcHNR2Cr5eeY1iBbUYSZee960hPoEmdbtb6p+9dAz3lLTbD7/lBbi87pS/3XAgUA==}
@@ -63,6 +69,10 @@ snapshots:
       '@cloud-cli/proxy': 1.11.1
 
   '@cloud-cli/proxy@1.11.1': {}
+
+  '@li3/store@0.2.0':
+    dependencies:
+      '@li3/web': 0.2.32
 
   '@li3/web@0.2.32': {}
 
