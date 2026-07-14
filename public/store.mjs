@@ -170,6 +170,8 @@ export const useStore = defineStore("app", function () {
     setWorkspace,
     createWorkspace,
     removeWorkspace,
+
+    workspaceList,
     reloadWorkspaceList,
 
     files,
