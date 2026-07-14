@@ -9,8 +9,8 @@ export const useStore = defineStore("app", function () {
   const workspace = ref("");
   const [files, setFiles] = hook([]);
   const [selectedFile, selectFile] = hook(null);
-  const session = ref(null);
-  const [sessionList, setSessionList] = hook([]);
+  const [session, setSession] = hook(null);
+  const sessionList = ref([]);
   const [model, setModel] = hook("");
   const [modelList, setModelList] = hook("");
   const [messages, setMessages] = hook([]);
@@ -73,6 +73,8 @@ export const useStore = defineStore("app", function () {
     if (workspace.value && session.value) {
       const json = await Sessions.read(workspace.value, session.value.id);
       setMessages(json.messages.reverse());
+    } else {
+      setMessages([]);
     }
   }
 
@@ -80,8 +82,9 @@ export const useStore = defineStore("app", function () {
     modelList.value = await Models.list();
   }
 
-  function setSession(id) {
-    reloadMessages();
+  async function setSessionById(id) {
+    setSession(sessionList.value.find((s) => s.id === id));
+    await reloadMessages();
   }
 
   async function createSession() {
@@ -100,15 +103,30 @@ export const useStore = defineStore("app", function () {
 
   async function reloadSessionList() {
     if (workspace.value) {
-      sessionList.value = await Sessions.list(ws.value);
+      setSessionList(await Sessions.list(ws.value));
+    }
+  }
+
+  function setSessionList(list) {
+    sessionList.value = list;
+
+    if (!list?.length) {
+      setSessionById('');
+      return;
+    }
+
+    const firstId = list && list[0]?.id;
+
+    if (list.length === 1) {
+      setSessionById(firstId);
+    }
+
+    if (list.length && !list.find((s) => s.id === sessionId.value)) {
+      setSessionById(firstId);
     }
   }
 
   async function deleteMessage(uid) {
-    if (!uid || !confirm("Are you sure?")) {
-      return;
-    }
-
     if (workspace.value && session.value) {
       await Sessions.deleteMessage(workspace.value, session.value.id, uid);
       await reloadMessages();
@@ -159,7 +177,7 @@ export const useStore = defineStore("app", function () {
     setFileContent,
 
     session,
-    setSession,
+    setSessionById,
     createSession,
     deleteSession,
 
@@ -178,6 +196,7 @@ export const useStore = defineStore("app", function () {
     setMessages,
     sendMessage,
     deleteMessage,
+    reloadMessages,
 
     profile,
     reloadProfile,
