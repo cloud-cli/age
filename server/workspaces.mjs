@@ -320,7 +320,7 @@ export default {
 
 async function runAgentLoop(name, sessionId) {
   return new Promise((resolve, reject) => {
-    const agent = spawn("./agents.mjs", [name, sessionId]);
+    const agent = spawn(process.argv0, ["./agents.mjs", name, sessionId]);
 
     agent.on("exit", () => {
       reject(new Error("Agent crashed"));
