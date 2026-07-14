@@ -366,7 +366,9 @@ async function runAgentLoop(name, sessionId) {
         const msg = JSON.parse(line.trim());
         console.log(msg);
         publish(msg.type, msg.data);
-      } catch { }
+      } catch {
+        console.log('Failed to parse', line);
+      }
     });
 
     agent.send({ event: "run", data: options });
