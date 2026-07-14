@@ -27,12 +27,6 @@ export default function () {
     }
   }
 
-  async function onDeleteSession() {
-    if (!sessionId.value || !confirm("Are you sure?")) return;
-
-    await store.deleteSession();
-  }
-
   async function onDeleteMessage(uid) {
     if (!uid || !confirm("Are you sure?")) {
       return;

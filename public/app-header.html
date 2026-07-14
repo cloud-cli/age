@@ -18,7 +18,7 @@
           on-add="onCreateWorkspace()"
           on-select="onSelectWorkspace($event.detail)"
           on-remove="onRemoveWorkspace()"
-          bind-actions="[{ icon: 'trash-2', action: 'remove', label: 'Remove' }]"
+          bind-actions="[{ icon: 'trash-2', action: 'remove', label: 'Remove', color: 'text-red-400' }]"
         ></dynamic-list>
 
         <dynamic-list
@@ -27,8 +27,10 @@
           on-add="store.createSession()"
           on-reload="store.reloadSessionList()"
           on-select="store.setSessionById($event.detail)"
+          on-remove="onDeleteSession()"
           bind-selected="session?.id"
           bind-list="sessionListMapped"
+          bind-actions="[{ icon: 'trash-2', action: 'remove', label: 'Remove', color: 'text-red-400' }]"
         ></dynamic-list>
       </div>
     </template>

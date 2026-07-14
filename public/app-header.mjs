@@ -34,6 +34,12 @@ export default function () {
     store.setWorkspace(v);
   }
 
+  async function onDeleteSession() {
+    if (!sessionId.value || !confirm("Are you sure?")) return;
+
+    await store.deleteSession();
+  }
+
   onInit(() => store.reloadProfile());
 
   return {
@@ -43,10 +49,11 @@ export default function () {
     workspace,
     sessionId,
     wsListMapped,
-    sessionListMapped
+    sessionListMapped,
     onCreateWorkspace,
     onReloadWorkspaceList,
     onSelectWorkspace,
     onRemoveWorkspace,
+    onDeleteSession,
   };
 }
