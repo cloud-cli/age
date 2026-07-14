@@ -24,7 +24,11 @@
             >{{ m.meta?.model }}</span
           >
           <div class="absolute right-0 top-0 m-2" class-hidden="m.meta?.thinking === true">
-            <button on-click="onDeleteMessage(m.meta?.uid)" class="p-1 text-red-400/70 bg-zinc-900 rounded" class-hidden="!m.meta?.uid">
+            <button
+              on-click="onDeleteMessage(m.meta?.uid)"
+              class="p-1 text-red-400/70 bg-zinc-900 rounded"
+              class-hidden="!m.meta?.uid"
+            >
               <lucide-icon icon="trash-2" size="16" title="Delete message"></lucide-icon>
             </button>
           </div>
@@ -75,13 +79,12 @@
           ></textarea>
           <div class="flex justify-between items-center p-2 px-1">
             <dynamic-list
-              ref="modelSelector"
               label="Model"
               placeholder="Model to use"
               bind-list="modelListMapped"
               bind-selected="model"
-              on-reload="onReloadModelList()"
-              on-select="onSelectModel($event.detail)"
+              on-reload="store.reloadModelList()"
+              on-select="store.setModel($event.detail)"
               on-add="onPullModel()"
             ></dynamic-list>
 

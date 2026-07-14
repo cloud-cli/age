@@ -5,7 +5,6 @@ import { useStore } from "@app/store.mjs";
 export default function () {
   const store = useStore();
   const { workspace, session, sessionId, model, modelList, messages } = storeToRefs(store);
-  const modelSelector = templateRef("modelSelector");
   const sending = ref(false);
   const [newMessage, setMessage] = hook("");
   const modelListMapped = computed(() => (modelList.value || []).map((m) => ({ label: m.id, value: m.id })));
@@ -49,12 +48,7 @@ export default function () {
       return;
     }
 
-    try {
-      modelSelector.value.spinning = true;
-      await store.pullModel(name);
-    } finally {
-      modelSelector.value.spinning = false;
-    }
+    await store.pullModel(name);
   }
 
   onInit(() => store.reloadModelList());
