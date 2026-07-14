@@ -50,7 +50,7 @@
           file.loading = true;
 
           try {
-            const content = await Workspaces.readFile(name, file);
+            const content = await Workspaces.readFile(ws.value, file.path);
           } finally {
             file.loading = false;
             file.loaded = true;
