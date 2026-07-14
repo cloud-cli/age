@@ -18,6 +18,19 @@
         }
       }
     </script>
+  </head>
+  <body class="bg-zinc-950 text-zinc-100 font-sans h-dvh flex flex-col overflow-hidden">
+    <template app>
+      <app-header class="contents"></app-header>
+      <template if="profile">
+        <main class="flex-1 flex overflow-hidden justify-stretch items-stretch">
+          <app-chat class="w-full md:w-1/2"></app-chat>
+          <app-editor class="w-full md:w-1/2"></app-editor>
+        </main>
+      </template>
+    </template>
+
+    <script type="module" async defer src="https://console.apphor.de/index.mjs"></script>
     <script type="module">
       import { load } from "@li3/web";
       ["lucide-icon", "markdown-block", "code-editor", "file-tree"].map((x) =>
@@ -25,35 +38,5 @@
       );
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body class="bg-zinc-950 text-zinc-100 font-sans h-dvh flex flex-col overflow-hidden">
-    <template app>
-      <app-header
-        class="contents"
-        bind-workspace="ws"
-        on-profile="onSetProfile($event.detail)"
-        on-select="onSelectWorkspace($event.detail)"
-        on-
-      ></app-header>
-
-      <template if="profile">
-        <main class="flex-1 flex overflow-hidden justify-stretch items-stretch">
-          <app-chat bind-workspace="ws" class="w-full md:w-1/2"></app-chat>
-          <app-editor bind-workspace="ws" class="w-full md:w-1/2"></app-editor>
-        </main>
-      </template>
-      <script setup>
-        import { hook } from "@li3/web";
-
-        export default function () {
-          const [ws, onSelectWorkspace] = hook("");
-          const [profile, onSetProfile] = hook(null);
-
-          return { ws, onSelectWorkspace, profile, onSetProfile };
-        }
-      </script>
-    </template>
-
-    <script type="module" async defer src="https://console.apphor.de/index.mjs"></script>
   </body>
 </html>

@@ -2,7 +2,6 @@ import { join, resolve } from "node:path";
 import { readFile } from "node:fs/promises";
 import { tools, toolsByName } from "./tools.mjs";
 import { callModel } from "./ollama-api.mjs";
-import { publish } from "./events.mjs";
 import { History } from "./history.mjs";
 import { randomUUID } from "node:crypto";
 import { dataDir } from "./env.mjs";

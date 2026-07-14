@@ -14,6 +14,9 @@ importers:
       '@cloud-cli/http':
         specifier: latest
         version: 1.1.0
+      '@li3/web':
+        specifier: 0.x
+        version: 0.2.32
       micro-router:
         specifier: latest
         version: 1.0.2
@@ -32,6 +35,9 @@ packages:
   '@cloud-cli/proxy@1.11.1':
     resolution: {integrity: sha512-bEKtqrDI2NY/fYHf+WJO1qz3dcnMooiFfh3cbJpDJYba4fPDCl41MxAxHFh2meKv7500JxJ9JhYi5oOoN2mJJQ==}
     hasBin: true
+
+  '@li3/web@0.2.32':
+    resolution: {integrity: sha512-zipZmbYkpCl35vOp+w1WcaWcHNR2Cr5eeY1iBbUYSZee960hPoEmdbtb6p+9dAz3lLTbD7/lBbi87pS/3XAgUA==}
 
   micro-router@1.0.2:
     resolution: {integrity: sha512-csECCeAv8kQBWeImJowY1hlbzmwPD6Qp7AwqM5Hi/91VYpIXoYaxqOEldLi+ELkmQqIji/iCYktD5eAJa3r54A==}
@@ -57,6 +63,8 @@ snapshots:
       '@cloud-cli/proxy': 1.11.1
 
   '@cloud-cli/proxy@1.11.1': {}
+
+  '@li3/web@0.2.32': {}
 
   micro-router@1.0.2: {}
 

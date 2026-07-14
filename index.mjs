@@ -5,7 +5,7 @@ import { resolve, parse, join } from "node:path";
 import workspaces from "./server/workspaces.mjs";
 import { subscribe } from "./server/events.mjs";
 
-const client = readFileSync("./public/index.mjs", "utf8");
+const client = readFileSync("./public/api.mjs", "utf8");
 const indexPage = readFileSync("./public/index.html", "utf8");
 const handler = router(workspaces);
 const mimeTypes = {
@@ -44,14 +44,14 @@ createServer((req, res) => {
     return;
   }
 
-  if (route === "GET /index.mjs") {
+  if (route === "GET /index.mjs" || route === 'GET /public/api.mjs') {
     const code = client.replace("__BASE_URL__", String(req.headers["x-forwarded-for"]));
 
     res
       .writeHead(200, {
         "Content-Type": "text/javascript",
         "Content-Length": code.length,
-        "Cache-Control": "max-age=604800, must-revalidate",
+        "Cache-Control": "max-age=3600, must-revalidate",
         "Access-Control-Allow-Origin": "*",
       })
       .end(code);
