@@ -1,7 +1,7 @@
 import { computed, onInit } from "@li3/web";
 import { signIn } from "https://auth.api.apphor.de/index.mjs";
 import { storeToRefs } from "@li3/store";
-import { useStore } from "/public/store.mjs";
+import { useStore } from "@app/store.mjs";
 
 export default function () {
   const store = useStore();

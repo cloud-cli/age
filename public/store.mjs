@@ -1,7 +1,7 @@
-import { defineStore } from "@li3/store";
-import { Workspaces, Sessions, setKey, events } from "/public/index.mjs";
 import { ref, hook } from "@li3/web";
+import { defineStore } from "@li3/store";
 import { events as authEvents, getProfile, getPropertyNS } from "https://auth.api.apphor.de/index.mjs";
+import { Workspaces, Sessions, setKey, events } from "@app/index.mjs";
 
 export const useStore = defineStore("app", function () {
   const profile = ref(null);
@@ -17,6 +17,11 @@ export const useStore = defineStore("app", function () {
 
   function setFileContent(c) {
     if (selectedFile.value) selectedFile.value.content = c;
+  }
+
+  async function loadFileContent() {
+    const content = await Workspaces.readFile(workspace.value, selectedFile.value.path);
+    setFileContent(content);
   }
 
   async function setProfile(v) {
@@ -175,6 +180,7 @@ export const useStore = defineStore("app", function () {
     selectedFile,
     selectFile,
     setFileContent,
+    loadFileContent,
 
     session,
     setSessionById,

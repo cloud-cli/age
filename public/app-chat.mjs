@@ -1,6 +1,6 @@
 import { ref, computed, hook, templateRef, watch, onInit } from "@li3/web";
 import { storeToRefs } from "@li3/store";
-import { useStore } from "/public/store.mjs";
+import { useStore } from "@app/store.mjs";
 
 export default function () {
   const store = useStore();
