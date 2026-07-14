@@ -1,11 +1,5 @@
 <template component="app-editor">
   <div class="relative h-full">
-    <lucide-icon
-      icon="loader"
-      size="12"
-      class="mr-2 text-zinc-400 absolute left-0 right-0 animate-spin"
-      bind-class="{ 'inline-block': selectedFile?.loading, 'hidden': !selectedFile }"
-    ></lucide-icon>
     <template if="workspace">
       <div class="flex h-full">
         <code-editor
@@ -34,13 +28,10 @@
       async function onSelectFile(file) {
         store.selectFile(file);
 
-        if (!file.loaded && !file.loading) {
-          file.loading = true;
-
+        if (!file.loaded) {
           try {
             await store.loadFileContent();
           } finally {
-            file.loading = false;
             file.loaded = true;
           }
         }
