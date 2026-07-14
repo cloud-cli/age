@@ -51,10 +51,12 @@ export const useStore = defineStore("app", function () {
   }
 
   async function removeWorkspace() {
+    if (!workspace.value) return;
+
     const name = workspace.value;
-    await Workspaces.delete(name);
-    workspaceList.value = workspaceList.value.filter((x) => x !== name);
     setWorkspace("");
+    await Workspaces.delete(name);
+    await reloadWorkspaceList();
   }
 
   async function createWorkspace(nameInput) {
@@ -94,9 +96,11 @@ export const useStore = defineStore("app", function () {
   }
 
   async function createSession() {
-    const newSession = await Sessions.create(workspace.value);
-    setSessionList(sessionList.value.concat(newSession));
-    setSession(newSession);
+    if (workspace.value) {
+      const newSession = await Sessions.create(workspace.value);
+      setSessionList(sessionList.value.concat(newSession));
+      setSession(newSession);
+    }
   }
 
   async function deleteSession() {
