@@ -10,6 +10,7 @@
     <template if="profile">
       <div class="flex items-center flex-wrap">
         <dynamic-list
+          class="w-full md:w-1/2"
           label="Workspace"
           placeholder="Select"
           bind-list="wsListMapped"
@@ -22,6 +23,7 @@
         ></dynamic-list>
 
         <dynamic-list
+          class="w-full md:w-1/2"
           label="Session"
           placeholder="Switch sessions"
           on-add="store.createSession()"
