@@ -5,10 +5,14 @@ import { useStore } from "@app/store.mjs";
 
 export default function () {
   const store = useStore();
-  const { profile, workspace, workspaceList } = storeToRefs(store);
+  const { profile, workspace, workspaceList, sessionList, sessionId } = storeToRefs(store);
 
   const wsListMapped = computed(() =>
     (workspaceList.value || []).map((ws) => ({ label: ws.name, value: ws.name })),
+  );
+
+  const sessionListMapped = computed(() =>
+    (sessionList.value || []).map((s) => ({ label: s.title || s.id, value: s.id })),
   );
 
   async function onCreateWorkspace() {
@@ -37,7 +41,9 @@ export default function () {
     signIn,
     profile,
     workspace,
+    sessionId,
     wsListMapped,
+    sessionListMapped
     onCreateWorkspace,
     onReloadWorkspaceList,
     onSelectWorkspace,

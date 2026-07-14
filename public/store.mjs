@@ -14,6 +14,7 @@ export const useStore = defineStore("app", function () {
   const [model, setModel] = hook("");
   const [modelList, setModelList] = hook("");
   const [messages, setMessages] = hook([]);
+  const sessionId = computed(() => session.value?.id || null);
 
   function setFileContent(c) {
     if (selectedFile.value) selectedFile.value.content = c;
@@ -184,6 +185,7 @@ export const useStore = defineStore("app", function () {
     loadFileContent,
 
     session,
+    sessionId,
     setSessionById,
     createSession,
     deleteSession,

@@ -4,16 +4,11 @@ import { useStore } from "@app/store.mjs";
 
 export default function () {
   const store = useStore();
-  const { workspace, session, sessionList, model, modelList, messages } = storeToRefs(store);
-
+  const { workspace, session, sessionId, sessionList, model, modelList, messages } = storeToRefs(store);
   const modelSelector = templateRef("modelSelector");
-  const sessionId = computed(() => session.value?.id || null);
   const sending = ref(false);
   const [newMessage, setMessage] = hook("");
   const modelListMapped = computed(() => (modelList.value || []).map((m) => ({ label: m.id, value: m.id })));
-  const sessionListMapped = computed(() =>
-    (sessionList.value || []).map((s) => ({ label: s.title || s.id, value: s.id })),
-  );
 
   async function onSend() {
     const message = newMessage.value;

@@ -32,6 +32,9 @@
       <script setup>
         import { storeToRefs } from "@li3/store";
         import { useStore } from "@app/store.mjs";
+
+        window.addEventListener("unhandledrejection", (event) => console.log(event));
+
         export default function () {
           const store = useStore();
           const { profile } = storeToRefs(store);
