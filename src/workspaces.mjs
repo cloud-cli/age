@@ -104,7 +104,7 @@ async function onReadWorkspace(_req, res, params) {
 
 async function onReadFile(req, res, params, searchParams) {
   const name = sanitize(params.name);
-  const file = searchParams.get(file);
+  const file = searchParams.get('file');
 
   if (!file) {
     res.sendJson("Not found", 404);
