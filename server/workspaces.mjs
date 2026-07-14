@@ -7,6 +7,7 @@ import { getModelList } from "./ollama-api.mjs";
 import { dataDir } from "./env.mjs";
 import { History } from "./history.mjs";
 import { spawn } from "node:child_process";
+import { publish } from "./events.mjs";
 
 const randomName = () =>
   uniqueNamesGenerator({
@@ -349,7 +350,7 @@ async function runAgentLoop(name, sessionId) {
     const agent = spawn("./agents.mjs", [name, sessionId]);
 
     agent.on("exit", () => {
-    reject(new Error("Agent crashed"));
+      reject(new Error("Agent crashed"));
     });
 
     agent.on("close", () => {
@@ -358,6 +359,14 @@ async function runAgentLoop(name, sessionId) {
       }
 
       resolve(sessionId);
+    });
+
+    agent.stdout.on('data', line => {
+      try {
+        const msg = JSON.parse(line.trim());
+        console.log(msg);
+        publish(msg.type, msg.data);
+      } catch { }
     });
 
     agent.send({ event: "run", data: options });

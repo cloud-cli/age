@@ -103,7 +103,7 @@ export async function runAgentLoop(workspace, sessionId) {
       uid: randomUUID(),
     };
     await history.push(message);
-    publish("message", { sessionId, message });
+    process.stdout.write(JSON.stringify({ type: 'message', data: { sessionId, message } }) + '\n');
   }
 
   await addMessage(aiResponse);
