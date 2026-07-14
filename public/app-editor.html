@@ -28,7 +28,7 @@
       const { workspace, files, selectedFile } = storeToRefs(store);
 
       function onSetContent(value) {
-        store.setContent(value);
+        store.setFileContent(value);
       }
 
       async function onSelectFile(file) {
@@ -39,7 +39,7 @@
 
           try {
             const content = await Workspaces.readFile(workspace.value, file.path);
-            store.setContent(content);
+            store.setFileContent(content);
           } finally {
             file.loading = false;
             file.loaded = true;

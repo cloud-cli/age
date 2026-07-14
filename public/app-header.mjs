@@ -1,16 +1,9 @@
-import { ref, computed, onInit, onDestroy, defineProp, defineEvent } from "@li3/web";
+import { computed, onInit } from "@li3/web";
 import { signIn } from "https://auth.api.apphor.de/index.mjs";
 import { storeToRefs } from "@li3/store";
 import { useStore } from "/public/store.mjs";
 
 export default function () {
-  const eventSource = new EventSource("/:events");
-  onDestroy(() => eventSource.close());
-
-  eventSource.onmessage = (e) => {
-    console.log(e.data);
-  };
-
   const store = useStore();
   const { profile, workspace, workspaceList } = storeToRefs(store);
 
@@ -24,7 +17,7 @@ export default function () {
   }
 
   async function onReloadWorkspaceList() {
-    store.updateWorkspaceList();
+    store.reloadWorkspaceList();
   }
 
   async function onRemoveWorkspace() {
@@ -37,7 +30,7 @@ export default function () {
     store.setWorkspace(v);
   }
 
-  onInit(() => store.updateProfile());
+  onInit(() => store.reloadProfile());
 
   return {
     signIn,
