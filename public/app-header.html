@@ -8,18 +8,30 @@
     </button>
 
     <template if="profile">
-      <dynamic-list
-        label="Workspace"
-        placeholder="Select"
-        bind-list="wsListMapped"
-        bind-selected="workspace"
-        on-reload="onReloadWorkspaceList()"
-        on-add="onCreateWorkspace()"
-        on-select="onSelectWorkspace($event.detail)"
-        on-remove="onRemoveWorkspace()"
-        bind-actions="[{ icon: 'trash-2', action: 'remove', label: 'Remove' }]"
-      ></dynamic-list
-    ></template>
+      <div class="flex items-center flex-wrap">
+        <dynamic-list
+          label="Workspace"
+          placeholder="Select"
+          bind-list="wsListMapped"
+          bind-selected="workspace"
+          on-reload="onReloadWorkspaceList()"
+          on-add="onCreateWorkspace()"
+          on-select="onSelectWorkspace($event.detail)"
+          on-remove="onRemoveWorkspace()"
+          bind-actions="[{ icon: 'trash-2', action: 'remove', label: 'Remove' }]"
+        ></dynamic-list>
+
+        <dynamic-list
+          label="Session"
+          placeholder="Switch sessions"
+          on-add="store.createSession()"
+          on-reload="store.reloadSessionList()"
+          on-select="store.setSessionId($event.detail)"
+          bind-selected="session?.id"
+          bind-list="sessionListMapped"
+        ></dynamic-list>
+      </div>
+    </template>
 
     <div class="flex items-center space-x-3">
       <button

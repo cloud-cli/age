@@ -1,16 +1,6 @@
 <template component="app-chat">
-  <section class="flex flex-col bg-zinc-950 border-r border-zinc-800">
+  <section class="flex flex-col bg-zinc-950 border-r border-zinc-800 h-full">
     <div class="flex items-center justify-between px-4 py-2 gap-2" class-hidden="!workspace">
-      <dynamic-list
-        label="Session"
-        placeholder="Switch sessions"
-        on-add="store.createSession()"
-        on-reload="store.reloadSessionList()"
-        on-select="store.setSessionId($event.detail)"
-        bind-selected="session?.id"
-        bind-list="sessionListMapped"
-      ></dynamic-list>
-
       <div class="flex items-center gap-2">
         <button
           type="button"

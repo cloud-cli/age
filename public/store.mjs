@@ -58,18 +58,18 @@ export const useStore = defineStore("app", function () {
 
   async function createWorkspace(nameInput) {
     const { name } = await Workspaces.create(nameInput);
-    await onReloadWorkspaceList();
-    setWorkspace(name);
-    selectFile(null);
-    setFiles([]);
+    await reloadWorkspaceList();
+    await setWorkspace(name);
   }
 
-  async function setWorkspace(id) {
-    workspace.value = id;
+  async function setWorkspace(name) {
+    workspace.value = name;
     setMessages([]);
     setSession(null);
     setSessionList([]);
     setModel("");
+    selectFile(null);
+    setFiles([]);
     await reloadSessionList();
     await reloadFileList();
   }

@@ -33,6 +33,7 @@ export default function () {
   onInit(() => store.reloadProfile());
 
   return {
+    store,
     signIn,
     profile,
     workspace,
