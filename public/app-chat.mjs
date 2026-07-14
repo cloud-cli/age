@@ -4,7 +4,7 @@ import { useStore } from "@app/store.mjs";
 
 export default function () {
   const store = useStore();
-  const { workspace, session, sessionId, sessionList, model, modelList, messages } = storeToRefs(store);
+  const { workspace, session, sessionId, model, modelList, messages } = storeToRefs(store);
   const modelSelector = templateRef("modelSelector");
   const sending = ref(false);
   const [newMessage, setMessage] = hook("");

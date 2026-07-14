@@ -1,4 +1,4 @@
-import { ref, hook } from "@li3/web";
+import { ref, hook, computed } from "@li3/web";
 import { events as authEvents, getProfile, getPropertyNS } from "https://auth.api.apphor.de/index.mjs";
 import { defineStore } from "@li3/store";
 import { Workspaces, Sessions, Models, setKey, events } from "@app/api.mjs";
