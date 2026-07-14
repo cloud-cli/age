@@ -93,7 +93,7 @@ export const useStore = defineStore("app", function () {
   }
 
   async function createSession() {
-    const newSession = await Sessions.create(ws.value);
+    const newSession = await Sessions.create(workspace.value);
     setSessionList(sessionList.value.concat(newSession));
     setSession(newSession);
   }
@@ -108,7 +108,7 @@ export const useStore = defineStore("app", function () {
 
   async function reloadSessionList() {
     if (workspace.value) {
-      setSessionList(await Sessions.list(ws.value));
+      setSessionList(await Sessions.list(workspace.value));
     }
   }
 
