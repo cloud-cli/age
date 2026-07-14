@@ -71,7 +71,6 @@ export default function () {
     modelListMapped,
     onSend,
     onKeyDown,
-    onDeleteSession,
     onDeleteMessage,
     onPullModel,
   };

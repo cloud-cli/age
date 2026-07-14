@@ -103,7 +103,7 @@ async function onReadWorkspace(_req, res, params) {
   res.sendJson(workspaceFiles);
 }
 
-async function onReadFile(req, res, params, searchParams) {
+async function onReadFile(_req, res, params, searchParams) {
   const name = sanitize(params.name);
   const file = searchParams.get("file");
 
@@ -140,15 +140,6 @@ async function onDeleteWorkspace(req, res, params) {
   }
 }
 
-// Read all the JSON files in the workspace history folder and return them as a JSON array of objects with the following structure:
-// [
-//   {
-//     id: string, // uuid of this session
-//     createdAt: string, // the creation date of the file in ISO format
-//     title: string, // the creation date of the file in ISO format
-//     messages: [ { role: string, content: string } ] // the content of the file parsed as JSON
-//   }
-// ]
 async function onReadWorkspaceHistoryList(_req, res, params) {
   const name = sanitize(params.name);
   const workspacePath = join(dataDir, name, "history");
@@ -178,21 +169,6 @@ async function onReadWorkspaceHistoryList(_req, res, params) {
   res.sendJson(json);
 }
 
-// create an empty session file in the workspace history
-// the request body may contain:
-// {
-//   title?: string,
-//   model?: string,
-// }
-//
-// returns a session object:
-// {
-//   id: string, // uuid of this session
-//   model?: string, // optional, specified model to use in this session
-//   title?: string, // session title
-//   createdAt: string, // the creation date of the file
-//   messages: []
-// }
 async function onCreateWorkspaceHistory(req, res, params) {
   const name = sanitize(params.name);
   const uid = randomUUID();
@@ -256,12 +232,9 @@ async function onDeleteWorkspaceHistory(_req, res, params) {
   }
 }
 
-// Handle a message sent to the workspace. The message is expected to be a JSON object with the following structure:
-// { message: string }
 async function onMessage(req, res, params) {
   const name = sanitize(params.name);
   const sessionId = sanitize(params.id);
-  const workspacePath = join(dataDir, name);
   const history = new History(name, sessionId);
 
   if (!history.exists()) {
