@@ -26,7 +26,7 @@
           placeholder="Switch sessions"
           on-add="store.createSession()"
           on-reload="store.reloadSessionList()"
-          on-select="store.setSessionId($event.detail)"
+          on-select="store.setSessionById($event.detail)"
           bind-selected="session?.id"
           bind-list="sessionListMapped"
         ></dynamic-list>
