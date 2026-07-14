@@ -2,7 +2,7 @@
   <div class="flex items-center bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 gap-1">
     <span class="text-[10px] text-zinc-500 font-mono uppercase mr-2 hidden md:block">{{ label || '' }}</span>
     <select
-      class="bg-transparent text-xs text-zinc-300 cursor-pointer"
+      class="bg-transparent text-xs text-zinc-300 cursor-pointer flex-1"
       on-change="onSelect($event.target.value)"
       bind-value="selected"
     >

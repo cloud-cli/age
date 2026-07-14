@@ -1,6 +1,6 @@
 <template component="app-header">
   <header
-    class="h-14 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur px-4 flex items-center justify-between z-10"
+    class="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur px-4 flex items-center justify-between z-10"
   >
     <button class="flex items-center space-x-3" on-click="window.location.reload()">
       <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -8,7 +8,7 @@
     </button>
 
     <template if="profile">
-      <div class="flex items-center flex-wrap">
+      <div class="flex items-center flex-wrap md:flex-nowrap md:space-x-2">
         <dynamic-list
           class="w-full md:w-1/2"
           label="Workspace"
