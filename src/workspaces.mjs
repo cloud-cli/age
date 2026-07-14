@@ -66,7 +66,7 @@ async function onCreateWorkspace(req, res) {
 // the structure is as follows:
 // file: { name: string, path: string, type: "file" }
 // folder: { name: string, path: string, type: "folder", files: [file | folder] }
-async function onReadWorkspace(req, res, params) {
+async function onReadWorkspace(_req, res, params) {
   const name = sanitize(params.name);
   const workspacePath = join(dataDir, name, "files");
 
@@ -87,14 +87,14 @@ async function onReadWorkspace(req, res, params) {
         if (file.isDirectory()) {
           return {
             name: file.name,
-            path: filePath,
+            path: filePath.replace(workspacePath, ''),
             type: "folder",
             files: await readFolder(filePath),
           };
         } else {
           return {
             name: file.name,
-            path: filePath,
+            path: filePath.replace(workspacePath, ''),
             type: "file",
           };
         }
