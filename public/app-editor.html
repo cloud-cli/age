@@ -8,7 +8,15 @@
           bind-value="selectedFile?.content || ''"
           on-change="onSetContent($event.target.value)"
         ></code-editor>
-        <file-tree class="w-1/3" bind-files="files" on-select="onSelectFile($event.detail)"></file-tree>
+
+        <div class="w-1/3 flex flex-col items-stretch space-y-1">
+          <div class="flex items-center justify-end bg-zinc-500/50 border-b gap-1 p-1 text-white">
+            <button on-click="store.addFileToSession()" bind-disabled="!selectedFile" class-text-zinc-500="!selectedFile">
+              <lucide-icon size="14" icon="message-square-plus" title="Add to conversation"></lucide-icon>
+            </button>
+          </div>
+          <file-tree class="flex-1" bind-files="files" on-select="onSelectFile($event.detail)"></file-tree>
+        </div>
       </div>
     </template>
   </div>

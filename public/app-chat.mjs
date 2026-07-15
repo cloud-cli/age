@@ -51,8 +51,6 @@ export default function () {
     await store.pullModel(name);
   }
 
-  onInit(() => store.reloadModelList());
-
   return {
     store,
     workspace,

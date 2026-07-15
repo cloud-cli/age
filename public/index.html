@@ -33,7 +33,7 @@
         import { storeToRefs } from "@li3/store";
         import { useStore } from "@app/store.mjs";
 
-        window.addEventListener("unhandledrejection", (event) => console.log(event));
+        window.addEventListener("unhandledrejection", (event) => console.error(event));
 
         export default function () {
           const store = useStore();
@@ -50,6 +50,6 @@
         load(`https://sodium.static.apphor.de/${x}.html`),
       );
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script async src="https://cdn.tailwindcss.com"></script>
   </body>
 </html>

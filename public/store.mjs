@@ -47,6 +47,19 @@ export const useStore = defineStore("app", function () {
     setFiles(await Workspaces.read(name));
   }
 
+  function addFileToSession() {
+    if (selectedFile.value) {
+      const msg = {
+        role: 'tool',
+        tool_name: 'ReadFile',
+        meta: { uid: crypto.randomUUID() },
+        content: selectedFile.value,
+      }
+
+      setMessages([msg, ...messages.value])
+    }
+  }
+
   async function reloadWorkspaceList() {
     workspaceList.value = await Workspaces.list();
   }
@@ -183,6 +196,7 @@ export const useStore = defineStore("app", function () {
     files,
     setFiles,
     reloadFileList,
+    addFileToSession,
 
     selectedFile,
     selectFile,
