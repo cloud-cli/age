@@ -260,10 +260,30 @@ async function onMessage(req, res, params) {
     return;
   }
 
+  tryAgentLoop(name, sessionId, res);
+}
+
+async function onRetry(req, res, params) {
+  const name = sanitize(params.name);
+  const sessionId = sanitize(params.id);
+  const history = new History(name, sessionId);
+
+  if (!history.exists()) {
+    console.error(`Workspace history not found: ${history.file}`);
+    res.sendJson({ error: `Session ${sessionId} not found` }, 404);
+    return;
+  }
+
+  tryAgentLoop(name, sessionId, res);
+}
+
+async function tryAgentLoop(name, sessionId, res) {
   try {
+    const history = new History(name, sessionId);
     await runAgentLoop(name, sessionId);
     res.sendJson(await history.read());
   } catch (e) {
+    console.log(e);
     res.sendJson({ error: e.message }, 500);
   }
 }
@@ -311,6 +331,7 @@ export default {
 
   "DELETE /workspaces/:name/history/:id/message/:uid": onDeleteMessage,
   "POST /workspaces/:name/history/:id/message": onMessage,
+  "POST /workspaces/:name/history/:id/retry": onRetry,
 
   "GET /workspaces/:name/history/:id": onReadWorkspaceHistory,
   "DELETE /workspaces/:name/history/:id": onDeleteWorkspaceHistory,
@@ -343,7 +364,7 @@ async function runAgentLoop(name, sessionId) {
     agent.stdout.on('data', line => {
       try {
         const msg = JSON.parse(line.trim());
-        console.log(msg);
+        console.log('agent', msg);
         publish(msg.type, msg.data);
       } catch {
         console.log('Failed to parse', line);

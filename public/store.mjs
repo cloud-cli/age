@@ -3,64 +3,9 @@ import { events as authEvents, getProfile, getPropertyNS } from "https://auth.ap
 import { defineStore } from "@li3/store";
 import { Workspaces, Sessions, Models, setKey, events } from "@app/api.mjs";
 
-export const useStore = defineStore("app", function () {
-  const profile = ref(null);
-  const workspaceList = ref([]);
+function useWorkspaces() {
   const workspace = ref("");
-  const [files, setFiles] = hook([]);
-  const [selectedFile, selectFile] = hook(null);
-  const [session, setSession] = hook(null);
-  const sessionList = ref([]);
-  const [model, setModel] = hook("");
-  const [modelList, setModelList] = hook("");
-  const [messages, setMessages] = hook([]);
-  const sessionId = computed(() => session.value?.id || null);
-
-  function setFileContent(c) {
-    if (selectedFile.value) selectedFile.value.content = c;
-  }
-
-  async function loadFileContent() {
-    const content = await Workspaces.readFile(workspace.value, selectedFile.value.path);
-    setFileContent(content);
-  }
-
-  async function setProfile(v) {
-    profile.value = v;
-    setKey(v ? await getPropertyNS("authKey") : "");
-
-    if (v) {
-      await reloadWorkspaceList();
-      await reloadModelList();
-    }
-  }
-
-  async function reloadFileList() {
-    selectFile(null);
-    const name = workspace.value;
-
-    if (!name) {
-      setFiles([]);
-      return;
-    }
-
-    setFiles(await Workspaces.read(name));
-  }
-
-  function addFileToSession() {
-    const file = selectedFile.value;
-
-    if (file) {
-      const msg = {
-        role: 'tool',
-        tool_name: 'ReadFile',
-        meta: { uid: crypto.randomUUID() },
-        content: file.content,
-      };
-
-      setMessages([msg, ...messages.value]);
-    }
-  }
+  const workspaceList = ref([]);
 
   async function reloadWorkspaceList() {
     workspaceList.value = await Workspaces.list();
@@ -93,12 +38,107 @@ export const useStore = defineStore("app", function () {
     await reloadFileList();
   }
 
+  return { workspace, workspaceList, reloadWorkspaceList, removeWorkspace, createWorkspace, setWorkspace };
+}
+
+function useFiles({ workspace }) {
+  const [files, setFiles] = hook([]);
+  const [selectedFile, selectFile] = hook(null);
+
+  function setFileContent(c) {
+    if (selectedFile.value) {
+      selectedFile.value.content = c;
+    }
+  }
+
+  async function loadFileContent() {
+    const content = await Workspaces.readFile(workspace.value, selectedFile.value.path);
+    setFileContent(content);
+  }
+
+  async function reloadFileList() {
+    selectFile(null);
+    const name = workspace.value;
+
+    if (!name) {
+      setFiles([]);
+      return;
+    }
+
+    setFiles(await Workspaces.read(name));
+  }
+
+  function addFileToSession() {
+    const file = selectedFile.value;
+
+    if (file) {
+      const msg = {
+        role: 'tool',
+        tool_name: 'ReadFile',
+        meta: { uid: crypto.randomUUID() },
+        content: file.content,
+      };
+
+      setMessages([msg, ...messages.value]);
+    }
+  }
+
+  return { setFileContent, loadFileContent, reloadFileList, addFileToSession, setFiles, selectedFile, files };
+}
+
+function useMessages({ workspace, session }) {
+  const [messages, setMessages] = hook([]);
+
   async function reloadMessages() {
     if (workspace.value && session.value) {
       const json = await Sessions.read(workspace.value, session.value.id);
       setMessages(json.messages.reverse());
     } else {
       setMessages([]);
+    }
+  }
+
+  async function deleteMessage(uid) {
+    if (workspace.value && session.value) {
+      await Sessions.deleteMessage(workspace.value, session.value.id, uid);
+      await reloadMessages();
+    }
+  }
+
+  async function sendMessage(message) {
+    const b = { role: "user", content: message, meta: { thinking: true } };
+    setMessages([a, b, ...messages.value]);
+    const response = await Sessions.sendMessage(workspace.value, session.value.id, { message, model: model.value });
+    setMessages(response.messages.reverse());
+  }
+
+  async function retryMessage() {
+    const response = await Sessions.retry(workspace.value, session.value.id);
+    setMessages(response.messages.reverse());
+  }
+
+  return { messages, setMessages, reloadMessages, deleteMessage, sendMessage, retryMessage };
+}
+
+export const useStore = defineStore("app", function () {
+  const { workspace, workspaceList, reloadWorkspaceList, removeWorkspace, createWorkspace, setWorkspace } = useWorkspaces();
+  const profile = ref(null);
+  const [session, setSession] = hook(null);
+  const sessionList = ref([]);
+  const [model, setModel] = hook("");
+  const [modelList, setModelList] = hook("");
+  const sessionId = computed(() => session.value?.id || null);
+
+  const { setFileContent, loadFileContent, reloadFileList, addFileToSession, setFiles, selectedFile, files } = useFiles({ workspace });
+  const { messages, setMessages, reloadMessages, deleteMessage, sendMessage, retryMessage } = useMessages({ workspace, session });
+
+  async function setProfile(v) {
+    profile.value = v;
+    setKey(v ? await getPropertyNS("authKey") : "");
+
+    if (v) {
+      await reloadWorkspaceList();
+      await reloadModelList();
     }
   }
 
@@ -152,24 +192,9 @@ export const useStore = defineStore("app", function () {
     }
   }
 
-  async function deleteMessage(uid) {
-    if (workspace.value && session.value) {
-      await Sessions.deleteMessage(workspace.value, session.value.id, uid);
-      await reloadMessages();
-    }
-  }
-
   async function pullModel(name) {
     await Models.pull(name);
     await reloadModelList();
-  }
-
-  async function sendMessage(message) {
-    const a = { role: "assistant", content: "", meta: { thinking: true } };
-    const b = { role: "user", content: message };
-    setMessages([a, b, ...messages.value]);
-    const response = await Sessions.sendMessage(workspace.value, session.value.id, { message, model: model.value });
-    setMessages(response.messages.reverse());
   }
 
   async function reloadProfile() {
@@ -225,6 +250,7 @@ export const useStore = defineStore("app", function () {
     messages,
     setMessages,
     sendMessage,
+    retryMessage,
     deleteMessage,
     reloadMessages,
 
