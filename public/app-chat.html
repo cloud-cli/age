@@ -6,7 +6,7 @@
           type="button"
           on-click="store.reloadMessages()"
           class="text-xs text-zinc-600 font-mono"
-          class-hidden="!session"
+          class-hidden="!sessionId"
         >
           <lucide-icon icon="refresh-cw" size="16" title="Reload"></lucide-icon>
         </button>
@@ -62,44 +62,45 @@
       </template>
     </div>
 
-    <div class="p-3 border-t border-zinc-800 bg-zinc-900/20" class-hidden="!workspace">
-      <div class="relative bg-zinc-900 border border-zinc-800 rounded-xl focus-within:border-zinc-700 transition p-2">
-        <form on-submit.prevent="onSend()">
-          <textarea
-            rows="2"
-            name="prompt"
-            placeholder="Next step"
-            bind-value="newMessage"
-            bind-disabled="sending"
-            class="w-full bg-transparent text-sm placeholder-zinc-600 focus:outline-none resize-none px-2 py-1"
-            class-text-zinc-200="!sending"
-            class-text-zinc-600="sending"
-            on-input.stop="setMessage($event.target.value)"
-            on-keydown="onKeyDown($event)"
-          ></textarea>
-          <div class="flex justify-between items-center p-2 px-1">
-            <dynamic-list
-              label="Model"
-              placeholder="Model to use"
-              bind-list="modelListMapped"
-              bind-selected="model"
-              on-reload="store.reloadModelList()"
-              on-select="store.setModel($event.detail)"
-              on-add="onPullModel()"
-            ></dynamic-list>
+    <div class="p-3 border-t border-zinc-800 bg-zinc-900/20" class-hidden="!workspace || !sessionId">
+      <form
+        class="relative bg-zinc-900 border border-zinc-800 rounded-xl focus-within:border-zinc-700 transition p-2"
+        on-submit.prevent="onSend()"
+      >
+        <textarea
+          rows="2"
+          name="prompt"
+          placeholder="Next step"
+          bind-value="newMessage"
+          bind-disabled="sending"
+          class="w-full bg-transparent text-sm placeholder-zinc-600 focus:outline-none resize-none px-2 py-1"
+          class-text-zinc-200="!sending"
+          class-text-zinc-600="sending"
+          on-input.stop="setMessage($event.target.value)"
+          on-keydown="onKeyDown($event)"
+        ></textarea>
+        <div class="flex justify-between items-center p-2 px-1">
+          <dynamic-list
+            label="Model"
+            placeholder="Model to use"
+            bind-list="modelListMapped"
+            bind-selected="model"
+            on-reload="store.reloadModelList()"
+            on-select="store.setModel($event.detail)"
+            on-add="onPullModel()"
+          ></dynamic-list>
 
-            <button
-              type="submit"
-              class="hover:bg-zinc-200 text-zinc-950 font-semibold text-xs px-3 py-1 rounded-md transition"
-              class-animate-pulse.bg-white.opacity-70="sending"
-              class-bg-zinc-100="!sending && newMessage.trim()"
-              bind-disabled="sending"
-            >
-              <lucide-icon icon="send-horizontal" size="16" title="Send"></lucide-icon>
-            </button>
-          </div>
-        </form>
-      </div>
+          <button
+            type="submit"
+            class="hover:bg-zinc-200 text-zinc-950 font-semibold text-xs px-3 py-1 rounded-md transition"
+            class-animate-pulse.bg-white.opacity-70="sending"
+            class-bg-zinc-100="!sending && newMessage.trim()"
+            bind-disabled="sending"
+          >
+            <lucide-icon icon="send-horizontal" size="16" title="Send"></lucide-icon>
+          </button>
+        </div>
+      </form>
     </div>
   </section>
 
