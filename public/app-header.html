@@ -30,7 +30,7 @@
           on-reload="store.reloadSessionList()"
           on-select="store.setSessionById($event.detail)"
           on-remove="onDeleteSession()"
-          bind-selected="session"
+          bind-selected="sessionId"
           bind-list="sessionListMapped"
           bind-actions="[{ icon: 'trash-2', action: 'remove', label: 'Remove', color: 'text-red-400' }]"
         ></dynamic-list>

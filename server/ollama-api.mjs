@@ -34,5 +34,5 @@ export async function pullModel(model) {
     },
   });
 
-  return await response.json();
+  return response.ok;
 }
