@@ -48,15 +48,17 @@ export const useStore = defineStore("app", function () {
   }
 
   function addFileToSession() {
-    if (selectedFile.value) {
+    const file = selectedFile.value;
+
+    if (file) {
       const msg = {
         role: 'tool',
         tool_name: 'ReadFile',
         meta: { uid: crypto.randomUUID() },
-        content: selectedFile.value,
-      }
+        content: file.content,
+      };
 
-      setMessages([msg, ...messages.value])
+      setMessages([msg, ...messages.value]);
     }
   }
 

@@ -54,6 +54,7 @@ export default function () {
   return {
     store,
     workspace,
+    sessionId,
     messages,
     newMessage,
     setMessage,

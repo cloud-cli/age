@@ -95,7 +95,7 @@
             class="hover:bg-zinc-200 text-zinc-950 font-semibold text-xs px-3 py-1 rounded-md transition"
             class-animate-pulse.bg-white.opacity-70="sending"
             class-bg-zinc-100="!sending && newMessage.trim()"
-            bind-disabled="sending"
+            bind-disabled="sending || (!workspace || !sessionId || !newMessage.trim())"
           >
             <lucide-icon icon="send-horizontal" size="16" title="Send"></lucide-icon>
           </button>
