@@ -1,10 +1,10 @@
-import { ref, hook, computed } from "@li3/web";
+import { ref, hook, computed, watch } from "@li3/web";
 import { events as authEvents, getProfile, getPropertyNS } from "https://auth.api.apphor.de/index.mjs";
 import { defineStore } from "@li3/store";
 import { Workspaces, Sessions, Models, setKey, events } from "@app/api.mjs";
 
 function useWorkspaces() {
-  const workspace = ref("");
+  const [workspace, setWorkspace] = hook("");
   const workspaceList = ref([]);
 
   async function reloadWorkspaceList() {
@@ -24,18 +24,6 @@ function useWorkspaces() {
     const { name } = await Workspaces.create(nameInput);
     await reloadWorkspaceList();
     await setWorkspace(name);
-  }
-
-  async function setWorkspace(name) {
-    workspace.value = name;
-    setMessages([]);
-    setSession(null);
-    setSessionList([]);
-    setModel("");
-    selectFile(null);
-    setFiles([]);
-    await reloadSessionList();
-    await reloadFileList();
   }
 
   return { workspace, workspaceList, reloadWorkspaceList, removeWorkspace, createWorkspace, setWorkspace };
@@ -216,6 +204,17 @@ export const useStore = defineStore("app", function () {
     if (session.value?.id === m.sessionId) {
       setMessages([m.message, ...messages.value]);
     }
+  });
+
+  watch(workspace, async () => {
+    setMessages([]);
+    setSession(null);
+    setSessionList([]);
+    setModel("");
+    selectFile(null);
+    setFiles([]);
+    await reloadSessionList();
+    await reloadFileList();
   });
 
   return {
