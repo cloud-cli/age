@@ -349,7 +349,5 @@ async function runAgentLoop(name, sessionId) {
         console.log('Failed to parse', line);
       }
     });
-
-    agent.send({ event: "run", data: options });
   });
 }

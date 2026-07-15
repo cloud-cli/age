@@ -98,9 +98,7 @@ export async function runAgentLoop(workspace, sessionId) {
   }
 
   async function addMessage(message) {
-    message.meta = {
-      uid: randomUUID(),
-    };
+    message.meta = { uid: randomUUID() };
     await history.push(message);
     process.stdout.write(JSON.stringify({ type: 'message', data: { sessionId, message } }) + '\n');
   }
