@@ -81,7 +81,7 @@ async function onReadWorkspace(_req, res, params) {
 
     const result = await Promise.all(
       files.map(async (file) => {
-        if ([exclude].includes(file.name)) return null;
+        if (exclude.includes(file.name)) return null;
 
         const filePath = join(folderPath, file.name);
         if (file.isDirectory()) {
