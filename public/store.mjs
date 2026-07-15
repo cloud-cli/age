@@ -56,6 +56,13 @@ function useFiles({ workspace }) {
     setFileContent(content);
   }
 
+  async function saveFileContent() {
+    if (selectedFile.value) {
+      const content = selectedFile.value.content;
+      await Workspaces.writeFile(workspace.value, selectedFile.value.path, content);
+    }
+  }
+
   async function reloadFileList() {
     selectFile(null);
     const name = workspace.value;

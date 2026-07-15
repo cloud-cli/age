@@ -129,6 +129,28 @@ async function onReadFile(_req, res, params, searchParams) {
   createReadStream(realPath).pipe(res);
 }
 
+async function onWriteFile(_req, res, params, searchParams) {
+  const name = sanitize(params.name);
+  const file = decodeURIComponent(searchParams.get("file"));
+
+  if (!file) {
+    res.sendJson("Not found", 400);
+    return;
+  }
+
+  const workspacePath = join(dataDir, name, "files");
+  const realPath = join(workspacePath, resolve("/", file));
+  const content = Buffer.concat(await req.toArray());
+
+  try {
+    await writeFile(realPath, content);
+    res.writeHead(202).end();
+  } catch (e) {
+    console.log(e);
+    res.writeHead(500).end();
+  }
+}
+
 async function onDeleteWorkspace(req, res, params) {
   const name = sanitize(params.name);
   const workspacePath = join(dataDir, name);
@@ -322,29 +344,6 @@ async function onModelPull(_req, res, params) {
   res.sendJson(success, success ? 200 : 500);
 }
 
-export default {
-  "GET /models": onModelList,
-  "POST /models/:name": onModelPull,
-
-  "GET /workspaces": onReadWorkspaceList,
-  "POST /workspaces": onCreateWorkspace,
-
-  "DELETE /workspaces/:name/history/:id/message/:uid": onDeleteMessage,
-  "POST /workspaces/:name/history/:id/message": onMessage,
-  "POST /workspaces/:name/history/:id/retry": onRetry,
-
-  "GET /workspaces/:name/history/:id": onReadWorkspaceHistory,
-  "DELETE /workspaces/:name/history/:id": onDeleteWorkspaceHistory,
-
-  "GET /workspaces/:name/history": onReadWorkspaceHistoryList,
-  "POST /workspaces/:name/history": onCreateWorkspaceHistory,
-
-  "GET /workspaces/:name/file": onReadFile,
-
-  "GET /workspaces/:name": onReadWorkspace,
-  "DELETE /workspaces/:name": onDeleteWorkspace,
-};
-
 async function runAgentLoop(name, sessionId) {
   return new Promise((resolve, reject) => {
     const agent = spawn(process.argv0, ["./agents.mjs", name, sessionId]);
@@ -372,3 +371,27 @@ async function runAgentLoop(name, sessionId) {
     });
   });
 }
+
+export default {
+  "GET /models": onModelList,
+  "POST /models/:name": onModelPull,
+
+  "GET /workspaces": onReadWorkspaceList,
+  "POST /workspaces": onCreateWorkspace,
+
+  "DELETE /workspaces/:name/history/:id/message/:uid": onDeleteMessage,
+  "POST /workspaces/:name/history/:id/message": onMessage,
+  "POST /workspaces/:name/history/:id/retry": onRetry,
+
+  "GET /workspaces/:name/history/:id": onReadWorkspaceHistory,
+  "DELETE /workspaces/:name/history/:id": onDeleteWorkspaceHistory,
+
+  "GET /workspaces/:name/history": onReadWorkspaceHistoryList,
+  "POST /workspaces/:name/history": onCreateWorkspaceHistory,
+
+  "GET /workspaces/:name/file": onReadFile,
+  "POST /workspaces/:name/file": onWriteFile,
+
+  "GET /workspaces/:name": onReadWorkspace,
+  "DELETE /workspaces/:name": onDeleteWorkspace,
+};

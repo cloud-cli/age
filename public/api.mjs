@@ -63,6 +63,22 @@ export const Workspaces = {
 
     return res.text();
   },
+
+  async writeFile(name, path, content) {
+    const url = new URL(`/workspaces/${name}/file`, baseUrl);
+    url.searchParams.set("file", path);
+    const res = await fetch(url, {
+      method: 'POST',
+      body: content,
+      ...authHeaders()
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to write workspace file: ${res.status} ${res.statusText}`);
+    }
+
+    return res.ok;
+  }
 };
 
 export const Sessions = {
