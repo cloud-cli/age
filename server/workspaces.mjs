@@ -60,6 +60,10 @@ async function onCreateWorkspace(req, res) {
   }
 }
 
+const exclude = [
+  '.git'
+];
+
 async function onReadWorkspace(_req, res, params) {
   const name = sanitize(params.name);
   const workspacePath = join(dataDir, name, "files");
@@ -77,6 +81,8 @@ async function onReadWorkspace(_req, res, params) {
 
     const result = await Promise.all(
       files.map(async (file) => {
+        if ([exclude].includes(file.name)) return null;
+
         const filePath = join(folderPath, file.name);
         if (file.isDirectory()) {
           return {
@@ -95,7 +101,7 @@ async function onReadWorkspace(_req, res, params) {
       }),
     );
 
-    return result;
+    return result.filter(Boolean);
   }
 
   const workspaceFiles = await readFolder(workspacePath);
