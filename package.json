@@ -6,8 +6,14 @@
     "micro-router": "latest",
     "unique-names-generator": "^4.7.1"
   },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  },
   "peerDependencies": {
-    "@li3/web": "0.x",
-    "@li3/store": "0.x"
+    "@li3/store": "0.x",
+    "@li3/web": "0.x"
+  },
+  "scripts": {
+    "ci": "npx -y typescript"
   }
 }
