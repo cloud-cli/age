@@ -1,7 +1,8 @@
 {
+  "include": ["./**/*.mts"],
+  "exclude": ["./node_modules/", "./server/"],
   "compilerOptions": {
-    "rootDir": ".",
-    "sourceRoot": "./server",
-    "outDir": "./server"
+    "rootDir": "./server-src/",
+    "outDir": "./server/"
   }
 }
