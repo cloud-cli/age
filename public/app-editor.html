@@ -41,14 +41,7 @@
 
       async function onSelectFile(file) {
         store.setSelectedFile(file);
-
-        if (!file.loaded) {
-          try {
-            await store.loadFileContent();
-          } finally {
-            file.loaded = true;
-          }
-        }
+        store.loadFileContent();
       }
 
       return { files, selectedFile, workspace, onSelectFile, onSetContent, store };

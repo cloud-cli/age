@@ -40,10 +40,15 @@ function useFiles({ workspace }) {
   }
 
   async function loadFileContent() {
-    const f = selectedFile.value;
+    const file = selectedFile.value;
 
-    if (f) {
-      f.content = await Workspaces.readFile(workspace.value, f.path);
+    if (!file || file.loaded) { return; }
+
+    try {
+      file.content = await Workspaces.readFile(workspace.value, file.path);
+      file.loaded = true;
+    } finally {
+      file.loaded = true;
     }
   }
 
