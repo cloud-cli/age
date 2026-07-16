@@ -117,7 +117,6 @@ async function onReadWorkspace(req, res, params) {
   } else {
     res.sendJson(workspaceFiles);
   }
-  rawStream.pipe(zlib.createGzip()).pipe(res); //
 }
 
 async function onReadFile(_req, res, params, searchParams) {
