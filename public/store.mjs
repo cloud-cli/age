@@ -86,7 +86,7 @@ function useFiles({ workspace }) {
     }
   }
 
-  return { setFileContent, loadFileContent, reloadFileList, addFileToSession, setFiles, setSelectedFile, files };
+  return { setFileContent, loadFileContent, saveFileContent, reloadFileList, addFileToSession, setFiles, setSelectedFile, files };
 }
 
 function useMessages({ workspace, session }) {
