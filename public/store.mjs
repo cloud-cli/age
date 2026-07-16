@@ -101,8 +101,8 @@ function useMessages({ workspace, session }) {
   }
 
   async function sendMessage(message) {
-    const b = { role: "user", content: message, meta: { thinking: true } };
-    setMessages([a, b, ...messages.value]);
+    const spinner = { role: "user", content: message, meta: { thinking: true } };
+    setMessages([spinner, ...messages.value]);
     const response = await Sessions.sendMessage(workspace.value, session.value.id, { message, model: model.value });
     setMessages(response.messages.reverse());
   }

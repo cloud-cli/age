@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceRoot": "./server",
+    "outDir": "./server"
+  }
+}
