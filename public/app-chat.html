@@ -70,7 +70,7 @@
         <textarea
           rows="2"
           name="prompt"
-          placeholder="Next step"
+          placeholder="Next steps..."
           bind-value="newMessage"
           bind-disabled="sending"
           class="w-full bg-transparent text-sm placeholder-zinc-600 focus:outline-none resize-none px-2 py-1"
@@ -93,9 +93,9 @@
           <div class="flex items-center gap-2">
             <button
               type="submit"
-              class="hover:bg-zinc-200 text-white font-semibold text-xs px-3 py-1 rounded-md transition"
-              class-animate-pulse.bg-white.opacity-70="sending"
-              class-bg-zinc-100="!sending && newMessage.trim()"
+              class="bg-zinc-100 text-black hover:bg-zinc-200 font-semibold text-xs px-3 py-1 rounded-md transition"
+              class-animate-pulse="sending"
+              class-opacity-50="sending || (!workspace || !sessionId || !newMessage.trim())"
               bind-disabled="sending || (!workspace || !sessionId || !newMessage.trim())"
             >
               <lucide-icon icon="send-horizontal" size="16" title="Send"></lucide-icon>

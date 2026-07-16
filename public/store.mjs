@@ -40,8 +40,11 @@ function useFiles({ workspace }) {
   }
 
   async function loadFileContent() {
-    const content = await Workspaces.readFile(workspace.value, selectedFile.value.path);
-    setFileContent(content);
+    const f = selectedFile.value;
+
+    if (f) {
+      f.content = await Workspaces.readFile(workspace.value, f.path);
+    }
   }
 
   async function saveFileContent() {

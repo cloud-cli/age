@@ -12,9 +12,14 @@
         <div class="w-1/3 flex flex-col items-stretch space-y-1 border-l border-zinc-800">
           <div class="flex items-center justify-between bg-zinc-500/50 gap-1 p-1 text-zinc-300">
             <span class="uppercase text-xs font-semi flex-1">Files</span>
-            <button on-click="store.addFileToSession()" bind-disabled="!selectedFile" class-text-zinc-500="!selectedFile">
-              <lucide-icon size="14" icon="message-square-plus" title="Add to conversation"></lucide-icon>
-            </button>
+            <div>
+              <button on-click="store.reloadFileList()">
+                <lucide-icon size="14" icon="refresh-cw" title="Reload"></lucide-icon>
+              </button>
+              <button on-click="store.addFileToSession()" bind-disabled="!selectedFile" class-text-zinc-500="!selectedFile">
+                <lucide-icon size="14" icon="message-square-plus" title="Add to conversation"></lucide-icon>
+              </button>
+            </div>
           </div>
           <file-tree class="flex-1" bind-files="files" on-select="onSelectFile($event.detail)"></file-tree>
         </div>
