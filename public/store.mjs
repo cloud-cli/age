@@ -134,7 +134,7 @@ export const useStore = defineStore("app", function () {
   const sessionId = computed(() => session.value?.id || null);
 
   const { setFileContent, loadFileContent, reloadFileList, addFileToSession, setFiles, selectedFile, setSelectedFile, files } = useFiles({ workspace });
-  const { messages, setMessages, reloadMessages, deleteMessage, sendMessage, retryMessage, model, setModel, pullModel, modelList, setModelList, } = useMessages({ workspace, session });
+  const { messages, setMessages, reloadMessages, deleteMessage, sendMessage, retryMessage, model, setModel, pullModel, modelList, setModelList, reloadModelList } = useMessages({ workspace, session });
 
   async function setProfile(v) {
     profile.value = v;

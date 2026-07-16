@@ -1,0 +1,21 @@
+<template component="app-main">
+  <app-header class="contents"></app-header>
+  <template if="profile">
+    <main class="flex-1 flex overflow-hidden justify-stretch items-stretch">
+      <app-chat class="w-full md:w-1/2"></app-chat>
+      <app-editor class="w-full md:w-1/2"></app-editor>
+    </main>
+  </template>
+  <script setup>
+    import { storeToRefs } from "@li3/store";
+    import { useStore } from "@app/store.mjs";
+
+    window.addEventListener("unhandledrejection", (event) => console.error(event));
+
+    export default function () {
+      const store = useStore();
+      const { profile } = storeToRefs(store);
+      return { profile };
+    }
+  </script>
+</template>
