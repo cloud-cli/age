@@ -41,11 +41,11 @@
                 bind-class="{ 'inline-block.animate-spin': m.meta?.thinking, 'hidden': !m.meta?.thinking }"
               ></lucide-icon>
 
-              <markdown-block
+              <markdown-it
                 bind-src="m.content || m.thinking"
                 class-text-zinc-300="m.thinking"
                 class="block"
-              ></markdown-block>
+              ></markdown-it>
             </div>
           </template>
 

@@ -1,6 +1,6 @@
 import { adjectives, colors, names, uniqueNamesGenerator } from "unique-names-generator";
 import { randomUUID } from "node:crypto";
-import { createGzip } from 'node:zlib';
+import { createGzip } from "node:zlib";
 import { createReadStream, existsSync } from "node:fs";
 import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -61,9 +61,7 @@ async function onCreateWorkspace(req, res) {
   }
 }
 
-const exclude = [
-  '.git'
-];
+const exclude = [".git"];
 
 async function onReadWorkspace(req, res, params) {
   const name = sanitize(params.name);
@@ -106,10 +104,10 @@ async function onReadWorkspace(req, res, params) {
   }
 
   const workspaceFiles = await readFolder(workspacePath);
-  const acceptEncoding = (req.headers['accept-encoding'] || '').includes('gzip');
+  const acceptEncoding = (req.headers["accept-encoding"] || "").includes("gzip");
 
   if (acceptEncoding) {
-    res.writeHead(200, { 'Content-Encoding': 'gzip', 'Content-Type': 'application/json' });
+    res.writeHead(200, { "Content-Encoding": "gzip", "Content-Type": "application/json" });
     const src = createGzip();
     src.pipe(res);
     src.write(JSON.stringify(workspaceFiles));
@@ -136,7 +134,7 @@ async function onReadFile(_req, res, params, searchParams) {
     return;
   }
 
-  res.setHeader('content-type', 'text/plain');
+  res.setHeader("content-type", "text/plain");
   createReadStream(realPath).pipe(res);
 }
 
@@ -287,13 +285,12 @@ async function onMessage(req, res, params) {
   try {
     const { message, model = "", files } = JSON.parse(body);
     await history.push({ role: "user", content: message, meta: { model, files, uid: randomUUID() } });
+    tryAgentLoop(name, sessionId, res);
   } catch (err) {
     console.error(`Failed to add message in session ${history.file}: ${err}`);
     res.sendJson({ error: "Failed to push message" }, 400);
     return;
   }
-
-  tryAgentLoop(name, sessionId, res);
 }
 
 async function onRetry(req, res, params) {
@@ -373,13 +370,13 @@ async function runAgentLoop(name, sessionId) {
       resolve(sessionId);
     });
 
-    agent.stdout.on('data', line => {
+    agent.stdout.on("data", (line) => {
       try {
         const msg = JSON.parse(line.trim());
-        console.log('agent', msg);
+        console.log("agent", msg);
         publish(msg.type, msg.data);
       } catch {
-        console.log('Failed to parse', line);
+        console.log("Failed to parse", line);
       }
     });
   });

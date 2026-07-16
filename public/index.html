@@ -19,6 +19,7 @@
           "@li3/": "https://at-li3.static.apphor.de/",
           "@sodium/": "https://at-sodium.static.apphor.de/",
           "@app/": "./public/"
+          "markdown-it": "https://unpkg.com/markdown-it@14.3.0/index.mjs"
         }
       }
     </script>
@@ -29,7 +30,7 @@
     <script type="module">
       import { load } from "@li3/web";
 
-      const components = ["lucide-icon", "markdown-block", "code-editor", "file-tree"];
+      const components = ["lucide-icon", "code-editor", "file-tree"];
       components.map((x) => load(`https://sodium.static.apphor.de/${x}.html`));
     </script>
     <script type="module" async defer src="https://console.apphor.de/index.mjs"></script>

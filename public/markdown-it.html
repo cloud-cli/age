@@ -1,0 +1,17 @@
+<template component="markdown-it">
+  <div>...</div>
+  <script src>
+    import MarkdownIt from "markdown-it";
+    import { defineProp, getElement } from '@li3/web';
+
+    export default function() {
+      const markdown = new MarkdownIt("default");
+      const source = defineProp('src');
+      const element = getElement();
+
+      watch(source, (v) => {
+        element.innerHTML = markdown.render(v);
+      });
+    }
+  </script>
+</template>
