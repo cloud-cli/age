@@ -10,7 +10,11 @@
       const element = getElement();
 
       watch(source, (v) => {
-        element.innerHTML = markdown.render(v);
+        try {
+          element.innerHTML = markdown.render(v);
+        } catch {
+          element.innerHTML = v;
+        }
       });
     }
   </script>
