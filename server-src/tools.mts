@@ -1,8 +1,8 @@
 import * as FS from "./tools/fs.mjs";
-import * as Git from "./tools/git.mjs";
+import * as Git from "./tools/git.mTs";
 import * as Shell from "./tools/shell.mjs";
 import * as Deploy from "./tools/deploy.mjs";
-import * as Ollama from "./tools/ollama.mjs";
+import * as Ollama from "./tools/ollama.mTs";
 import * as Markdown from "./tools/markdown.mjs";
 
 function parseDescription(fnString: string) {

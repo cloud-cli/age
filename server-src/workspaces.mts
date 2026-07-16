@@ -136,6 +136,7 @@ async function onReadFile(_req, res, params, searchParams) {
     return;
   }
 
+  res.setHeader('content-type', 'text/plain');
   createReadStream(realPath).pipe(res);
 }
 
@@ -358,13 +359,15 @@ async function runAgentLoop(name, sessionId) {
   return new Promise((resolve, reject) => {
     const agent = spawn(process.argv0, ["./agents.mjs", name, sessionId]);
 
-    agent.on("exit", () => {
-      reject(new Error("Agent crashed"));
+    agent.on("exit", (code) => {
+      if (code) {
+        reject(new Error("Agent crashed: " + code));
+      }
     });
 
     agent.on("close", () => {
       if (agent.exitCode > 0) {
-        reject(new Error(agent.exitCode));
+        reject(new Error("Agent crashed :" + agent.exitCode));
       }
 
       resolve(sessionId);
