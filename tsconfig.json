@@ -4,7 +4,10 @@
   "compilerOptions": {
     "rootDir": "./server-src/",
     "outDir": "./server/",
+    "lib": ["ES2025"],
     "types": ["node"],
-    "lib": ["ESNext"]
+    "noImplicitAny": false,
+    "module": "nodenext",
+    "target": "esnext"
   }
 }
