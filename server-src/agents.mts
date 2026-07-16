@@ -8,7 +8,7 @@ import { dataDir } from "./env.mjs";
 import { publish } from "./events.mjs";
 
 const defaultModel = process.env.MODEL;
-const agentSystemPrompt = await readFile(new URL("./system.txt", import.meta.url), "utf8");
+const agentSystemPrompt = await readFile(new URL("../system.txt", import.meta.url), "utf8");
 
 export async function getModelResponse(history: History) {
   const requestBody = {
