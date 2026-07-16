@@ -4,6 +4,11 @@ import { dataDir } from "./env.mjs";
 import { readFile, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 
+export interface Message {
+  role: string;
+  content: string;
+  tool_call: string;
+}
 export class History {
   #cache;
 
@@ -30,7 +35,7 @@ export class History {
     return await this.write(history);
   }
 
-  async getMessagesForModel() {
+  async getMessagesForModel(): Array<Message> {
     const history = await this.read();
     return history.messages.map((x) => {
       const { meta = null, ...rest } = x;

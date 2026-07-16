@@ -27,6 +27,9 @@ importers:
         specifier: ^4.7.1
         version: 4.7.1
     devDependencies:
+      '@types/node':
+        specifier: ^26.1.1
+        version: 26.1.1
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -49,6 +52,9 @@ packages:
   '@li3/web@0.2.32':
     resolution: {integrity: sha512-zipZmbYkpCl35vOp+w1WcaWcHNR2Cr5eeY1iBbUYSZee960hPoEmdbtb6p+9dAz3lLTbD7/lBbi87pS/3XAgUA==}
 
+  '@types/node@26.1.1':
+    resolution: {integrity: sha512-nxAkRSVkN1Y0JC1W8ky/fTfkGsMmcrRsbx+3XoZE+rMOX71kLYTV7fLXpqud1GpbpP5TuffXFqfX7fH2GgZREw==}
+
   micro-router@1.0.2:
     resolution: {integrity: sha512-csECCeAv8kQBWeImJowY1hlbzmwPD6Qp7AwqM5Hi/91VYpIXoYaxqOEldLi+ELkmQqIji/iCYktD5eAJa3r54A==}
 
@@ -62,6 +68,9 @@ packages:
     resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
     engines: {node: '>=14.17'}
     hasBin: true
+
+  undici-types@8.3.0:
+    resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
 
   unique-names-generator@4.7.1:
     resolution: {integrity: sha512-lMx9dX+KRmG8sq6gulYYpKWZc9RlGsgBR6aoO8Qsm3qvkSJ+3rAymr+TnV8EDMrIrwuFJ4kruzMWM/OpYzPoow==}
@@ -85,6 +94,10 @@ snapshots:
 
   '@li3/web@0.2.32': {}
 
+  '@types/node@26.1.1':
+    dependencies:
+      undici-types: 8.3.0
+
   micro-router@1.0.2: {}
 
   safe-buffer@5.2.1: {}
@@ -94,5 +107,7 @@ snapshots:
       safe-buffer: 5.2.1
 
   typescript@6.0.3: {}
+
+  undici-types@8.3.0: {}
 
   unique-names-generator@4.7.1: {}

@@ -3,6 +3,8 @@
   "exclude": ["./node_modules/", "./server/"],
   "compilerOptions": {
     "rootDir": "./server-src/",
-    "outDir": "./server/"
+    "outDir": "./server/",
+    "types": ["node"],
+    "lib": ["ESNext"]
   }
 }

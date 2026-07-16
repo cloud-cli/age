@@ -9,7 +9,7 @@ import { dataDir } from "./env.mjs";
 const defaultModel = process.env.MODEL;
 const agentSystemPrompt = await readFile(new URL("./system.txt", import.meta.url), "utf8");
 
-export async function getModelResponse(history) {
+export async function getModelResponse(history: History) {
   const requestBody = {
     model: (await history.getModel()) || defaultModel,
     tools,
@@ -139,7 +139,7 @@ async function main() {
 
   try {
     await runAgentLoop(workspace, sessionId);
-    process.exit(0);
+    return process.exit(0);
   } catch (e) {
     console.log(e);
     process.exit(1);
