@@ -88,10 +88,6 @@ export async function runAgentLoop(workspace, sessionId) {
       console.error(aiResponse);
       throw new Error("Invalid AI response");
     }
-
-    if (model) {
-      await history.setModel(model);
-    }
   } catch (err) {
     console.error("Error getting model response", err);
     throw err;

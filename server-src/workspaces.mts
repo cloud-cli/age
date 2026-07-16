@@ -139,7 +139,7 @@ async function onReadFile(_req, res, params, searchParams) {
   createReadStream(realPath).pipe(res);
 }
 
-async function onWriteFile(_req, res, params, searchParams) {
+async function onWriteFile(req, res, params, searchParams) {
   const name = sanitize(params.name);
   const file = decodeURIComponent(searchParams.get("file"));
 
@@ -350,7 +350,7 @@ async function onModelList(_req, res) {
 
 async function onModelPull(_req, res, params) {
   const { name } = params;
-  const { success } = await pullModel(name);
+  const success = await pullModel(name);
   res.sendJson(success, success ? 200 : 500);
 }
 

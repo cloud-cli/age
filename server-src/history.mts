@@ -12,7 +12,10 @@ export interface Message {
 export class History {
   #cache;
 
-  constructor(workspaceName, sessionId) {
+  private workspaceName: string;
+  private sessionId: string;
+
+  constructor(workspaceName: string, sessionId: string) {
     Object.assign(this, { workspaceName, sessionId });
     this.#cache = null;
   }
@@ -35,7 +38,7 @@ export class History {
     return await this.write(history);
   }
 
-  async getMessagesForModel(): Array<Message> {
+  async getMessagesForModel(): Promise<Array<Message>> {
     const history = await this.read();
     return history.messages.map((x) => {
       const { meta = null, ...rest } = x;
