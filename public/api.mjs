@@ -1,9 +1,10 @@
 const baseUrl = "https://__BASE_URL__";
 
-let authKey = "";
+let authKey = localStorage.getItem('__key__') || '';
 
 export function setKey(k) {
   authKey = k;
+  localStorage.setItem('__key__', k);
 }
 
 function authHeaders() {
