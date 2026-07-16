@@ -83,6 +83,8 @@ function useFiles({ workspace }) {
 
 function useMessages({ workspace, session }) {
   const [messages, setMessages] = hook([]);
+  const [model, setModel] = hook("");
+  const [modelList, setModelList] = hook("");
 
   async function reloadMessages() {
     if (workspace.value && session.value) {
@@ -112,7 +114,16 @@ function useMessages({ workspace, session }) {
     setMessages(response.messages.reverse());
   }
 
-  return { messages, setMessages, reloadMessages, deleteMessage, sendMessage, retryMessage };
+  async function pullModel(name) {
+    await Models.pull(name);
+    await reloadModelList();
+  }
+
+  async function reloadModelList() {
+    modelList.value = await Models.list();
+  }
+
+  return { messages, setMessages, reloadMessages, deleteMessage, sendMessage, retryMessage, model, setModel, pullModel, reloadModelList, modelList, setModelList };
 }
 
 export const useStore = defineStore("app", function () {
@@ -120,12 +131,10 @@ export const useStore = defineStore("app", function () {
   const profile = ref(null);
   const [session, setSession] = hook(null);
   const sessionList = ref([]);
-  const [model, setModel] = hook("");
-  const [modelList, setModelList] = hook("");
   const sessionId = computed(() => session.value?.id || null);
 
   const { setFileContent, loadFileContent, reloadFileList, addFileToSession, setFiles, selectedFile, setSelectedFile, files } = useFiles({ workspace });
-  const { messages, setMessages, reloadMessages, deleteMessage, sendMessage, retryMessage } = useMessages({ workspace, session });
+  const { messages, setMessages, reloadMessages, deleteMessage, sendMessage, retryMessage, model, setModel, pullModel, modelList, setModelList, } = useMessages({ workspace, session });
 
   async function setProfile(v) {
     profile.value = v;
@@ -135,10 +144,6 @@ export const useStore = defineStore("app", function () {
       await reloadWorkspaceList();
       await reloadModelList();
     }
-  }
-
-  async function reloadModelList() {
-    modelList.value = await Models.list();
   }
 
   async function setSessionById(id) {
@@ -185,11 +190,6 @@ export const useStore = defineStore("app", function () {
     if (list.length && !list.find((s) => s.id === sessionId.value)) {
       setSessionById(firstId);
     }
-  }
-
-  async function pullModel(name) {
-    await Models.pull(name);
-    await reloadModelList();
   }
 
   async function reloadProfile() {
