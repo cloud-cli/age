@@ -140,7 +140,7 @@ export const Sessions = {
     return res.json();
   },
 
-  async sendMessage(name, id) {
+  async retry(name, id) {
     const res = await fetch(new URL(`/workspaces/${name}/history/${id}/retry`, baseUrl), {
       method: "POST",
       ...authHeaders(),
