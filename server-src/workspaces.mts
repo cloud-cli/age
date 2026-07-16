@@ -9,6 +9,7 @@ import { dataDir } from "./env.mjs";
 import { History } from "./history.mjs";
 import { spawn } from "node:child_process";
 import { publish } from "./events.mjs";
+import { runAgentLoop } from "./agents.mjs";
 
 const randomName = () =>
   uniqueNamesGenerator({
@@ -310,7 +311,11 @@ async function onRetry(req, res, params) {
 async function tryAgentLoop(name, sessionId, res) {
   try {
     const history = new History(name, sessionId);
-    await runAgentLoop(name, sessionId);
+    if (process.env.AGENT_WORKERS) {
+      await runAgentLoopSpawned(name, sessionId);
+    } else {
+      await runAgentLoop(name, sessionId);
+    }
     res.sendJson(await history.read());
   } catch (e) {
     console.log(e);
@@ -352,7 +357,7 @@ async function onModelPull(_req, res, params) {
   res.sendJson(success, success ? 200 : 500);
 }
 
-async function runAgentLoop(name, sessionId) {
+async function runAgentLoopSpawned(name, sessionId) {
   return new Promise((resolve, reject) => {
     const agent = spawn(process.argv0, ["./agents.mjs", name, sessionId]);
 
