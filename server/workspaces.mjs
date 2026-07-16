@@ -1,5 +1,6 @@
 import { adjectives, colors, names, uniqueNamesGenerator } from "unique-names-generator";
 import { randomUUID } from "node:crypto";
+import { createGzip } from 'node:zlib';
 import { createReadStream, existsSync } from "node:fs";
 import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -64,7 +65,7 @@ const exclude = [
   '.git'
 ];
 
-async function onReadWorkspace(_req, res, params) {
+async function onReadWorkspace(req, res, params) {
   const name = sanitize(params.name);
   const workspacePath = join(dataDir, name, "files");
 
@@ -105,8 +106,18 @@ async function onReadWorkspace(_req, res, params) {
   }
 
   const workspaceFiles = await readFolder(workspacePath);
+  const acceptEncoding = (req.headers['accept-encoding'] || '').includes('gzip');
 
-  res.sendJson(workspaceFiles);
+  if (acceptEncoding) {
+    res.writeHead(200, { 'Content-Encoding': 'gzip', 'Content-Type': 'application/json' });
+    const src = createGzip();
+    src.pipe(res);
+    src.write(JSON.stringify(workspaceFiles));
+    src.end();
+  } else {
+    res.sendJson(workspaceFiles);
+  }
+  rawStream.pipe(zlib.createGzip()).pipe(res); //
 }
 
 async function onReadFile(_req, res, params, searchParams) {

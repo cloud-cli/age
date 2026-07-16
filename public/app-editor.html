@@ -35,7 +35,7 @@
       }
 
       async function onSelectFile(file) {
-        store.selectFile(file);
+        store.setSelectedFile(file);
 
         if (!file.loaded) {
           try {

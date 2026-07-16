@@ -31,7 +31,7 @@ function useWorkspaces() {
 
 function useFiles({ workspace }) {
   const [files, setFiles] = hook([]);
-  const [selectedFile, selectFile] = hook(null);
+  const [selectedFile, setSelectedFile] = hook(null);
 
   function setFileContent(c) {
     if (selectedFile.value) {
@@ -52,7 +52,7 @@ function useFiles({ workspace }) {
   }
 
   async function reloadFileList() {
-    selectFile(null);
+    setSelectedFile(null);
     const name = workspace.value;
 
     if (!name) {
@@ -78,7 +78,7 @@ function useFiles({ workspace }) {
     }
   }
 
-  return { setFileContent, loadFileContent, reloadFileList, addFileToSession, setFiles, selectedFile, files };
+  return { setFileContent, loadFileContent, reloadFileList, addFileToSession, setFiles, setSelectedFile, files };
 }
 
 function useMessages({ workspace, session }) {
@@ -124,7 +124,7 @@ export const useStore = defineStore("app", function () {
   const [modelList, setModelList] = hook("");
   const sessionId = computed(() => session.value?.id || null);
 
-  const { setFileContent, loadFileContent, reloadFileList, addFileToSession, setFiles, selectedFile, selectFile, files } = useFiles({ workspace });
+  const { setFileContent, loadFileContent, reloadFileList, addFileToSession, setFiles, selectedFile, setSelectedFile, files } = useFiles({ workspace });
   const { messages, setMessages, reloadMessages, deleteMessage, sendMessage, retryMessage } = useMessages({ workspace, session });
 
   async function setProfile(v) {
@@ -211,7 +211,7 @@ export const useStore = defineStore("app", function () {
     setSession(null);
     setSessionList([]);
     setModel("");
-    selectFile(null);
+    setSelectedFile(null);
     setFiles([]);
     await reloadSessionList();
     await reloadFileList();
@@ -232,7 +232,7 @@ export const useStore = defineStore("app", function () {
     addFileToSession,
 
     selectedFile,
-    selectFile,
+    setSelectedFile,
     setFileContent,
     loadFileContent,
 
