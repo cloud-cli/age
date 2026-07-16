@@ -51,7 +51,7 @@
       const selectedIndex = computed(() => (list.value || []).findIndex((o) => o.value === selected.value) || 0);
       const onDispatch = (e, v) => el.dispatchEvent(new CustomEvent(e, { detail: v }));
 
-      return { onAdd, onReload, onSelect, onDispatch };
+      return { onAdd, onReload, onSelect, onDispatch, selectedIndex };
     }
   </script>
 </template>
