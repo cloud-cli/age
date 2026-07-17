@@ -38,6 +38,9 @@ export async function callModel(requestBody) {
         const text = Buffer.concat(chunks).toString("utf8");
         resolve(JSON.parse(text));
       });
+      sh.stdin.setDefaultEncoding('utf-8');
+      sh.stdin.write(body);
+      sh.stdin.end();
     });
   }
 
