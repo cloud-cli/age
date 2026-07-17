@@ -1,16 +1,16 @@
 <template component="markdown-it">
   <div>...</div>
   <script setup>
-    import "https://app.unpkg.com/markdown-it@14.3.0/files/dist/markdown-it.min.js"
+    import "https://unpkg.com/markdown-it@14.3.0/dist/markdown-it.min.js"
     import { defineProp, getElement } from '@li3/web';
 
     export default function() {
-      const markdown = new globalThis.markdownit("default");
       const source = defineProp('src');
       const element = getElement();
 
       watch(source, (v) => {
         try {
+          const markdown = new globalThis.markdownit("default");
           element.innerHTML = markdown.render(v);
         } catch {
           element.innerHTML = v;
