@@ -1,3 +1,5 @@
+import { spawn } from "node:child_process";
+
 const apiUrl = process.env.API_URL;
 const apiKey = process.env.API_KEY;
 
@@ -12,17 +14,43 @@ export async function getModelList() {
 }
 
 export async function callModel(requestBody) {
-  const response = await fetch(new URL("/api/chat", apiUrl), {
+  const url = new URL("/api/chat", apiUrl).toString();
+  const body = JSON.stringify(requestBody);
+
+  if (process.env.OLLAMA_CURL) {
+    return new Promise(async (resolve, reject) => {
+      const auth = apiKey ? ["-H", `Authorization: Bearer ${apiKey}`] : [];
+      const args = auth.concat([
+        "-X",
+        "POST",
+        "-H",
+        "Content-Type: application/json",
+        url,
+        "--data-binary",
+        "@-",
+      ]);
+
+      const sh = spawn("curl", args);
+      const chunks = [];
+      sh.stderr.on("data", (c) => reject(c));
+      sh.stdout.on("data", (c) => chunks.push(c));
+      sh.stdout.on("end", () => {
+        const text = Buffer.concat(chunks).toString("utf8");
+        resolve(JSON.parse(text));
+      });
+    });
+  }
+
+  const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
     },
-    body: JSON.stringify(requestBody),
+    body,
   });
 
-  const body = await response.text();
-  return JSON.parse(body);
+  return JSON.parse(await response.text());
 }
 
 export async function pullModel(model) {
