@@ -44,16 +44,20 @@ export async function callModel(requestBody) {
     });
   }
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
-    },
-    body,
-  });
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+      },
+      body,
+    });
 
-  return JSON.parse(await response.text());
+    return JSON.parse(await response.text());
+  } catch (e) {
+    console.error('Ollama: ' + e);
+  }
 }
 
 export async function pullModel(model) {
