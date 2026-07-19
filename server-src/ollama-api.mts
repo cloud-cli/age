@@ -54,7 +54,9 @@ export async function callModel(requestBody) {
       body,
     });
 
-    return JSON.parse(await response.text());
+    const text = await response.text();
+    console.log('cm', text)
+    return JSON.parse(text);
   } catch (e) {
     console.error('Ollama: ' + e);
   }

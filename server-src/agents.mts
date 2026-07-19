@@ -26,6 +26,7 @@ export async function getModelResponse(history: History) {
   };
 
   const { message } = await callModel(requestBody);
+  console.log('getModelResp', message);
   return message;
 }
 
