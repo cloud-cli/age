@@ -4,6 +4,7 @@ import * as Shell from "./tools/shell.mjs";
 import * as Deploy from "./tools/deploy.mjs";
 import * as Ollama from "./tools/ollama.mjs";
 import * as Markdown from "./tools/markdown.mjs";
+import * as Database from "./tools/db.mjs";
 
 function parseDescription(fnString: string) {
   const lines = fnString.split("\n");
@@ -73,7 +74,7 @@ export const convertFunctionsToTools = (functions) =>
 export const tools: any[] = [];
 export const toolsByName: Record<string, any> = {};
 
-for (const t of [FS, Git, Shell, Deploy, Ollama, Markdown]) {
+for (const t of [FS, Git, Shell, Deploy, Ollama, Markdown, Database]) {
   tools.push(...convertFunctionsToTools(t));
   Object.assign(toolsByName, t);
 }
