@@ -91,7 +91,7 @@ export async function runAgentLoop(workspace, sessionId) {
       throw new Error("Invalid AI response");
     }
   } catch (err) {
-    console.error("Error getting model response", err);
+    console.error("Error getting model response", err.toString('utf8'));
     throw err;
   }
 
