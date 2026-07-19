@@ -318,7 +318,7 @@ async function tryAgentLoop(name, sessionId, res) {
     }
     res.sendJson(await history.read());
   } catch (e) {
-    console.log(e);
+    console.log('Agent loop error', e);
     res.sendJson({ error: e.message }, 500);
   }
 }

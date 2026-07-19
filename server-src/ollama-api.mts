@@ -21,6 +21,7 @@ export async function callModel(requestBody) {
     return new Promise(async (resolve, reject) => {
       const auth = apiKey ? ["-H", `Authorization: Bearer ${apiKey}`] : [];
       const args = auth.concat([
+        "-sSL",
         "-X",
         "POST",
         "-H",
