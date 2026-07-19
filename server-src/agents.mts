@@ -25,9 +25,9 @@ export async function getModelResponse(history: History) {
     ],
   };
 
-  const { message } = await callModel(requestBody);
-  console.log('getModelResp', message);
-  return message;
+  const m = await callModel(requestBody);
+  console.log('getModelResp', m);
+  return m.message;
 }
 
 function convertValue(value, type) {
