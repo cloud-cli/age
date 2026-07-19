@@ -87,7 +87,7 @@ export async function runAgentLoop(workspace, sessionId) {
     aiResponse = await getModelResponse(history);
 
     if (aiResponse.error) {
-      console.error(aiResponse);
+      console.error('aiResp', aiResponse);
       throw new Error("Invalid AI response");
     }
   } catch (err) {
@@ -143,7 +143,7 @@ async function main() {
     await runAgentLoop(workspace, sessionId);
     return process.exit(0);
   } catch (e) {
-    console.log(e);
+    console.log('main c', e);
     process.exit(1);
   }
 }
