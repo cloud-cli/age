@@ -16,7 +16,7 @@ export async function getModelList() {
 export async function callModel(requestBody) {
   const url = new URL("/api/chat", apiUrl).toString();
   const body = JSON.stringify(requestBody);
-
+  console.log('CallModel', url, body)
   if (process.env.OLLAMA_CURL) {
     return new Promise(async (resolve, reject) => {
       const auth = apiKey ? ["-H", `Authorization: Bearer ${apiKey}`] : [];
