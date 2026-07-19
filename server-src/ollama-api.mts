@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { request } from 'https';
 
 const apiUrl = process.env.API_URL;
 const apiKey = process.env.API_KEY;
@@ -14,34 +15,39 @@ export async function getModelList() {
 }
 
 export async function callModel(requestBody) {
-  const url = new URL("/api/chat", apiUrl).toString();
+  const url = new URL("/api/chat", apiUrl);
   const body = JSON.stringify(requestBody);
   console.log('CallModel', url, body)
-  if (process.env.OLLAMA_CURL) {
-    return new Promise(async (resolve, reject) => {
-      const auth = apiKey ? ["-H", `Authorization: Bearer ${apiKey}`] : [];
-      const args = auth.concat([
-        "-sSL",
-        "-X",
-        "POST",
-        "-H",
-        "Content-Type: application/json",
-        url,
-        "--data-binary",
-        "@-",
-      ]);
 
-      const sh = spawn("curl", args);
-      const chunks = [];
-      sh.stderr.on("data", (c) => reject(c));
-      sh.stdout.on("data", (c) => chunks.push(c));
-      sh.stdout.on("end", () => {
-        const text = Buffer.concat(chunks).toString("utf8");
-        resolve(JSON.parse(text));
+  // useful for slower response times. node fetch has a timeout that is hardcoded
+  if (process.env.NODE_HTTP) {
+    return new Promise((resolve, reject) => {
+      const req = request(url, {        
+        method: 'POST',
+        headers: {
+          ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+        }
       });
-      sh.stdin.setDefaultEncoding('utf-8');
-      sh.stdin.write(body);
-      sh.stdin.end();
+
+      req.on('response', res => {
+        const all = [];
+
+        res.on("data", c => all.push(c));
+        res.on('end', () => {
+          const b = Buffer.concat(all).toString('utf8');
+
+          try {
+            resolve(JSON.parse(b));
+          } catch (e) {
+            reject(e);
+          }
+        });
+
+        res.on('error', reject);
+      });
+
+      req.write(body);
+      req.end();
     });
   }
 
@@ -59,7 +65,7 @@ export async function callModel(requestBody) {
     console.log('cm', text)
     return JSON.parse(text);
   } catch (e) {
-    console.error('Ollama: ' , e, JSON.stringify(e));
+    console.error('Ollama: ', e, JSON.stringify(e));
   }
 }
 

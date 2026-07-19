@@ -194,7 +194,7 @@ export const events = new EventTarget();
 
 const source = new EventSource("/:events");
 source.addEventListener("message", (e) => {
-  console.log(e.data);
+  foe.data);
   const { eventName, data } = e.data;
 
   switch (eventName) {
