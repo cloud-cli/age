@@ -1,7 +1,7 @@
 import { exec } from "@cloud-cli/exec";
 import { resolve } from "node:path";
 
-export async function ShellExec(/*string*/ command, /*string[]*/ args) {
+export async function ShellExec(/*string*/ command, /*string[]*/ args, ) {
   "## Runs a shell command in the current workspace with Node child_process.spawn. 'args' must be a list of strings, e.g. ShellExec('ls', ['-la']) ##";
 
   if (typeof args === 'string') {
@@ -11,7 +11,7 @@ export async function ShellExec(/*string*/ command, /*string[]*/ args) {
       console.log(e);
     }
   }
-  
+
   if (typeof command !== 'string' || !Array.isArray(args)) {
     throw new Error("Invalid arguments list: " + JSON.stringify([command, args]));
   }
