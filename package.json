@@ -13,8 +13,5 @@
   "peerDependencies": {
     "@li3/store": "0.x",
     "@li3/web": "0.x"
-  },
-  "scripts": {
-    "ci": "pnpm i && ./node_modules/.bin/tsc || true"
   }
 }
