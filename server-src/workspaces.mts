@@ -4,7 +4,7 @@ import { createGzip } from "node:zlib";
 import { createReadStream, existsSync } from "node:fs";
 import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { getModelList, pullModel } from "./ollama-api.mjs";
+import { getModelList, pullModel } from "./backend/ollama.mjs";
 import { dataDir } from "./env.mjs";
 import { History } from "./history.mjs";
 import { spawn } from "node:child_process";

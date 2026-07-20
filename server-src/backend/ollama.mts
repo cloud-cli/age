@@ -1,4 +1,3 @@
-import { spawn } from "node:child_process";
 import { request } from 'https';
 
 const apiUrl = process.env.API_URL;
@@ -21,7 +20,7 @@ export async function callModel(requestBody) {
 
   // useful for slower response times. node fetch has a timeout that is hardcoded
   return new Promise((resolve, reject) => {
-    const req = request(url, {        
+    const req = request(url, {
       method: 'POST',
       headers: {
         ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
@@ -63,4 +62,24 @@ export async function pullModel(model) {
   });
 
   return response.ok;
+}
+
+export async function getChatTitle(history) {
+  const system = `You are an expert at creating concise, 3-5 word chat session titles. Read the conversation history and generate an accurate, catchy title that captures the main topic. Do not include quotes or conversational filler, just the title.`
+  const res = await fetch(new URL('/api/generate', apiUrl), {
+    method: 'POST',
+    body: JSON.stringify({
+      model: "gemma2:9b",
+      prompt: `Based on this conversation history, generate a title:\n` + history.map(h => `${h.role}: ${h.content}`),
+      system,
+      stream: false
+    })
+  });
+
+  if (res.ok) {
+    return res.json();
+  }
+
+  const text = await res.text();
+  throw new Error(text);
 }

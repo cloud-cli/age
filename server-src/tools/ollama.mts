@@ -1,4 +1,4 @@
-import { callModel, getModelList, pullModel } from "../ollama-api.mjs";
+import { callModel, getModelList, pullModel } from "../backend/ollama.mjs";
 
 export async function OllamaListModels() {
   "##List pulled models##";
@@ -16,7 +16,7 @@ export async function OllamaCallModel(/* string */ model, /* string */ message) 
   return response.message;
 }
 
-export async function OllamaSummarizeText(/*string*/ text) {
+export async function OllamaSummarizeText(/*string*/ model, /*string*/ text) {
   "##Reduce text to a one-page summary##";
   const response = await callModel({
     model,
