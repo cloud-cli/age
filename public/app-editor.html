@@ -2,10 +2,9 @@
   <div class="relative h-full">
     <template if="workspace">
       <div class="flex h-full">
-        <div>
-          <div class="text-xs p-2 truncate"> {{ selectedFile?.path }}</div>
+        <div class="w-2/3">
+          <div class="text-xs p-2 truncate"> {{ selectedFile?.path || '' }}</div>
           <code-editor
-            class="w-2/3"
             bind-value="selectedFile?.content || ''"
             on-change="onSetContent($event.target.value)"
           ></code-editor>
