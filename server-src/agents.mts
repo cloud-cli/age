@@ -129,7 +129,7 @@ export async function runAgentLoop(workspace, sessionId) {
         role: "system",
         content: `Error executing function ${functionName} with args ${JSON.stringify(functionArgs)}:\nError: ${error}`,
       });
-      return;
+      break;
     }
   }
 
