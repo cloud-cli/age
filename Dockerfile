@@ -1,6 +1,6 @@
 FROM ghcr.io/cloud-cli/node:latest
 
-RUN apt update && apt install gradle -y
+RUN apk update && apk add openjdk17 gradle
 
 WORKDIR /home/app
 COPY . .
