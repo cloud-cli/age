@@ -1,4 +1,4 @@
-import createServer from "@cloud-cli/http";
+import { createServer } from "node:http";
 import router from "micro-router";
 import { readFileSync, existsSync, statSync, createReadStream } from "node:fs";
 import { resolve, parse, join } from "node:path";
@@ -19,6 +19,8 @@ const mimeTypes = {
 };
 
 createServer((req, res) => {
+  res.on('finish', () => { console.log(`[${new Date().toISOString().slice(0, 19)}] [${res.statusCode}] ${req.method} ${req.url}`); });
+
   const url = new URL(req.url, "http://a");
   const route = `${req.method} ${url.pathname}`;
 
@@ -77,4 +79,8 @@ createServer((req, res) => {
   }
 
   handler(req, res);
+});
+
+server.listen(Number(process.env.PORT), () => {
+  console.log(`Server started on port ${process.env.PORT}`);
 });

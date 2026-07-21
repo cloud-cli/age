@@ -2,7 +2,6 @@
   "main": "index.mjs",
   "dependencies": {
     "@cloud-cli/exec": "^1.2.1",
-    "@cloud-cli/http": "latest",
     "micro-router": "latest",
     "unique-names-generator": "^4.7.1"
   },

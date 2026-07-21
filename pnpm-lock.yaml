@@ -11,9 +11,6 @@ importers:
       '@cloud-cli/exec':
         specifier: ^1.2.1
         version: 1.2.1
-      '@cloud-cli/http':
-        specifier: latest
-        version: 1.1.0
       '@li3/store':
         specifier: 0.x
         version: 0.2.1
@@ -38,13 +35,6 @@ packages:
 
   '@cloud-cli/exec@1.2.1':
     resolution: {integrity: sha512-ME+k05k2gSarw9w/grPCAkbIVUBtkBvdvLgZxVOl+5c8gIWtqRqJonL3TqS0OQZADQyitfaKdBpysnvkBJZrXw==}
-
-  '@cloud-cli/http@1.1.0':
-    resolution: {integrity: sha512-MekQcRsLlkMjStYqkvkLljdPnMBYmfqqz8SlaOsRisinVgppD1EY44zu3kj/VwmbYAYm4a+FBeRRJ7o5NS6V1A==}
-
-  '@cloud-cli/proxy@1.11.3':
-    resolution: {integrity: sha512-/aZamY6IOMhxIYgI5mL+7qYSrUOmHW4QsBoWYgbu2cOxYpurZndTER420LZaEqypyxCq+7zc2+eH+t+Xg80kkg==}
-    hasBin: true
 
   '@li3/store@0.2.1':
     resolution: {integrity: sha512-GZsze4gCLurb/79mLjZyXFs7MZmtsJG76/CJn3+zs2XKfExRK7S0YSExk8t//8FW8JcHlgNXOF6XibgKz0/uog==}
@@ -81,12 +71,6 @@ snapshots:
   '@cloud-cli/exec@1.2.1':
     dependencies:
       string_decoder: 1.3.0
-
-  '@cloud-cli/http@1.1.0':
-    dependencies:
-      '@cloud-cli/proxy': 1.11.3
-
-  '@cloud-cli/proxy@1.11.3': {}
 
   '@li3/store@0.2.1':
     dependencies:
