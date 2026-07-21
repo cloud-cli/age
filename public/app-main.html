@@ -2,27 +2,27 @@
   <app-header class="contents"></app-header>
   <template if="store.profile">
     <main class="flex-1 flex overflow-hidden justify-stretch items-stretch">
-      <div class="my-1 flex items-center justify-center space-x-2">
+      <div class="my-1 flex items-center justify-center w-full h-4">
         <button
-          on-click="toggleItem('left')"
+          on-click="store.toggleLayout('left')"
           class="inline-block rounded-full p-1"
-          bind-class="{ 'text-blue-400': t.left, 'text-white-400': t.left }"
+          bind-class="{ 'text-blue-400': t.left, 'text-white-400': !t.left }"
           title="Toggle left panel"
         >
           <lucide-icon size="16" icon="panel-left"></lucide-icon>
         </button>
         <button
-          on-click="toggleItem('center')"
+          on-click="store.toggleLayout('center')"
           class="inline-block rounded-full p-1"
-          bind-class="{ 'text-blue-400': t.center, 'text-white-400': t.center }"
+          bind-class="{ 'text-blue-400': t.center, 'text-white-400': !t.center }"
           title="Toggle center panel"
         >
           <lucide-icon size="16" icon="square-menu"></lucide-icon>
         </button>
         <button
-          on-click="toggleItem('right')"
+          on-click="store.toggleLayout('right')"
           class="inline-block rounded-full p-1"
-          bind-class="{ 'text-blue-400': t.right, 'text-white-400': t.right }"
+          bind-class="{ 'text-blue-400': t.right, 'text-white-400': !t.right }"
           title="Toggle right panel"
         >
           <lucide-icon size="16" icon="panel-right"></lucide-icon>
@@ -47,22 +47,18 @@
     </main>
   </template>
   <script setup>
-    import { ref } from "@li3/web";
+    import { computed } from "@li3/web";
     import { useStore } from "@app/store.mjs";
 
-    window.addEventListener("unhandledrejection", (event) => console.error(event));
+    window.addEventListener("unhandledrejection", (event) =>
+      console.error(event),
+    );
 
     export default function () {
       const store = useStore();
-      const t = ref({
-        appChat: true,
-        appEditor: true,
-        appFiles: true,
-      });
+      const t = () => store.layout;
 
-      const toggleItem = (x) => (t.value[x] = !t.value[x]);
-
-      return { t, store };
+      return { store, t };
     }
   </script>
 </template>

@@ -141,6 +141,8 @@ export const useStore = defineStore("app", function () {
   const [expanded, setExpanded] = hook([]);
   const sessionList = ref([]);
   const sessionId = computed(() => session.value?.id || null);
+  const layout = ref({ left: true, center: true, right: true });
+  const toggleLayout = (x) => (layout.value[x] = !layout.value[x]);
 
   const { setFileContent, loadFileContent, reloadFileList, addFileToSession, setFiles, selectedFile, setSelectedFile, files } = useFiles({ workspace });
   const { messages, setMessages, reloadMessages, deleteMessage, sendMessage, retryMessage, model, setModel, pullModel, modelList, setModelList, reloadModelList } = useMessages({ workspace, session });
@@ -225,6 +227,9 @@ export const useStore = defineStore("app", function () {
     setWorkspace,
     createWorkspace,
     removeWorkspace,
+
+    layout,
+    toggleLayout,
 
     workspaceList,
     reloadWorkspaceList,
