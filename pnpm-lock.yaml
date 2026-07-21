@@ -42,8 +42,8 @@ packages:
   '@cloud-cli/http@1.1.0':
     resolution: {integrity: sha512-MekQcRsLlkMjStYqkvkLljdPnMBYmfqqz8SlaOsRisinVgppD1EY44zu3kj/VwmbYAYm4a+FBeRRJ7o5NS6V1A==}
 
-  '@cloud-cli/proxy@1.11.1':
-    resolution: {integrity: sha512-bEKtqrDI2NY/fYHf+WJO1qz3dcnMooiFfh3cbJpDJYba4fPDCl41MxAxHFh2meKv7500JxJ9JhYi5oOoN2mJJQ==}
+  '@cloud-cli/proxy@1.11.3':
+    resolution: {integrity: sha512-/aZamY6IOMhxIYgI5mL+7qYSrUOmHW4QsBoWYgbu2cOxYpurZndTER420LZaEqypyxCq+7zc2+eH+t+Xg80kkg==}
     hasBin: true
 
   '@li3/store@0.2.1':
@@ -84,9 +84,9 @@ snapshots:
 
   '@cloud-cli/http@1.1.0':
     dependencies:
-      '@cloud-cli/proxy': 1.11.1
+      '@cloud-cli/proxy': 1.11.3
 
-  '@cloud-cli/proxy@1.11.1': {}
+  '@cloud-cli/proxy@1.11.3': {}
 
   '@li3/store@0.2.1':
     dependencies:

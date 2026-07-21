@@ -3,7 +3,6 @@ import router from "micro-router";
 import { readFileSync, existsSync, statSync, createReadStream } from "node:fs";
 import { resolve, parse, join } from "node:path";
 import workspaces from "./server/workspaces.mjs";
-import { subscribe } from "./server/events.mjs";
 
 const client = readFileSync("./public/api.mjs", "utf8");
 const indexPage = readFileSync("./public/index.html", "utf8");
@@ -33,18 +32,7 @@ createServer((req, res) => {
     return;
   }
 
-  if (route === "GET /:events") {
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-
-    const detach = () => (res.detached = true);
-    req.on("close", detach);
-    req.on("error", detach);
-    subscribe(res);
-    return;
-  }
-
-  if (route === "GET /index.mjs" || route === 'GET /public/api.mjs') {
+  if (route === "GET /index.mjs" || route === "GET /public/api.mjs") {
     const code = client.replace("__BASE_URL__", String(req.headers["x-forwarded-for"]));
 
     res
@@ -59,7 +47,7 @@ createServer((req, res) => {
   }
 
   if (route.startsWith("GET /public/")) {
-    const fullPath = join(process.cwd(), "public", resolve("/", url.pathname.replace('/public/', '')));
+    const fullPath = join(process.cwd(), "public", resolve("/", url.pathname.replace("/public/", "")));
 
     res.setHeader("Cache-Control", `max-age=${url.searchParams.has("nocache") ? 1 : 86400}, must-revalidate`);
 

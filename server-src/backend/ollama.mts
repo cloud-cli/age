@@ -29,10 +29,11 @@ export async function callModel(requestBody) {
 
     req.on('response', res => {
       const all = [];
+
       res.on("data", c => {
-        console.log(c.toString())
         all.push(c)
       });
+
       res.on('end', () => {
         const b = Buffer.concat(all).toString('utf8');
 

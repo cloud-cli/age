@@ -1,19 +1,11 @@
-/** @type {Set<WeakRef>} */
-const listeners = new Set();
-
-/** @param {import('http').ServerResponse} client */
-export function subscribe(client) {
-  listeners.add(new WeakRef(client));
-}
+const messageHub = process.env.MESSAGE_HUB_URL;
 
 export function publish(eventName, data) {
-  for (const ref of listeners) {
-    const stream = ref.deref();
-    if (!stream || stream.detached || !stream.writable) {
-      listeners.delete(ref);
-      continue;
-    }
+  if (!messageHub) return;
 
-    stream.write(`data: ${JSON.stringify({ eventName, data })}\n\n`);
-  }
+  const url = new URL("/publish", messageHub);
+  fetch(url, {
+    method: "POST",
+    body: JSON.stringify({ eventName, data }),
+  });
 }

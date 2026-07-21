@@ -1,10 +1,10 @@
 const baseUrl = "https://__BASE_URL__";
 
-let authKey = localStorage.getItem('__key__') || '';
+let authKey = localStorage.getItem("__key__") || "";
 
 export function setKey(k) {
   authKey = k;
-  localStorage.setItem('__key__', k);
+  localStorage.setItem("__key__", k);
 }
 
 function authHeaders() {
@@ -69,9 +69,9 @@ export const Workspaces = {
     const url = new URL(`/workspaces/${name}/file`, baseUrl);
     url.searchParams.set("file", path);
     const res = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       body: content,
-      ...authHeaders()
+      ...authHeaders(),
     });
 
     if (!res.ok) {
@@ -79,7 +79,7 @@ export const Workspaces = {
     }
 
     return res.ok;
-  }
+  },
 };
 
 export const Sessions = {
@@ -192,17 +192,37 @@ export const Models = {
 
 export const events = new EventTarget();
 
-const source = new EventSource("/:events");
-source.addEventListener("message", (e) => {
-  const { eventName, data } = e.data;
+async function init() {
+  const env = await (await fetch("/.env")).json();
+  if (!env.MESSAGE_HUB_URL) return;
 
-  switch (eventName) {
-    case "message":
-      const { sessionId, message } = data;
-      events.dispatchEvent(new CustomEvent("message", { detail: { sessionId, message } }));
-      break;
+  function connect() {
+    const ws = new WebSocket(env.MESSAGE_HUB_URL);
 
-    default:
-      events.dispatchEvent(new CustomEvent("event", { detail: data }));
+    ws.onmessage = (e) => {
+      const { eventName, data } = JSON.parse(e.data);
+      events.dispatchEvent(new CustomEvent(eventName, { detail: data }));
+    };
+
+    ws.onclose = () => setTimeout(connect, 1000);
   }
-});
+
+  connect();
+}
+
+init();
+
+// const source = new EventSource("/:events");
+// source.addEventListener("message", (e) => {
+//   const { eventName, data } = e.data;
+
+//   switch (eventName) {
+//     case "message":
+//       const { sessionId, message } = data;
+//       events.dispatchEvent(new CustomEvent("message", { detail: { sessionId, message } }));
+//       break;
+
+//     default:
+//       events.dispatchEvent(new CustomEvent("event", { detail: data }));
+//   }
+// });

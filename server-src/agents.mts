@@ -26,7 +26,6 @@ export async function getModelResponse(history: History) {
   };
 
   const m = await callModel(requestBody);
-  console.log('getModelResp', m);
   return m.message;
 }
 
@@ -98,11 +97,7 @@ export async function runAgentLoop(workspace, sessionId) {
   async function addMessage(message) {
     message.meta = { uid: randomUUID() };
     await history.push(message);
-    if (process.env.AGENT_WORKERS) {
-      process.stdout.write(JSON.stringify({ type: "message", data: { sessionId, message } }) + "\n");
-    } else {
-      publish("message", { sessionId, message });
-    }
+    publish("message", { sessionId, message });
   }
 
   await addMessage(aiResponse);
@@ -143,7 +138,6 @@ async function main() {
     await runAgentLoop(workspace, sessionId);
     return process.exit(0);
   } catch (e) {
-    console.log('main c', e);
     process.exit(1);
   }
 }

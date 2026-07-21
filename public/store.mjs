@@ -1,7 +1,7 @@
 import { ref, hook, computed, watch } from "@li3/web";
 import { events as authEvents, getProfile, getPropertyNS } from "https://auth.api.apphor.de/index.mjs";
 import { defineStore } from "@li3/store";
-import { Workspaces, Sessions, Models, setKey, events } from "@app/api.mjs";
+import { Workspaces, Sessions, Models, setKey } from "@app/api.mjs";
 
 function useWorkspaces() {
   const [workspace, setWorkspace] = hook("");
@@ -207,12 +207,6 @@ export const useStore = defineStore("app", function () {
   }
 
   authEvents.addEventListener("state", (e) => setProfile(e.detail));
-
-  events.addEventListener("message", function onIncomingMessage(m) {
-    if (session.value?.id === m.sessionId) {
-      setMessages([m.message, ...messages.value]);
-    }
-  });
 
   watch(workspace, async () => {
     setMessages([]);

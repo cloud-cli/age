@@ -8,7 +8,7 @@ export async function ShellExec(/*string*/ command, /*string[]*/ args, /*string*
     try {
       args = JSON.parse(args);
     } catch (e) {
-      console.log(e);
+      console.error('ShellExecError', e);
     }
   }
 

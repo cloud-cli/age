@@ -7,9 +7,8 @@ import { join, resolve } from "node:path";
 import { getModelList, pullModel } from "./backend/ollama.mjs";
 import { dataDir } from "./env.mjs";
 import { History } from "./history.mjs";
-import { spawn } from "node:child_process";
-import { publish } from "./events.mjs";
 import { runAgentLoop } from "./agents.mjs";
+import { publish } from "./events.mjs";
 
 const randomName = () =>
   uniqueNamesGenerator({
@@ -155,8 +154,9 @@ async function onWriteFile(req, res, params, searchParams) {
   try {
     await writeFile(realPath, content);
     res.writeHead(202).end();
+    publish("filechange", { workspace: name, path: file });
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.writeHead(500).end();
   }
 }
@@ -311,15 +311,11 @@ async function onRetry(req, res, params) {
 async function tryAgentLoop(name, sessionId, res) {
   try {
     const history = new History(name, sessionId);
-    if (process.env.AGENT_WORKERS) {
-      await runAgentLoopSpawned(name, sessionId);
-    } else {
-      await runAgentLoop(name, sessionId);
-    }
+    await runAgentLoop(name, sessionId);
     res.sendJson(await history.read());
   } catch (e) {
-    console.log('Agent loop error', e);
-    res.sendJson({ error: e.message }, 500);
+    console.log("Agent loop error", e);
+    res.sendJson({ error: String(e) }, 500);
   }
 }
 
@@ -342,7 +338,7 @@ async function onDeleteMessage(_req, res, params) {
 
     res.writeHead(202).end();
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.writeHead(500).end();
   }
 }
@@ -355,36 +351,6 @@ async function onModelPull(_req, res, params) {
   const { name } = params;
   const success = await pullModel(name);
   res.sendJson(success, success ? 200 : 500);
-}
-
-async function runAgentLoopSpawned(name, sessionId) {
-  return new Promise((resolve, reject) => {
-    const agent = spawn(process.argv0, ["./agents.mjs", name, sessionId]);
-
-    agent.on("exit", (code) => {
-      if (code) {
-        reject(new Error("Agent crashed: " + code));
-      }
-    });
-
-    agent.on("close", () => {
-      if (agent.exitCode > 0) {
-        reject(new Error("Agent crashed :" + agent.exitCode));
-      }
-
-      resolve(sessionId);
-    });
-
-    agent.stdout.on("data", (line) => {
-      try {
-        const msg = JSON.parse(line.trim());
-        console.log("agent", msg);
-        publish(msg.type, msg.data);
-      } catch {
-        console.log("Failed to parse", line);
-      }
-    });
-  });
 }
 
 export default {
