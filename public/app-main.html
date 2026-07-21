@@ -1,64 +1,68 @@
 <template component="app-main">
-  <app-header class="contents"></app-header>
-  <template if="store.profile">
-    <main class="flex-1 flex overflow-hidden justify-stretch items-stretch">
-      <div class="my-1 flex items-center justify-center w-full h-4">
-        <button
-          on-click="store.toggleLayout('left')"
-          class="inline-block rounded-full p-1"
-          bind-class="{ 'text-blue-400': t.left, 'text-white-400': !t.left }"
-          title="Toggle left panel"
-        >
-          <lucide-icon size="16" icon="panel-left"></lucide-icon>
-        </button>
-        <button
-          on-click="store.toggleLayout('center')"
-          class="inline-block rounded-full p-1"
-          bind-class="{ 'text-blue-400': t.center, 'text-white-400': !t.center }"
-          title="Toggle center panel"
-        >
-          <lucide-icon size="16" icon="square-menu"></lucide-icon>
-        </button>
-        <button
-          on-click="store.toggleLayout('right')"
-          class="inline-block rounded-full p-1"
-          bind-class="{ 'text-blue-400': t.right, 'text-white-400': !t.right }"
-          title="Toggle right panel"
-        >
-          <lucide-icon size="16" icon="panel-right"></lucide-icon>
-        </button>
-      </div>
+  <div
+    class="bg-zinc-950 text-zinc-100 font-sans h-dvh flex flex-col overflow-hidden"
+  >
+    <app-header></app-header>
+    <template if="$.profile">
+      <main class="flex-1 flex flex-col justify-stretch items-stretch">
+        <div class="flex items-center justify-center w-full h-4">
+          <button
+            on-click="$.toggleLayout('left')"
+            class="inline-block rounded-full p-1"
+            bind-class="{ 'text-blue-400': t.left, 'text-white-400': !t.left }"
+            title="Toggle left panel"
+          >
+            <lucide-icon size="16" icon="panel-left"></lucide-icon>
+          </button>
+          <button
+            on-click="$.toggleLayout('center')"
+            class="inline-block rounded-full p-1"
+            bind-class="{ 'text-blue-400': t.center, 'text-white-400': !t.center }"
+            title="Toggle center panel"
+          >
+            <lucide-icon size="16" icon="square-menu"></lucide-icon>
+          </button>
+          <button
+            on-click="$.toggleLayout('right')"
+            class="inline-block rounded-full p-1"
+            bind-class="{ 'text-blue-400': t.right, 'text-white-400': !t.right }"
+            title="Toggle right panel"
+          >
+            <lucide-icon size="16" icon="panel-right"></lucide-icon>
+          </button>
+        </div>
 
-      <template if="store.workspace">
-        <section class="flex items-center justify-stretch">
-          <app-chat class="h-full w-1/3" class-hidden="!t.left"></app-chat>
 
-          <code-editor
-            class="h-full w-1/3"
-            class-hidden="!t.center || !store.selectedFile"
-            bind-status="store.selectedFile?.path || ''"
-            bind-value="store.selectedFile?.content || ''"
-            on-change="store.setFileContent($event.target.value)"
-          ></code-editor>
+          <section class="flex items-center justify-stretch w-full" class-hidden="!$.workspace">
+            <app-chat class="h-full w-1/3" class-hidden="!t.left"></app-chat>
 
-          <app-files class="h-full w-1/3" class-hidden="!t.right"></app-files>
-        </section>
-      </template>
-    </main>
-  </template>
+            <code-editor
+              class="h-full w-1/3"
+              class-hidden="!t.center || !$.selectedFile"
+              bind-status="$.selectedFile?.path || ''"
+              bind-value="$.selectedFile?.content || ''"
+              on-change="$.setFileContent($event.target.value)"
+            ></code-editor>
+
+            <app-files class="h-full w-1/3" class-hidden="!t.right"></app-files>
+
+        </template>
+      </main>
+    </template>
+  </div>
   <script setup>
     import { computed } from "@li3/web";
-    import { useStore } from "@app/store.mjs";
+    import { useStore } from "@app/$.mjs";
 
     window.addEventListener("unhandledrejection", (event) =>
       console.error(event),
     );
 
     export default function () {
-      const store = useStore();
-      const t = computed(() => store.layout);
+      const $ = useStore();
+      const t = computed(() => $.layout);
 
-      return { store, t };
+      return { $, t };
     }
   </script>
 </template>
