@@ -138,6 +138,7 @@ export const useStore = defineStore("app", function () {
   const { workspace, workspaceList, reloadWorkspaceList, removeWorkspace, createWorkspace, setWorkspace } = useWorkspaces();
   const profile = ref(null);
   const [session, setSession] = hook(null);
+  const [expanded, setExpanded] = hook([]);
   const sessionList = ref([]);
   const sessionId = computed(() => session.value?.id || null);
 
@@ -237,6 +238,9 @@ export const useStore = defineStore("app", function () {
     setSelectedFile,
     setFileContent,
     loadFileContent,
+
+    expanded,
+    setExpanded,
 
     session,
     sessionId,
