@@ -18,7 +18,7 @@ const mimeTypes = {
   ".jpg": "image/jpeg",
 };
 
-createServer((req, res) => {
+const server = createServer((req, res) => {
   res.on('finish', () => { console.log(`[${new Date().toISOString().slice(0, 19)}] [${res.statusCode}] ${req.method} ${req.url}`); });
 
   const url = new URL(req.url, "http://a");
