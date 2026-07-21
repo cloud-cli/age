@@ -1,4 +1,4 @@
-const messageHub = process.env.MESSAGE_HUB_URL;
+const messageHub = process.env.APP_MESSAGE_HUB_URL;
 
 export function publish(eventName, data) {
   if (!messageHub) return;

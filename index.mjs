@@ -18,11 +18,25 @@ const mimeTypes = {
   ".jpg": "image/jpeg",
 };
 
+const env = JSON.stringify(
+  Object.fromEntries(
+    Object.entries(process.env)
+      .filter(([key]) => key.startsWith("APP_"))
+      .map(([key, value]) => [key.replace("APP_", ""), value])
+  )
+);
+
 const server = createServer((req, res) => {
   res.on('finish', () => { console.log(`[${new Date().toISOString().slice(0, 19)}] [${res.statusCode}] ${req.method} ${req.url}`); });
 
   const url = new URL(req.url, "http://a");
   const route = `${req.method} ${url.pathname}`;
+
+  if (route === 'GET /.env') {
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(env);
+    return;
+  };
 
   if (route === "GET /favicon.ico") {
     res.writeHead(404).end();
