@@ -65,7 +65,7 @@ const server = createServer((req, res) => {
   if (route.startsWith("GET /public/")) {
     const fullPath = join(process.cwd(), "public", resolve("/", url.pathname.replace("/public/", "")));
 
-    res.setHeader("Cache-Control", `max-age=${url.searchParams.has("nocache") ? 1 : 86400}, must-revalidate`);
+    res.setHeader("Cache-Control", `max-age=${url.searchParams.has("nocache") ? 1 : 300}, must-revalidate`);
 
     if (existsSync(fullPath) && statSync(fullPath).isFile()) {
       const extension = parse(fullPath).ext.toLowerCase();
