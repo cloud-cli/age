@@ -36,9 +36,10 @@
           <section class="flex items-center justify-stretch w-full" class-hidden="!$.workspace">
             <app-chat class="h-full w-1/3" class-hidden="!t.left"></app-chat>
 
+            <div class="h-full w-1/3" class-hidden="!t.center"></div>
             <code-editor
-              class="h-full w-1/3"
-              class-hidden="!t.center || !$.selectedFile"
+              class="h-full w-full"
+              class-hidden="!$.selectedFile"
               bind-status="$.selectedFile?.path || ''"
               bind-value="$.selectedFile?.content || ''"
               on-change="$.setFileContent($event.target.value)"
@@ -52,7 +53,7 @@
   </div>
   <script setup>
     import { computed } from "@li3/web";
-    import { useStore } from "@app/$.mjs";
+    import { useStore } from "@app/store.mjs";
 
     window.addEventListener("unhandledrejection", (event) =>
       console.error(event),
