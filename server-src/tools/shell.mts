@@ -1,8 +1,8 @@
 import { exec } from "@cloud-cli/exec";
 import { resolve } from "node:path";
 
-export async function ShellExec(/*string*/ command, /*string[]*/ args, ) {
-  "## Runs a shell command in the current workspace with Node child_process.spawn. 'args' must be a list of strings, e.g. ShellExec('ls', ['-la']) ##";
+export async function ShellExec(/*string*/ command, /*string[]*/ args, /*string*/ cwd = '.') {
+  "## Runs a single command in a shell with Node child_process.spawn. 'args' must be a list of strings, e.g. ShellExec('ls', ['-la']). Command chaining and pipes are not allowed. ##";
 
   if (typeof args === 'string') {
     try {
@@ -25,7 +25,7 @@ export async function ShellExec(/*string*/ command, /*string[]*/ args, ) {
     return arg;
   });
 
-  const options = { cwd: this.getPath("."), encoding: "utf8" };
+  const options = { cwd: this.getPath(cwd), encoding: "utf8" };
 
   console.log("ShellExec", command, args);
   const sh = await exec(command, args, options);
