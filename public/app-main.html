@@ -32,11 +32,13 @@
           </button>
         </div>
 
+        <section
+          class="flex items-center justify-stretch w-full"
+          class-hidden="!$.workspace"
+        >
+          <app-chat class="h-full w-1/3" class-hidden="!t.left"></app-chat>
 
-          <section class="flex items-center justify-stretch w-full" class-hidden="!$.workspace">
-            <app-chat class="h-full w-1/3" class-hidden="!t.left"></app-chat>
-
-            <div class="h-full w-1/3" class-hidden="!t.center"></div>
+          <div class="h-full w-1/3" class-hidden="!t.center">
             <code-editor
               class="h-full w-full"
               class-hidden="!$.selectedFile"
@@ -44,10 +46,10 @@
               bind-value="$.selectedFile?.content || ''"
               on-change="$.setFileContent($event.target.value)"
             ></code-editor>
+          </div>
 
-            <app-files class="h-full w-1/3" class-hidden="!t.right"></app-files>
-
-        </template>
+          <app-files class="h-full w-1/3" class-hidden="!t.right"></app-files>
+        </section>
       </main>
     </template>
   </div>
