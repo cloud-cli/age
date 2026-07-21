@@ -56,7 +56,7 @@
 
     export default function () {
       const store = useStore();
-      const t = () => store.layout;
+      const t = computed(() => store.layout);
 
       return { store, t };
     }
