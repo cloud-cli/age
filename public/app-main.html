@@ -36,9 +36,12 @@
           class="flex items-center justify-stretch w-full"
           class-hidden="!$.workspace"
         >
-          <app-chat class="h-full w-1/3" class-hidden="!t.left"></app-chat>
+          <app-chat
+            class="h-full flex-1 w-full max-w-2xl"
+            class-hidden="!t.left"
+          ></app-chat>
 
-          <div class="h-full w-1/3" class-hidden="!t.center">
+          <div class="h-full flex-1 w-full max-w-2xl" class-hidden="!t.center">
             <code-editor
               class="h-full w-full"
               class-hidden="!$.selectedFile"
@@ -48,7 +51,10 @@
             ></code-editor>
           </div>
 
-          <app-files class="h-full w-1/3" class-hidden="!t.right"></app-files>
+          <app-files
+            class="h-full flex-1 w-full max-w-2xl"
+            class-hidden="!t.right"
+          ></app-files>
         </section>
       </main>
     </template>
