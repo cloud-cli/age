@@ -8,4 +8,4 @@ COPY . .
 RUN pnpm i
 RUN ./node_modules/.bin/tsc || true
 RUN chmod +x entrypoint.sh
-ENTRYPOINT [ "/home/app/entrypoint.sh" ]
+ENTRYPOINT ["/home/app/entrypoint.sh"]
