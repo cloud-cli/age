@@ -3,7 +3,7 @@
     <div
       class="flex items-center justify-between bg-zinc-500/50 gap-1 p-1 text-zinc-300"
     >
-      <span class="uppercase text-xs font-semi flex-1">Files</span>
+      <span class="uppercase text-xs font-semi flex-1">{{store.files?.length}} files</span>
       <div>
         <button on-click="store.reloadFileList()">
           <lucide-icon size="14" icon="refresh-cw" title="Reload"></lucide-icon>
