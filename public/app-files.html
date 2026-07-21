@@ -1,0 +1,36 @@
+<template component="app-files">
+  <div class="flex flex-col items-stretch space-y-1 border-l border-zinc-800">
+    <div class="flex items-center justify-between bg-zinc-500/50 gap-1 p-1 text-zinc-300">
+      <span class="uppercase text-xs font-semi flex-1">Files</span>
+      <div>
+        <button on-click="store.reloadFileList()">
+          <lucide-icon size="14" icon="refresh-cw" title="Reload"></lucide-icon>
+        </button>
+        <button
+          on-click="store.addFileToSession()"
+          bind-disabled="!store.selectedFile"
+          class-text-zinc-500="!store.selectedFile"
+        >
+          <lucide-icon size="14" icon="message-square-plus" title="Add to conversation"></lucide-icon>
+        </button>
+      </div>
+    </div>
+    <file-tree class="flex-1" bind-files="store.files" on-select="onSelectFile($event.detail)"></file-tree>
+  </div>
+  <script setup>
+    import { ref, hook, watch, defineProp } from "@li3/web";
+    import { storeToRefs } from "@li3/store";
+    import { useStore } from "@app/store.mjs";
+
+    export default function () {
+      const store = useStore();
+
+      async function onSelectFile(file) {
+        store.setSelectedFile(file);
+        store.loadFileContent();
+      }
+
+      return { onSelectFile, store };
+    }
+  </script>
+</template>
