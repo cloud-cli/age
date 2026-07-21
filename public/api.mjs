@@ -1,6 +1,7 @@
 const baseUrl = "https://__BASE_URL__";
 
 let authKey = localStorage.getItem("__key__") || "";
+const env = {};
 
 export function setKey(k) {
   authKey = k;
@@ -193,11 +194,14 @@ export const Models = {
 export const events = new EventTarget();
 
 async function init() {
-  const env = await (await fetch("/.env")).json();
-  if (!env.MESSAGE_HUB_URL) return;
+  const res = await fetch("/.env");
+  const vars = await res.json();
+  Object.assign(env, vars);
+
+  if (!vars.MESSAGE_HUB_URL) return;
 
   function connect() {
-    const ws = new WebSocket(env.MESSAGE_HUB_URL);
+    const ws = new WebSocket(vars.MESSAGE_HUB_URL);
 
     ws.onmessage = (e) => {
       const { eventName, data } = JSON.parse(e.data);
@@ -211,18 +215,3 @@ async function init() {
 }
 
 init();
-
-// const source = new EventSource("/:events");
-// source.addEventListener("message", (e) => {
-//   const { eventName, data } = e.data;
-
-//   switch (eventName) {
-//     case "message":
-//       const { sessionId, message } = data;
-//       events.dispatchEvent(new CustomEvent("message", { detail: { sessionId, message } }));
-//       break;
-
-//     default:
-//       events.dispatchEvent(new CustomEvent("event", { detail: data }));
-//   }
-// });
