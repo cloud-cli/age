@@ -37,11 +37,20 @@
           class-hidden="!$.workspace"
         >
           <app-chat
-            class="h-full flex-1 w-full max-w-2xl"
-            class-hidden="!t.left"
+            class="h-full flex-1 w-full"
+            bind-class="{
+              hidden: !t.left,
+              'max-w-2xl': t.center && t.right,
+              'max-w-4xl': !t.center || !t.right,
+            }"
           ></app-chat>
 
-          <div class="h-full flex-1 w-full max-w-2xl" class-hidden="!t.center">
+          <div class="h-full flex-1 w-full"
+            bind-class="{
+              hidden: !t.center,
+              'max-w-2xl': t.left && t.right,
+              'max-w-4xl': !t.left || !t.right,
+            }">
             <code-editor
               class="h-full w-full"
               class-hidden="!$.selectedFile"
@@ -52,8 +61,12 @@
           </div>
 
           <app-files
-            class="h-full flex-1 w-full max-w-2xl"
-            class-hidden="!t.right"
+            class="h-full flex-1 w-full"
+            bind-class="{
+              hidden: !t.right,
+              'max-w-2xl': t.left && t.center,
+              'max-w-4xl': !t.left || !t.center,
+            }"
           ></app-files>
         </section>
       </main>
