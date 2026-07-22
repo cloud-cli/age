@@ -28,7 +28,7 @@
       on-expand="$.setExpanded($event.detail)"
       on-select="onSelectFile($event.detail)"
     ></file-tree>
-    <div class="font-bold p-2 text-center text-sm" class-hidden="!($.files?.length)">No files in this workspace.</div>
+    <div class="font-bold p-2 text-center text-sm" class-hidden="$.files?.length">No files in this workspace.</div>
   </div>
   <script setup>
     import { useStore } from "@app/store.mjs";

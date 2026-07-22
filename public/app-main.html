@@ -38,13 +38,13 @@
         >
           <app-chat
             class="h-full flex-1 w-full"
-            style-max-width="`calc(100% / ${[t.left, t.center, t.right].filter(Boolean).length]})`"
+            style-max-width="`calc(100% / ${ [t.left, t.center, t.right].filter(Boolean).length })`"
             class-hidden="!t.left"
           ></app-chat>
 
           <div
             class="h-full flex-1 w-full"
-            style-max-width="`calc(100% / ${[t.left, t.center, t.right].filter(Boolean).length]})`"
+            style-max-width="`calc(100% / ${ [t.left, t.center, t.right].filter(Boolean).length })`"
             class-hidden="!t.center"
           >
             <code-editor
@@ -58,7 +58,7 @@
 
           <app-files
             class="h-full flex-1 w-full"
-            style-max-width="`calc(100% / ${[t.left, t.center, t.right].filter(Boolean).length]})`"
+            style-max-width="`calc(100% / ${ [t.left, t.center, t.right].filter(Boolean).length })`"
             class-hidden="!t.right"
           ></app-files>
         </section>
