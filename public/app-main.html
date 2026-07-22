@@ -38,19 +38,15 @@
         >
           <app-chat
             class="h-full flex-1 w-full"
-            bind-class="{
-              hidden: !t.left,
-              'max-w-2xl': t.center && t.right,
-              'max-w-4xl': !t.center || !t.right,
-            }"
+            style-max-width="`calc(100% / ${[t.left, t.center, t.right].filter(Boolean).length]})`"
+            class-hidden="!t.left"
           ></app-chat>
 
-          <div class="h-full flex-1 w-full"
-            bind-class="{
-              hidden: !t.center,
-              'max-w-2xl': t.left && t.right,
-              'max-w-4xl': !t.left || !t.right,
-            }">
+          <div
+            class="h-full flex-1 w-full"
+            style-max-width="`calc(100% / ${[t.left, t.center, t.right].filter(Boolean).length]})`"
+            class-hidden="!t.center"
+          >
             <code-editor
               class="h-full w-full"
               class-hidden="!$.selectedFile"
@@ -62,11 +58,8 @@
 
           <app-files
             class="h-full flex-1 w-full"
-            bind-class="{
-              hidden: !t.right,
-              'max-w-2xl': t.left && t.center,
-              'max-w-4xl': !t.left || !t.center,
-            }"
+            style-max-width="`calc(100% / ${[t.left, t.center, t.right].filter(Boolean).length]})`"
+            class-hidden="!t.right"
           ></app-files>
         </section>
       </main>

@@ -7,40 +7,41 @@
     }
   </script>
   <div class="relative">
-    <button
-      class="absolute right-0 top-0 m-1 p-1 text-red-400/70 bg-zinc-900 rounded"
-      class-hidden="m.meta?.thinking || !m.meta?.uid"
-      on-click="onDeleteMessage(m.meta?.uid)"
-    >
-      <lucide-icon
-        icon="trash-2"
-        size="16"
-        title="Delete message"
-      ></lucide-icon>
-    </button>
+    <div class="flex items-center justify-between text-xs mb-1">
+      <span
+        class="inline-block rounded p-1 bg-zinc-700 empty:hidden"
+        bind-inner-text="m.meta?.model"
+      ></span>
 
+      <button
+        class="absolute right-0 top-0 m-1 p-1 text-red-400/70 bg-zinc-900 rounded"
+        class-hidden="m.meta?.thinking || !m.meta?.uid"
+        on-click="onDeleteMessage(m.meta?.uid)"
+      >
+        <lucide-icon
+          icon="trash-2"
+          size="16"
+          title="Delete message"
+        ></lucide-icon>
+      </button>
+    </div>
     <template if="m.thinking">
       <collapsed-text
-        class="text-zinc-500 max-w-3xl"
+        class="text-zinc-500"
         bind-content="m.thinking"
       ></collapsed-text>
     </template>
 
     <template if="m.role !== 'tool'">
-      <span
-        class="absolute inline-block rounded p-1 -mt-7 bg-zinc-700 text-xs"
-        class-hidden="!m.meta?.model"
-        >{{ m.meta?.model }}</span
-      >
       <div
-        class="max-w-3xl bg-zinc-900 border border-zinc-700 rounded-md p-2 leading-relaxed relative mx-auto w-full"
+        class="bg-zinc-900 border border-zinc-700 rounded-md p-2 leading-relaxed relative w-full"
       >
         <markdown-it bind-src="m.content" class="block"></markdown-it>
       </div>
     </template>
 
     <template if="message.role === 'tool'">
-      <div class="text-zinc-500">
+      <div class="text-zinc-500 border border-zinc-700 rounded-md p-2">
         <div
           class="text-emerald-500 text-zinc-300 px-1 py-0.5"
           bind-inner-text="m.tool_name"
