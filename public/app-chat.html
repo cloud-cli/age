@@ -6,7 +6,7 @@
       return { m: defineProp("message", { default: () => {} }) };
     }
   </script>
-  <div class="relative">
+  <div class="relative" bind-msg="m">
     <div class="flex items-center justify-between text-xs mb-1">
       <span
         class="inline-block rounded p-1 bg-zinc-700 empty:hidden"
@@ -32,7 +32,7 @@
       ></collapsed-text>
     </template>
 
-    <template if="m.role !== 'tool'">
+    <template if="m.role !== 'tool' && !m.thinking">
       <div
         class="bg-zinc-900 border border-zinc-700 rounded-md p-2 leading-relaxed relative w-full"
       >
@@ -44,7 +44,7 @@
       <div class="text-zinc-500 border border-zinc-700 rounded-md p-2">
         <div
           class="text-emerald-500 text-zinc-300 px-1 py-0.5"
-          bind-inner-text="m.tool_name"
+          bind-inner-text="m.tool_name || ''"
         ></div>
         <collapsed-text bind-content="m.content"></collapsed-text>
       </div>
