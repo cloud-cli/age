@@ -3,7 +3,7 @@
     import { defineProp } from "@li3/web";
 
     export default function () {
-      return { m: defineProp("message") };
+      return { m: defineProp("message", { default: () => {} }) };
     }
   </script>
   <div class="relative">
@@ -21,7 +21,7 @@
 
     <template if="m.thinking">
       <collapsed-text
-        class="text-zinc-300"
+        class="text-zinc-500 max-w-3xl"
         bind-content="m.thinking"
       ></collapsed-text>
     </template>
@@ -42,8 +42,8 @@
     <template if="message.role === 'tool'">
       <div class="text-zinc-500">
         <div
-          class="text-emerald-500 text-zinc-300 ml-1 px-1 py-0.5"
-          bind-inner-text="m.toll_name"
+          class="text-emerald-500 text-zinc-300 px-1 py-0.5"
+          bind-inner-text="m.tool_name"
         ></div>
         <collapsed-text bind-content="m.content"></collapsed-text>
       </div>
