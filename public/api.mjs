@@ -210,8 +210,8 @@ async function init() {
     const ws = new WebSocket(new URL('/agents', vars.MESSAGE_HUB_URL));
 
     ws.onmessage = async (e) => {
-      const text = await e.data.text();
-      const { eventName, data } = JSON.parse(text);
+      const json = typeof e.data !== 'string' ? await e.data.text() : e.data;
+      const { eventName, data } = JSON.parse(json);
       events.dispatchEvent(new CustomEvent(eventName, { detail: data }));
     };
 
