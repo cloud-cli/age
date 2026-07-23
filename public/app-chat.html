@@ -21,18 +21,18 @@
     </button>
   </div>
 
-  <div class="relative space-y-2 overflow-auto" class-border-l.border-zinc-600.pl-4.py-2="m.role === 'assistant'" bind-msg="m">
-    <collapsed-text
-      v-if="m.thinking"
-      class="text-zinc-400 w-full block"
-      bind-content="m.thinking || ''"
-    ></collapsed-text>
+  <div
+    class="relative space-y-2 overflow-auto"
+    class-border-l.border-zinc-600.pl-4.py-2="m.role === 'assistant'"
+    bind-msg="m"
+  >
+    <template if="m.thinking">
+      <collapsed-text class="text-zinc-400 w-full block" bind-content="m.thinking || ''"></collapsed-text
+    ></template>
 
-    <markdown-it
-      v-if="m.content"
-      bind-src="m.content"
-      class="bg-zinc-900 rounded-md text-white p-1 w-full block"
-    ></markdown-it>
+    <template if="m.content">
+      <markdown-it bind-src="m.content" class="bg-zinc-900 rounded-md text-white p-1 w-full block"></markdown-it>
+    </template>
 
     <template if="message.role === 'tool'">
       <div class="text-emerald-500 px-1 py-0.5" bind-inner-text="m.tool_name || ''"></div>
