@@ -124,14 +124,12 @@ function useMessages({ workspace, session }) {
   }
 
   async function sendMessage(message) {
-    const spinner = { role: 'user', content: message, meta: {} };
     const response = await Sessions.sendMessage(workspace.value, session.value.id, { message, model: model.value });
     setMessages([response, ...messages.value]);
   }
 
   async function retryMessage() {
-    const response = await Sessions.retry(workspace.value, session.value.id);
-    setMessages(response.messages.reverse());
+    Sessions.retry(workspace.value, session.value.id);
   }
 
   async function pullModel(name) {
@@ -145,7 +143,7 @@ function useMessages({ workspace, session }) {
 
   events.addEventListener('message', (e) => {
     const { sessionId, message } = e.detail;
-    if (session.value === sessionId) {
+    if (session.value?.id === sessionId) {
       messages.unshift(message);
     }
   });
