@@ -6,7 +6,7 @@
       return { m: defineProp('message', { default: () => {} }) };
     }
   </script>
-  <div class="relative" bind-msg="m">
+  <div class="relative" class-border-l.border-zinc-600.pl-4.pb-4="m.role === 'assistant'" bind-msg="m">
     <div class="flex items-center justify-between text-xs mb-1">
       <div>
         <span class="inline-block rounded p-1 bg-zinc-700 empty:hidden" bind-inner-text="m.meta?.model || ''"></span>
@@ -23,7 +23,7 @@
 
     <collapsed-text
       v-if="m.thinking"
-      class="bg-zinc-900 rounded-md text-zinc-400 p-1 w-full block"
+      class="text-zinc-400 w-full block"
       bind-content="m.thinking || ''"
     ></collapsed-text>
 
