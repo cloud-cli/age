@@ -1,11 +1,6 @@
 <template component="dynamic-list">
-  <div
-    class="flex items-center bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 gap-1"
-  >
-    <span
-      class="text-[10px] text-zinc-500 font-mono uppercase mr-2 hidden md:block"
-      >{{ label || '' }}</span
-    >
+  <div class="flex items-center bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 gap-1">
+    <span class="text-[10px] text-zinc-500 font-mono uppercase mr-2 hidden md:block">{{ label || '' }}</span>
     <select
       class="bg-transparent text-xs text-zinc-300 cursor-pointer flex-1"
       on-change="onSelect($event.target.value)"
@@ -29,11 +24,7 @@
       ></lucide-icon>
     </button>
     <template for="b of actions">
-      <button
-        type="button"
-        on-click="onDispatch(b.action, b.data)"
-        class="text-xs text-zinc-600"
-      >
+      <button type="button" on-click="onDispatch(b.action, b.data)" class="text-xs text-zinc-600">
         <lucide-icon
           bind-icon="b.icon"
           size="16"
@@ -44,19 +35,19 @@
     </template>
   </div>
   <script setup>
-    import { defineProp, getElement, defineEvent, computed } from "@li3/web";
+    import { defineProp, getElement, defineEvent, computed } from '@li3/web';
 
     export default function () {
       const el = getElement();
-      const list = defineProp("list");
-      const label = defineProp("label");
-      const selected = defineProp("selected");
-      const placeholder = defineProp("placeholder");
-      const spinning = defineProp("spinning");
-      const onAdd = defineEvent("add");
-      const onReload = defineEvent("reload");
-      const onSelect = defineEvent("select");
-      const actions = defineProp("actions");
+      const list = defineProp('list');
+      const label = defineProp('label');
+      const selected = defineProp('selected');
+      const placeholder = defineProp('placeholder');
+      const spinning = defineProp('spinning');
+      const onAdd = defineEvent('add');
+      const onReload = defineEvent('reload');
+      const onSelect = defineEvent('select');
+      const actions = defineProp('actions');
       const selectedIndex = computed(() => {
         const options = list.value;
 
@@ -72,8 +63,7 @@
         return 0;
       });
 
-      const onDispatch = (e, v) =>
-        el.dispatchEvent(new CustomEvent(e, { detail: v }));
+      const onDispatch = (e, v) => el.dispatchEvent(new CustomEvent(e, { detail: v }));
 
       return { onAdd, onReload, onSelect, onDispatch, selectedIndex };
     }

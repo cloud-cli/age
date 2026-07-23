@@ -1,71 +1,46 @@
 <template component="chat-message">
   <script setup>
-    import { defineProp } from "@li3/web";
+    import { defineProp } from '@li3/web';
 
     export default function () {
-      return { m: defineProp("message", { default: () => {} }) };
+      return { m: defineProp('message', { default: () => {} }) };
     }
   </script>
   <div class="relative" bind-msg="m">
     <div class="flex items-center justify-between text-xs mb-1">
-      <span
-        class="inline-block rounded p-1 bg-zinc-700 empty:hidden"
-        bind-inner-text="m.meta?.model || ''"
-      ></span>
+      <span class="inline-block rounded p-1 bg-zinc-700 empty:hidden" bind-inner-text="m.meta?.model || ''"></span>
 
       <button
-        class="absolute right-0 top-0 m-1 p-1 text-red-400/70 bg-zinc-900 rounded"
+        class="text-red-400/70"
         class-hidden="m.meta?.thinking || !m.meta?.uid"
         on-click="onDeleteMessage(m.meta?.uid)"
       >
-        <lucide-icon
-          icon="trash-2"
-          size="16"
-          title="Delete message"
-        ></lucide-icon>
+        <lucide-icon icon="trash-2" size="16" title="Delete message"></lucide-icon>
       </button>
     </div>
-    <template if="m.thinking">
-      <collapsed-text
-        class="text-zinc-500"
-        bind-content="m.thinking"
-      ></collapsed-text>
-    </template>
 
-    <template if="m.role !== 'tool' && !m.thinking">
-      <div
-        class="bg-zinc-900 border border-zinc-700 rounded-md p-2 leading-relaxed relative w-full"
-      >
-        <markdown-it bind-src="m.content" class="block"></markdown-it>
-      </div>
-    </template>
+    <collapsed-text v-if="m.thinking" class="text-zinc-200">{{ m.thinking }}</collapsed-text>
+
+    <div v-if="m.role !== 'tool' && !m.thinking" class="bg-zinc-900 border border-zinc-700 rounded-md p-2 leading-relaxed relative w-full">
+      <markdown-it bind-src="m.content" class="block"></markdown-it>
+    </div>
 
     <template if="message.role === 'tool'">
-      <div class="text-zinc-500 border border-zinc-700 rounded-md p-2">
-        <div
-          class="text-emerald-500 text-zinc-300 px-1 py-0.5"
-          bind-inner-text="m.tool_name || ''"
-        ></div>
-        <collapsed-text bind-content="m.content"></collapsed-text>
-      </div>
+      <div class="text-emerald-500 px-1 py-0.5" bind-inner-text="m.tool_name || ''"></div>
+      <collapsed-text class="text-zinc-500">{{ m.content }}</collapsed-text>
     </template>
   </div>
 </template>
 
 <template component="app-chat">
   <section class="flex flex-col bg-zinc-950 border-r border-zinc-800 h-full">
-    <div
-      class="flex-1 overflow-y-auto p-4 font-mono text-xs flex flex-col-reverse gap-2"
-    >
+    <div class="flex-1 overflow-y-auto p-4 font-mono text-xs flex flex-col-reverse gap-2">
       <template for="m of messages">
         <chat-message bind-message="m"></chat-message>
       </template>
     </div>
 
-    <div
-      class="p-3 border-t border-zinc-800 bg-zinc-900/20"
-      class-hidden="!workspace || !sessionId"
-    >
+    <div class="p-3 border-t border-zinc-800 bg-zinc-900/20" class-hidden="!workspace || !sessionId">
       <form
         class="relative bg-zinc-900 border border-zinc-800 rounded-xl focus-within:border-zinc-700 transition p-2"
         on-submit.prevent="onSend()"
@@ -101,11 +76,7 @@
               class-opacity-50="sending || (!workspace || !sessionId || !newMessage.trim())"
               bind-disabled="sending || (!workspace || !sessionId || !newMessage.trim())"
             >
-              <lucide-icon
-                icon="send-horizontal"
-                size="24"
-                title="Send"
-              ></lucide-icon>
+              <lucide-icon icon="send-horizontal" size="24" title="Send"></lucide-icon>
             </button>
 
             <button
@@ -114,11 +85,7 @@
               class="text-xs text-zinc-600 font-mono"
               class-hidden="!sessionId"
             >
-              <lucide-icon
-                icon="list-restart"
-                size="24"
-                title="Retry"
-              ></lucide-icon>
+              <lucide-icon icon="list-restart" size="24" title="Retry"></lucide-icon>
             </button>
 
             <button
@@ -127,11 +94,7 @@
               class="text-xs text-zinc-600 font-mono"
               class-hidden="!sessionId"
             >
-              <lucide-icon
-                icon="refresh-cw"
-                size="24"
-                title="Reload"
-              ></lucide-icon>
+              <lucide-icon icon="refresh-cw" size="24" title="Reload"></lucide-icon>
             </button>
           </div>
         </div>

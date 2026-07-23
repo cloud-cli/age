@@ -28,9 +28,12 @@
     <app-main></app-main>
 
     <script type="module">
-      import { load } from "@li3/web";
+      import { load } from '@li3/web';
+      import { useVue } from '@li3/use';
 
-      const components = ["lucide-icon", "code-editor", "file-tree"];
+      useVue();
+
+      const components = ['lucide-icon', 'code-editor', 'file-tree'];
       components.map((x) => load(`https://sodium.static.apphor.de/${x}.html`));
     </script>
     <script type="module" async defer src="https://console.apphor.de/index.mjs"></script>
