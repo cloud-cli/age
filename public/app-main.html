@@ -1,10 +1,10 @@
 <template component="app-main">
   <div
-    class="bg-zinc-950 text-zinc-100 font-sans h-dvh flex flex-col overflow-hidden"
+    class="bg-zinc-950 text-zinc-100 font-sans h-dvh"
   >
-    <app-header></app-header>
+    <app-header class="absolute h-12 w-full"></app-header>
     <template if="$.profile">
-      <main class="flex-1 flex flex-col justify-stretch items-stretch">
+      <main class="flex-1 flex flex-col justify-stretch items-stretch h-dvh pt-12 overflow-hidden">
         <div class="flex items-center justify-center w-full h-4">
           <button
             on-click="$.toggleLayout('left')"
@@ -32,7 +32,7 @@
           </button>
         </div>
 
-        <section
+        <div
           class="flex items-center justify-stretch w-full h-full"
           class-hidden="!$.workspace"
         >
@@ -61,7 +61,7 @@
             style-max-width="`calc(100% / ${ [t.left, t.center, t.right].filter(Boolean).length })`"
             class-hidden="!t.right"
           ></app-files>
-        </section>
+        </div>
       </main>
     </template>
   </div>
