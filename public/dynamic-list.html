@@ -63,8 +63,10 @@
         if (options) {
           const index = options.findIndex((o) => o.value === selected.value);
           if (index !== -1) {
-            return index + 1; // index plus empty placeholder at the top
+            return index;
           }
+
+          return 0;
         }
 
         return 0;
