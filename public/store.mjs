@@ -1,10 +1,11 @@
-import { ref, hook, computed, watch } from "@li3/web";
-import { events as authEvents, getProfile, getPropertyNS } from "https://auth.api.apphor.de/index.mjs";
-import { defineStore } from "@li3/store";
-import { Workspaces, Sessions, Models, setKey } from "@app/api.mjs";
+import { ref, hook, computed, watch } from '@li3/web';
+import { events as authEvents, getProfile, getPropertyNS } from 'https://auth.api.apphor.de/index.mjs';
+import { defineStore } from '@li3/store';
+import { Workspaces, Sessions, Models, setKey } from '@app/api.mjs';
+import { events } from './api.mjs';
 
 function useWorkspaces() {
-  const [workspace, setWorkspace] = hook("");
+  const [workspace, setWorkspace] = hook('');
   const workspaceList = ref([]);
 
   async function reloadWorkspaceList() {
@@ -15,7 +16,7 @@ function useWorkspaces() {
     if (!workspace.value) return;
 
     const name = workspace.value;
-    setWorkspace("");
+    setWorkspace('');
     await Workspaces.delete(name);
     await reloadWorkspaceList();
   }
@@ -42,7 +43,9 @@ function useFiles({ workspace }) {
   async function loadFileContent() {
     const file = selectedFile.value;
 
-    if (!file || file.loaded) { return; }
+    if (!file || file.loaded) {
+      return;
+    }
 
     try {
       file.content = await Workspaces.readFile(workspace.value, file.path);
@@ -86,13 +89,23 @@ function useFiles({ workspace }) {
     }
   }
 
-  return { setFileContent, loadFileContent, saveFileContent, reloadFileList, addFileToSession, setFiles, selectedFile, setSelectedFile, files };
+  return {
+    setFileContent,
+    loadFileContent,
+    saveFileContent,
+    reloadFileList,
+    addFileToSession,
+    setFiles,
+    selectedFile,
+    setSelectedFile,
+    files,
+  };
 }
 
 function useMessages({ workspace, session }) {
   const [messages, setMessages] = hook([]);
-  const [model, setModel] = hook("");
-  const [modelList, setModelList] = hook("");
+  const [model, setModel] = hook('');
+  const [modelList, setModelList] = hook('');
 
   async function reloadMessages() {
     if (workspace.value && session.value) {
@@ -111,10 +124,9 @@ function useMessages({ workspace, session }) {
   }
 
   async function sendMessage(message) {
-    const spinner = { role: "user", content: message, meta: { thinking: true } };
-    setMessages([spinner, ...messages.value]);
+    const spinner = { role: 'user', content: message, meta: {} };
     const response = await Sessions.sendMessage(workspace.value, session.value.id, { message, model: model.value });
-    setMessages(response.messages.reverse());
+    setMessages([response, ...messages.value]);
   }
 
   async function retryMessage() {
@@ -131,11 +143,32 @@ function useMessages({ workspace, session }) {
     modelList.value = await Models.list();
   }
 
-  return { messages, setMessages, reloadMessages, deleteMessage, sendMessage, retryMessage, model, setModel, pullModel, reloadModelList, modelList, setModelList };
+  events.addEventListener('message', (e) => {
+    const { sessionId, message } = e.detail;
+    if (session.value === sessionId) {
+      messages.unshift(message);
+    }
+  });
+
+  return {
+    messages,
+    setMessages,
+    reloadMessages,
+    deleteMessage,
+    sendMessage,
+    retryMessage,
+    model,
+    setModel,
+    pullModel,
+    reloadModelList,
+    modelList,
+    setModelList,
+  };
 }
 
-export const useStore = defineStore("app", function () {
-  const { workspace, workspaceList, reloadWorkspaceList, removeWorkspace, createWorkspace, setWorkspace } = useWorkspaces();
+export const useStore = defineStore('app', function () {
+  const { workspace, workspaceList, reloadWorkspaceList, removeWorkspace, createWorkspace, setWorkspace } =
+    useWorkspaces();
   const profile = ref(null);
   const [session, setSession] = hook(null);
   const [expanded, setExpanded] = hook([]);
@@ -144,12 +177,34 @@ export const useStore = defineStore("app", function () {
   const layout = ref({ left: true, center: true, right: true });
   const toggleLayout = (x) => (layout.value[x] = !layout.value[x]);
 
-  const { setFileContent, loadFileContent, reloadFileList, addFileToSession, setFiles, selectedFile, setSelectedFile, files } = useFiles({ workspace });
-  const { messages, setMessages, reloadMessages, deleteMessage, sendMessage, retryMessage, model, setModel, pullModel, modelList, setModelList, reloadModelList } = useMessages({ workspace, session });
+  const {
+    setFileContent,
+    loadFileContent,
+    reloadFileList,
+    addFileToSession,
+    setFiles,
+    selectedFile,
+    setSelectedFile,
+    files,
+  } = useFiles({ workspace });
+  const {
+    messages,
+    setMessages,
+    reloadMessages,
+    deleteMessage,
+    sendMessage,
+    retryMessage,
+    model,
+    setModel,
+    pullModel,
+    modelList,
+    setModelList,
+    reloadModelList,
+  } = useMessages({ workspace, session });
 
   async function setProfile(v) {
     profile.value = v;
-    setKey(v ? await getPropertyNS("authKey") : "");
+    setKey(v ? await getPropertyNS('authKey') : '');
 
     if (v) {
       await reloadWorkspaceList();
@@ -206,16 +261,16 @@ export const useStore = defineStore("app", function () {
   async function reloadProfile() {
     try {
       setProfile(await getProfile());
-    } catch { }
+    } catch {}
   }
 
-  authEvents.addEventListener("state", (e) => setProfile(e.detail));
+  authEvents.addEventListener('state', (e) => setProfile(e.detail));
 
   watch(workspace, async () => {
     setMessages([]);
     setSession(null);
     setSessionList([]);
-    setModel("");
+    setModel('');
     setSelectedFile(null);
     setFiles([]);
     await reloadSessionList();

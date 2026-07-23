@@ -6,6 +6,6 @@ export function publish(eventName, data) {
   const url = new URL("/publish", messageHub);
   fetch(url, {
     method: "POST",
-    body: JSON.stringify({ eventName, data }),
+    body: JSON.stringify({ sessionId: 'agents', data: { eventName, data } }),
   });
 }
