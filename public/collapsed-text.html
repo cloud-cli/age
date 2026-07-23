@@ -1,9 +1,6 @@
 <template component="collapsed-text">
-  <ref name="expanded" value="false" setter="onToggle" />
   <div class="relative">
-    <div class="whitespace-pre-wrap overflow-hidden" class-max-height="!expanded">
-      <slot></slot>
-    </div>
+    <div class="whitespace-pre-wrap overflow-hidden" class-max-height="!expanded">{{ content }}</div>
     <div class="absolute bottom-0 flex text-xs items-center justify-end w-full">
       <button on-click="onToggle(!expanded)" class="text-zinc-500">
         <lucide-icon size="16" bind-icon="expanded ? 'chevron-up' : 'chevron-down'"></lucide-icon>
@@ -15,4 +12,13 @@
       max-height: 4rem;
     }
   </style>
+  <script setup>
+    import { defineProp, hook } from '@li3/web';
+
+    export default function () {
+      defineProp('content');
+      const [expanded, onToggle] = hook(false);
+      return { expanded, onToggle };
+    }
+  </script>
 </template>

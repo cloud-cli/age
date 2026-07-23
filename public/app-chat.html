@@ -8,7 +8,9 @@
   </script>
   <div class="relative" bind-msg="m">
     <div class="flex items-center justify-between text-xs mb-1">
-      <span class="inline-block rounded p-1 bg-zinc-700 empty:hidden" bind-inner-text="m.meta?.model || ''"></span>
+      <div>
+        <span class="inline-block rounded p-1 bg-zinc-700 empty:hidden" bind-inner-text="m.meta?.model || ''"></span>
+      </div>
 
       <button
         class="text-red-400/70"
@@ -19,15 +21,17 @@
       </button>
     </div>
 
-    <collapsed-text v-if="m.thinking" class="text-zinc-200">{{ m.thinking }}</collapsed-text>
+    <collapsed-text v-if="m.thinking" class="text-zinc-200" bind-content="m.thinking || ''"></collapsed-text>
 
-    <div v-if="m.role !== 'tool' && !m.thinking" class="bg-zinc-900 border border-zinc-700 rounded-md p-2 leading-relaxed relative w-full">
-      <markdown-it bind-src="m.content" class="block"></markdown-it>
-    </div>
+    <markdown-it
+      v-if="m.role !== 'tool' && !m.thinking"
+      bind-src="m.content"
+      class="bg-zinc-900 rounded-md p-1 leading-relaxed relative w-full block"
+    ></markdown-it>
 
     <template if="message.role === 'tool'">
       <div class="text-emerald-500 px-1 py-0.5" bind-inner-text="m.tool_name || ''"></div>
-      <collapsed-text class="text-zinc-500">{{ m.content }}</collapsed-text>
+      <collapsed-text class="text-zinc-500" bind-content="m.content || ''"></collapsed-text>
     </template>
   </div>
 </template>
