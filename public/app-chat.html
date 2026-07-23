@@ -6,21 +6,22 @@
       return { m: defineProp('message', { default: () => {} }) };
     }
   </script>
-  <div class="relative" class-border-l.border-zinc-600.pl-4.pb-4="m.role === 'assistant'" bind-msg="m">
-    <div class="flex items-center justify-between text-xs mb-1">
-      <div>
-        <span class="inline-block rounded p-1 bg-zinc-700 empty:hidden" bind-inner-text="m.meta?.model || ''"></span>
-      </div>
 
-      <button
-        class="text-red-400/70"
-        class-hidden="m.meta?.thinking || !m.meta?.uid"
-        on-click="onDeleteMessage(m.meta?.uid)"
-      >
-        <lucide-icon icon="trash-2" size="16" title="Delete message"></lucide-icon>
-      </button>
+  <div class="flex items-center justify-between text-xs mb-1">
+    <div>
+      <span class="inline-block rounded p-1 bg-zinc-700 empty:hidden" bind-inner-text="m.meta?.model || ''"></span>
     </div>
 
+    <button
+      class="text-red-400/70"
+      class-hidden="m.meta?.thinking || !m.meta?.uid"
+      on-click="onDeleteMessage(m.meta?.uid)"
+    >
+      <lucide-icon icon="trash-2" size="16" title="Delete message"></lucide-icon>
+    </button>
+  </div>
+
+  <div class="relative space-y-2 overflow-auto" class-border-l.border-zinc-600.pl-4.py-2="m.role === 'assistant'" bind-msg="m">
     <collapsed-text
       v-if="m.thinking"
       class="text-zinc-400 w-full block"
