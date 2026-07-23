@@ -6,10 +6,10 @@
       on-change="onSelect($event.target.value)"
       bind-selected-index="selectedIndex"
     >
-      <option disabled hidden value="">{{ placeholder }}</option>
       <template for="s of list">
         <option bind-value="s.value">{{ s.label }}</option>
       </template>
+      <option disabled hidden value="">{{ placeholder }}</option>
     </select>
     <button type="button" on-click="onAdd()" class="text-xs text-zinc-600">
       <lucide-icon icon="plus" size="16" title="Add"></lucide-icon>
@@ -57,7 +57,7 @@
             return index;
           }
 
-          return 0;
+          return undefined;
         }
 
         return 0;
