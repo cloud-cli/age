@@ -1,8 +1,8 @@
-import { existsSync } from "node:fs";
-import { join } from "node:path";
-import { dataDir } from "./env.mjs";
-import { readFile, writeFile } from "node:fs/promises";
-import { randomUUID } from "node:crypto";
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { dataDir } from './env.mjs';
+import { readFile, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 
 export interface Message {
   role: string;
@@ -21,7 +21,7 @@ export class History {
   }
 
   get file() {
-    return join(dataDir, this.workspaceName, "history", `${this.sessionId}.json`);
+    return join(dataDir, this.workspaceName, 'history', `${this.sessionId}.json`);
   }
 
   async getModel() {
@@ -51,7 +51,7 @@ export class History {
   }
 
   async read() {
-    const f = await readFile(this.file, "utf8");
+    const f = await readFile(this.file, 'utf8');
     const json = JSON.parse(f);
     this.#cache = json;
 

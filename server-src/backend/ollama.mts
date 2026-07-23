@@ -4,7 +4,7 @@ const apiUrl = process.env.API_URL;
 const apiKey = process.env.API_KEY;
 
 export async function getModelList() {
-  const response = await fetch(new URL("/v1/models", apiUrl), {
+  const response = await fetch(new URL('/v1/models', apiUrl), {
     headers: {
       ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
     },
@@ -14,7 +14,7 @@ export async function getModelList() {
 }
 
 export async function callModel(requestBody) {
-  const url = new URL("/api/chat", apiUrl);
+  const url = new URL('/api/chat', apiUrl);
   const body = JSON.stringify(requestBody);
   console.log('CallModel started');
 
@@ -24,14 +24,14 @@ export async function callModel(requestBody) {
       method: 'POST',
       headers: {
         ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
-      }
+      },
     });
 
-    req.on('response', res => {
+    req.on('response', (res) => {
       const all = [];
 
-      res.on("data", c => {
-        all.push(c)
+      res.on('data', (c) => {
+        all.push(c);
       });
 
       res.on('end', () => {
@@ -54,8 +54,8 @@ export async function callModel(requestBody) {
 }
 
 export async function pullModel(model) {
-  const response = await fetch(new URL("/api/pull", apiUrl), {
-    method: "POST",
+  const response = await fetch(new URL('/api/pull', apiUrl), {
+    method: 'POST',
     body: JSON.stringify({ model }),
     headers: {
       ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
@@ -66,15 +66,15 @@ export async function pullModel(model) {
 }
 
 export async function getChatTitle(history) {
-  const system = `You are an expert at creating concise, 3-5 word chat session titles. Read the conversation history and generate an accurate, catchy title that captures the main topic. Do not include quotes or conversational filler, just the title.`
+  const system = `You are an expert at creating concise, 3-5 word chat session titles. Read the conversation history and generate an accurate, catchy title that captures the main topic. Do not include quotes or conversational filler, just the title.`;
   const res = await fetch(new URL('/api/generate', apiUrl), {
     method: 'POST',
     body: JSON.stringify({
-      model: "gemma2:9b",
-      prompt: `Based on this conversation history, generate a title:\n` + history.map(h => `${h.role}: ${h.content}`),
+      model: 'gemma2:9b',
+      prompt: `Based on this conversation history, generate a title:\n` + history.map((h) => `${h.role}: ${h.content}`),
       system,
-      stream: false
-    })
+      stream: false,
+    }),
   });
 
   if (res.ok) {
