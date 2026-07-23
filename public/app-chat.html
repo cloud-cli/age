@@ -21,12 +21,16 @@
       </button>
     </div>
 
-    <collapsed-text v-if="m.thinking" class="text-zinc-200" bind-content="m.thinking || ''"></collapsed-text>
+    <collapsed-text
+      v-if="m.thinking"
+      class="bg-zinc-900 rounded-md text-zinc-400 p-1 w-full block"
+      bind-content="m.thinking || ''"
+    ></collapsed-text>
 
     <markdown-it
-      v-if="m.role !== 'tool' && !m.thinking"
+      v-if="m.content"
       bind-src="m.content"
-      class="bg-zinc-900 rounded-md p-1 leading-relaxed relative w-full block"
+      class="bg-zinc-900 rounded-md text-white p-1 w-full block"
     ></markdown-it>
 
     <template if="message.role === 'tool'">
