@@ -36,7 +36,7 @@
         ></dynamic-list>
       </div>
     </template>
-
+    <template if="!profile">
     <div class="flex items-center space-x-3">
       <button
         on-click="signIn(true)"
@@ -45,6 +45,7 @@
         <lucide-icon icon="user"></lucide-icon>
       </button>
     </div>
+    </template>
   </header>
 
   <script setup src="./app-header.mjs"></script>
