@@ -144,7 +144,7 @@ function useMessages({ workspace, session }) {
   events.addEventListener('message', (e) => {
     const { sessionId, message } = e.detail;
     if (session.value?.id === sessionId) {
-      messages.unshift(message);
+      messages.value = [message, ...messages.value];
     }
   });
 
