@@ -1,14 +1,80 @@
+import { parseEnv } from 'node:util';
 import { join, resolve } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import { existsSync, readFileSync } from 'node:fs';
 import { tools, toolsByName } from './tools.mjs';
 import { callModel } from './backend/ollama.mjs';
 import { History } from './history.mjs';
-import { randomUUID } from 'node:crypto';
 import { dataDir } from './env.mjs';
 import { publish } from './events.mjs';
 
+const shell = process.env.SHELL || 'sh';
 const defaultModel = process.env.MODEL;
 const agentSystemPrompt = await readFile(new URL('./../system.txt', import.meta.url), 'utf8');
+
+export class Context {
+  workspace: string;
+  sessionId: string;
+
+  constructor(p: Partial<Context>) {
+    Object.assign(this, p);
+  }
+
+  get uid() {
+    return `${this.workspace}__${this.sessionId}`;
+  }
+
+  get workspacePath() {
+    return join(dataDir, this.workspace);
+  }
+
+  getShell() {
+    const tmpEnv = join(tmpdir(), this.uid + '.env');
+    const env = { ...process.env, TMP_ENV: tmpEnv };
+
+    if (existsSync(tmpEnv)) {
+      Object.assign(env, parseEnv(readFileSync(tmpEnv, 'utf8')));
+    }
+
+    // const cwd = this.getPath('.');
+    const sh = spawn(shell, [], {
+      // cwd: env.PWD?.includes(cwd) ? env.PWD : cwd,
+      shell,
+      env,
+    });
+
+    function exec(v) {
+      const chunks = [];
+      sh.stdout.on('data', (c) => chunks.push(c));
+      sh.stderr.on('data', (c) => chunks.push(c));
+
+      return new Promise((resolve, reject) => {
+        sh.stdin.write(v + '\n');
+        sh.stdin.write('export shell_exit=$?\n');
+        sh.stdin.write('env > $TMP_ENV\n');
+        sh.stdin.write('exit $shell_exit\n');
+
+        sh.on('exit', (code) => {
+          const output = {
+            code,
+            output: Buffer.concat(chunks).toString('utf8')
+          };
+
+          code ? reject(output) : resolve(output);
+        });
+      });
+    }
+
+    return { exec };
+  }
+
+  getPath(s) {
+    return join(this.workspacePath, 'files', resolve('/', s || '.'));
+  }
+}
 
 export async function getModelResponse(history: History) {
   const requestBody = {
@@ -45,7 +111,7 @@ function convertValue(value, type) {
   }
 }
 
-export function executeFunction(functionName, modelArgs, workspacePath) {
+export function executeFunction(functionName: string, modelArgs: any[], context: Context) {
   const specs = tools.find((next) => next.function.name === functionName);
 
   if (!specs) {
@@ -67,18 +133,12 @@ export function executeFunction(functionName, modelArgs, workspacePath) {
   }
 
   const f = toolsByName[functionName];
-  const context = {
-    getPath(s) {
-      return join(workspacePath, 'files', resolve('/', s || '.'));
-    },
-  };
 
-  console.log(`Call ${functionName}`, modelArgs, foundArgs, workspacePath);
+  console.log(`Call ${functionName}`, foundArgs);
   return f.apply(context, foundArgs);
 }
 
 export async function runAgentLoop(workspace, sessionId) {
-  const workspacePath = join(dataDir, workspace);
   const history = new History(workspace, sessionId);
   let aiResponse;
 
@@ -111,7 +171,8 @@ export async function runAgentLoop(workspace, sessionId) {
     const functionArgs = call.function.arguments;
 
     try {
-      const functionResponse = await executeFunction(functionName, functionArgs, workspacePath);
+      const context = new Context({ sessionId, workspace });
+      const functionResponse = await executeFunction(functionName, functionArgs, context);
 
       await addMessage({
         role: 'tool',
