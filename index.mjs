@@ -49,7 +49,7 @@ const server = createServer((req, res) => {
   }
 
   if (route === "GET /index.mjs" || route === "GET /public/api.mjs") {
-    const code = client.replace("__BASE_URL__", String(req.headers["x-forwarded-for"]));
+    const code = client.replace("__BASE_URL__", String(req.headers["x-forwarded-host"]));
 
     res
       .writeHead(200, {
