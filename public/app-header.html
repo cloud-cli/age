@@ -1,6 +1,6 @@
 <template component="app-header">
   <header class="border-b border-zinc-800 bg-zinc-900/50 px-4 flex items-center justify-between">
-    <template if="profile">
+    <template if="$.profile">
       <div class="flex items-center flex-wrap md:flex-nowrap md:space-x-2">
         <button class="flex items-center space-x-2 flex-1" on-click="window.location.reload()">
           <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -12,8 +12,8 @@
           class="w-full md:w-1/2"
           placeholder="Select"
           bind-list="wsListMapped"
-          bind-selected="workspace"
-          on-reload="onReloadWorkspaceList()"
+          bind-selected="$.workspace"
+          on-reload="$.reloadWorkspaceList()"
           on-add="onCreateWorkspace()"
           on-select="onSelectWorkspace($event.detail)"
           on-remove="onRemoveWorkspace()"
@@ -24,18 +24,18 @@
           label="Session"
           class="w-full md:w-1/2"
           placeholder="Switch sessions"
-          on-add="store.createSession()"
-          on-reload="store.reloadSessionList()"
-          on-select="store.setSessionById($event.detail)"
+          on-add="$.createSession()"
+          on-reload="$.reloadSessionList()"
+          on-select="$.setSessionById($event.detail)"
           on-remove="onDeleteSession()"
-          bind-selected="sessionId"
+          bind-selected="$.sessionId"
           bind-list="sessionListMapped"
           bind-actions="[{ icon: 'trash-2', action: 'remove', label: 'Remove', color: 'text-red-400' }]"
         ></dynamic-list>
       </div>
     </template>
 
-    <template if="!profile">
+    <template if="!$.profile">
       <div class="flex items-center space-x-3">
         <button
           on-click="signIn(true)"
