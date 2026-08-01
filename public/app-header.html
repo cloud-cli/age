@@ -15,7 +15,7 @@
           bind-selected="$.workspace"
           on-reload="$.reloadWorkspaceList()"
           on-add="onCreateWorkspace()"
-          on-select="onSelectWorkspace($event.detail)"
+          on-select="$.setWorkspace($event.detail)"
           on-remove="onRemoveWorkspace()"
           bind-actions="[{ icon: 'trash-2', action: 'remove', label: 'Remove', color: 'text-red-400' }]"
         ></dynamic-list>

@@ -20,10 +20,6 @@ export default function () {
     }
   }
 
-  function onSelectWorkspace(v) {
-    $.setWorkspace(v);
-  }
-
   async function onDeleteSession() {
     if (!$.sessionId || !confirm('Are you sure?')) return;
 
@@ -38,8 +34,6 @@ export default function () {
     wsListMapped,
     sessionListMapped,
     onCreateWorkspace,
-    onReloadWorkspaceList,
-    onSelectWorkspace,
     onRemoveWorkspace,
     onDeleteSession,
   };
