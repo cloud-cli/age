@@ -1,6 +1,6 @@
-import { ref, hook } from '@li3/web';
-import { defineStore } from '@li3/store';
 import { Workspaces } from '@app/api.mjs';
+import { defineStore } from '@li3/store';
+import { hook, ref } from '@li3/web';
 
 export const useWorkspaces = defineStore('workspaces', function () {
   const [workspace, setWorkspace] = hook('');

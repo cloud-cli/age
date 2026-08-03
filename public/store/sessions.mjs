@@ -1,7 +1,7 @@
 import { Sessions } from '@app/api.mjs';
+import { useWorkspaces } from '@app/store/workspaces.mjs';
 import { defineStore } from '@li3/store';
 import { computed, hook, ref } from '@li3/web';
-import { useWorkspaces } from './workspaces.mjs';
 
 export const useSessions = defineStore('sessions', function () {
   const $ = useWorkspaces();

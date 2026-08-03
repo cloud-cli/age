@@ -1,4 +1,5 @@
 import { Workspaces } from '@app/api.mjs';
+import { useWorkspaces } from '@app/store/workspaces.mjs';
 import { defineStore } from '@li3/store';
 import { hook, ref } from '@li3/web';
 
@@ -78,5 +79,7 @@ export const useFiles = defineStore('files', function () {
     selectedFile,
     setSelectedFile,
     files,
+    expanded,
+    setExpanded,
   };
 });
