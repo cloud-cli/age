@@ -55,5 +55,12 @@ export const useSessions = defineStore('sessions', function () {
     }
   }
 
-  return { setSessionById, createSession, deleteSession, reloadSessionList, setSessionList };
+  return {
+    session,
+    setSessionById,
+    createSession,
+    deleteSession,
+    reloadSessionList,
+    setSessionList,
+  };
 });

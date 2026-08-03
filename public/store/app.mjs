@@ -29,7 +29,7 @@ export const useApp = defineStore('app', function () {
     () => workspaces.workspace,
     async () => {
       messages.setMessages([]);
-      sessions.setSession(null);
+      sessions.setSessionById('');
       sessions.setSessionList([]);
       messages.setModel('');
       files.setSelectedFile(null);
