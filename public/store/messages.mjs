@@ -1,9 +1,8 @@
-import { Models, Sessions } from '@app/api.mjs';
+import { events, Models, Sessions } from '@app/api.mjs';
 import { useSessions } from '@app/store/sessions.mjs';
 import { useWorkspaces } from '@app/store/workspaces.mjs';
 import { defineStore } from '@li3/store';
 import { computed, effect, hook, ref } from '@li3/web';
-import { events } from './api.mjs';
 
 export const useMessages = defineStore('messages', function () {
   const $ws = useWorkspaces();
