@@ -5,7 +5,7 @@
 
     export default function () {
       const $msg = useMessages();
-      async function onDeleteMessage(uid) {
+      async function onDeleteMessage() {
         const uid = m.meta?.uid;
 
         if (!uid || !confirm('Are you sure?')) {

@@ -85,7 +85,7 @@ export const useSessions = defineStore('sessions', function () {
   return { setSessionById, createSession, deleteSession, reloadSessionList, setSessionList };
 });
 
-defineStore('profile', function () {
+export const useProfile = defineStore('profile', function () {
   const profile = ref(null);
 
   async function setProfile(v) {
