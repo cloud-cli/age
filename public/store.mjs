@@ -223,7 +223,7 @@ export const useMessages = defineStore('messages', function () {
     }
   }
 
-  async function sendMessage(message) {
+  async function sendMessage() {
     const message = newMessage.value;
 
     if (!($ws.workspace.value && $sessions.sessionId && message)) return;
