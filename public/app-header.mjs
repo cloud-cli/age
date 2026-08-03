@@ -1,38 +1,43 @@
 import { computed, onInit } from '@li3/web';
 import { signIn } from 'https://auth.api.apphor.de/index.mjs';
-import { useStore } from '@app/store.mjs';
+import { useWorkspaces, useSessions, useProfile } from '@app/store.mjs';
 
 export default function () {
-  const $ = useStore();
-  const wsListMapped = computed(() => ($.workspaceList || []).map((ws) => ({ label: ws.name, value: ws.name })));
-  const sessionListMapped = computed(() =>
-    ($.sessionList || []).map((s) => ({ label: s.title || s.id, value: s.id })),
-  );
+  const $ws = useWorkspaces();
+  const $s = useSessions();
+  const $p = useProfile();
+  const wsList = computed(() => ($ws.workspaceList || []).map((ws) => ({ label: ws.name, value: ws.name })));
+  const sessionList = computed(() => ($s.sessionList || []).map((s) => ({ label: s.title || s.id, value: s.id })));
 
   async function onCreateWorkspace() {
-    const nameInput = prompt('Name (optional)', '') || undefined;
-    $.createWorkspace(nameInput);
+    const name = prompt('Name (optional)', '');
+
+    if (name) {
+      $ws.createWorkspace(name);
+    }
   }
 
   async function onRemoveWorkspace() {
-    if ($.workspace && confirm('Are you sure?')) {
-      $.removeWorkspace();
+    if ($ws.workspace && confirm('Are you sure?')) {
+      $ws.removeWorkspace();
     }
   }
 
   async function onDeleteSession() {
-    if (!$.sessionId || !confirm('Are you sure?')) return;
+    if (!$s.sessionId || !confirm('Are you sure?')) return;
 
-    await $.deleteSession();
+    await $s.deleteSession();
   }
 
-  onInit(() => $.reloadProfile());
+  onInit(() => $p.reloadProfile());
 
   return {
-    $,
+    $ws,
+    $s,
+    $p,
     signIn,
-    wsListMapped,
-    sessionListMapped,
+    wsList,
+    sessionList,
     onCreateWorkspace,
     onRemoveWorkspace,
     onDeleteSession,

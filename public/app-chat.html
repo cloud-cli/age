@@ -1,9 +1,23 @@
 <template component="chat-message">
   <script setup>
     import { defineProp } from '@li3/web';
+    import { useMessages } from '@app/store.mjs';
 
     export default function () {
-      return { m: defineProp('message', { default: () => {} }) };
+      const $msg = useMessages();
+      async function onDeleteMessage(uid) {
+        const uid = m.meta?.uid;
+
+        if (!uid || !confirm('Are you sure?')) {
+          return;
+        }
+
+        await $msg.deleteMessage(uid);
+      }
+
+      const m = defineProp('message', { default: () => {} });
+
+      return { m, onDeleteMessage };
     }
   </script>
 
@@ -12,11 +26,7 @@
       <span class="inline-block rounded p-1 bg-zinc-700 empty:hidden" bind-inner-text="m.meta?.model || ''"></span>
     </div>
 
-    <button
-      class="text-red-400/70"
-      class-hidden="m.meta?.thinking || !m.meta?.uid"
-      on-click="onDeleteMessage(m.meta?.uid)"
-    >
+    <button class="text-red-400/70" class-hidden="m.meta?.thinking || !m.meta?.uid" on-click="onDeleteMessage()">
       <lucide-icon icon="trash-2" size="16" title="Delete message"></lucide-icon>
     </button>
   </div>
@@ -44,26 +54,26 @@
 <template component="app-chat">
   <section class="flex flex-col bg-zinc-950 border-r border-zinc-800 h-full">
     <div class="flex-1 overflow-y-auto p-4 font-mono text-xs flex flex-col-reverse gap-2">
-      <template for="m of messages">
+      <template for="m of $msg.messages">
         <chat-message bind-message="m"></chat-message>
       </template>
     </div>
 
-    <div class="p-3 border-t border-zinc-800 bg-zinc-900/20" class-hidden="!workspace || !sessionId">
+    <div class="p-3 border-t border-zinc-800 bg-zinc-900/20" class-hidden="!$ws.workspace || !$sessions.sessionId">
       <form
         class="relative bg-zinc-900 border border-zinc-800 rounded-xl focus-within:border-zinc-700 transition p-2"
-        on-submit.prevent="onSend()"
+        on-submit.prevent="$msg.sendMessage()"
       >
         <textarea
           rows="2"
           name="prompt"
           placeholder="Next steps..."
-          bind-value="newMessage"
-          bind-disabled="sending"
+          bind-value="$msg.newMessage"
+          bind-disabled="$msg.sending"
           class="w-full bg-transparent text-sm placeholder-zinc-600 focus:outline-none resize-none px-2 py-1"
-          class-text-zinc-200="!sending"
-          class-text-zinc-600="sending"
-          on-input.stop="setMessage($event.target.value)"
+          class-text-zinc-200="!$msg.sending"
+          class-text-zinc-600="$msg.sending"
+          on-input.stop="$msg.setNewMessage($event.target.value)"
           on-keydown="onKeyDown($event)"
         ></textarea>
         <div class="flex justify-between items-center p-2 px-1">
@@ -71,9 +81,9 @@
             label="Model"
             placeholder="Model to use"
             bind-list="modelListMapped"
-            bind-selected="model"
-            on-reload="store.reloadModelList()"
-            on-select="store.setModel($event.detail)"
+            bind-selected="$msg.model"
+            on-reload="$msg.reloadModelList()"
+            on-select="$msg.setModel($event.detail)"
             on-add="onPullModel()"
           ></dynamic-list>
 
@@ -81,27 +91,27 @@
             <button
               type="submit"
               class="bg-zinc-100 text-black hover:bg-zinc-200 font-semibold text-xs px-3 py-1 rounded-md transition"
-              class-animate-pulse="sending"
-              class-opacity-50="sending || (!workspace || !sessionId || !newMessage.trim())"
-              bind-disabled="sending || (!workspace || !sessionId || !newMessage.trim())"
+              class-animate-pulse="$msg.sending"
+              class-opacity-50="$msg.sendDisabled"
+              bind-disabled="$msg.sendDisabled"
             >
               <lucide-icon icon="send-horizontal" size="24" title="Send"></lucide-icon>
             </button>
 
             <button
               type="button"
-              on-click="store.retryMessage()"
+              on-click="$msg.retryMessage()"
               class="text-xs text-zinc-600 font-mono"
-              class-hidden="!sessionId"
+              class-hidden="!$sessions.sessionId"
             >
               <lucide-icon icon="list-restart" size="24" title="Retry"></lucide-icon>
             </button>
 
             <button
               type="button"
-              on-click="store.reloadMessages()"
+              on-click="$msg.reloadMessages()"
               class="text-xs text-zinc-600 font-mono"
-              class-hidden="!sessionId"
+              class-hidden="!$sessions.sessionId"
             >
               <lucide-icon icon="refresh-cw" size="24" title="Reload"></lucide-icon>
             </button>
@@ -111,5 +121,39 @@
     </div>
   </section>
 
-  <script setup src="./app-chat.mjs"></script>
+  <script setup>
+    import { computed } from '@li3/web';
+    import { useWorkspaces, useSessions, useMessages } from '@app/store.mjs';
+
+    export default function () {
+      const $ws = useWorkspaces();
+      const $sessions = useSessions();
+      const $msg = useMessages();
+      const modelListMapped = computed(() => ($.modelList || []).map((m) => ({ label: m.id, value: m.id })));
+
+      function onKeyDown(e) {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          $msg.sendMessage();
+        }
+      }
+
+      async function onPullModel() {
+        const name = prompt('Model name', '');
+
+        if (name) {
+          await $msg.pullModel(name);
+        }
+      }
+
+      return {
+        $ws,
+        $msg,
+        $sessions,
+        modelListMapped,
+        onKeyDown,
+        onPullModel,
+      };
+    }
+  </script>
 </template>

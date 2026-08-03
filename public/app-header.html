@@ -11,11 +11,11 @@
           label="Workspace"
           class="w-full md:w-1/2"
           placeholder="Select"
-          bind-list="wsListMapped"
-          bind-selected="$.workspace"
-          on-reload="$.reloadWorkspaceList()"
+          bind-list="wsList"
+          bind-selected="$ws.workspace"
+          on-reload="$ws.reloadWorkspaceList()"
           on-add="onCreateWorkspace()"
-          on-select="$.setWorkspace($event.detail)"
+          on-select="$ws.setWorkspace($event.detail)"
           on-remove="onRemoveWorkspace()"
           bind-actions="[{ icon: 'trash-2', action: 'remove', label: 'Remove', color: 'text-red-400' }]"
         ></dynamic-list>
@@ -24,18 +24,18 @@
           label="Session"
           class="w-full md:w-1/2"
           placeholder="Switch sessions"
-          on-add="$.createSession()"
-          on-reload="$.reloadSessionList()"
-          on-select="$.setSessionById($event.detail)"
+          on-add="$s.createSession()"
+          on-reload="$s.reloadSessionList()"
+          on-select="$s.setSessionById($event.detail)"
           on-remove="onDeleteSession()"
-          bind-selected="$.sessionId"
-          bind-list="sessionListMapped"
+          bind-selected="$s.sessionId"
+          bind-list="sessionList"
           bind-actions="[{ icon: 'trash-2', action: 'remove', label: 'Remove', color: 'text-red-400' }]"
         ></dynamic-list>
       </div>
     </template>
 
-    <template if="!$.profile">
+    <template if="!$p.profile">
       <div class="flex items-center space-x-3">
         <button
           on-click="signIn(true)"

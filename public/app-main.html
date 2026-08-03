@@ -67,14 +67,14 @@
   </div>
   <script setup>
     import { computed } from "@li3/web";
-    import { useStore } from "@app/store.mjs";
+    import { useApp } from "@app/store.mjs";
 
     window.addEventListener("unhandledrejection", (event) =>
       console.error(event),
     );
 
     export default function () {
-      const $ = useStore();
+      const $ = useApp();
       const t = computed(() => $.layout);
 
       return { $, t };

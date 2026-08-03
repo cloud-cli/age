@@ -1,23 +1,13 @@
 <template component="app-files">
   <div class="h-full flex flex-col items-stretch space-y-1 border-l border-zinc-800">
-    <div
-      class="flex items-center justify-between bg-zinc-500/50 gap-1 p-1 text-zinc-300"
-    >
+    <div class="flex items-center justify-between bg-zinc-500/50 gap-1 p-1 text-zinc-300">
       <span class="uppercase text-xs font-semi flex-1">Files</span>
       <div>
         <button on-click="$.reloadFileList()">
           <lucide-icon size="14" icon="refresh-cw" title="Reload"></lucide-icon>
         </button>
-        <button
-          on-click="$.addFileToSession()"
-          bind-disabled="!$.selectedFile"
-          class-text-zinc-500="!$.selectedFile"
-        >
-          <lucide-icon
-            size="14"
-            icon="message-square-plus"
-            title="Add to conversation"
-          ></lucide-icon>
+        <button on-click="$.addFileToSession()" bind-disabled="!$.selectedFile" class-text-zinc-500="!$.selectedFile">
+          <lucide-icon size="14" icon="message-square-plus" title="Add to conversation"></lucide-icon>
         </button>
       </div>
     </div>
@@ -26,22 +16,15 @@
       bind-files="$.files"
       bind-expanded="$.expanded"
       on-expand="$.setExpanded($event.detail)"
-      on-select="onSelectFile($event.detail)"
+      on-select="$.setSelectedFile($event.detail)"
     ></file-tree>
     <div class="font-bold p-2 text-center text-sm" class-hidden="$.files?.length">No files in this workspace.</div>
   </div>
   <script setup>
-    import { useStore } from "@app/store.mjs";
+    import { useFiles } from '@app/store.mjs';
 
     export default function () {
-      const $ = useStore();
-
-      async function onSelectFile(file) {
-        $.setSelectedFile(file);
-        $.loadFileContent();
-      }
-
-      return { onSelectFile, $ };
+      return { $: useFiles() };
     }
   </script>
 </template>
