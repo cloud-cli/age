@@ -1,13 +1,11 @@
 <template component="app-main">
-  <div
-    class="bg-zinc-950 text-zinc-100 font-sans h-dvh"
-  >
+  <div class="bg-zinc-950 text-zinc-100 font-sans h-dvh">
     <app-header class="absolute h-12 w-full"></app-header>
-    <template if="$.profile">
+    <template if="$p.profile">
       <main class="flex-1 flex flex-col justify-stretch items-stretch h-dvh pt-12 overflow-hidden">
         <div class="flex items-center justify-center w-full h-4">
           <button
-            on-click="$.toggleLayout('left')"
+            on-click="$app.toggleLayout('left')"
             class="inline-block rounded-full p-1"
             bind-class="{ 'text-blue-400': t.left, 'text-white-400': !t.left }"
             title="Toggle left panel"
@@ -15,7 +13,7 @@
             <lucide-icon size="16" icon="panel-left"></lucide-icon>
           </button>
           <button
-            on-click="$.toggleLayout('center')"
+            on-click="$app.toggleLayout('center')"
             class="inline-block rounded-full p-1"
             bind-class="{ 'text-blue-400': t.center, 'text-white-400': !t.center }"
             title="Toggle center panel"
@@ -23,7 +21,7 @@
             <lucide-icon size="16" icon="square-menu"></lucide-icon>
           </button>
           <button
-            on-click="$.toggleLayout('right')"
+            on-click="$app.toggleLayout('right')"
             class="inline-block rounded-full p-1"
             bind-class="{ 'text-blue-400': t.right, 'text-white-400': !t.right }"
             title="Toggle right panel"
@@ -32,10 +30,7 @@
           </button>
         </div>
 
-        <div
-          class="flex items-center justify-stretch w-full h-full"
-          class-hidden="$.profile && !$.workspace"
-        >
+        <div class="flex items-center justify-stretch w-full h-full" class-hidden="$p.profile && !$ws.workspace">
           <app-chat
             class="h-full flex-1 w-full"
             style-max-width="`calc(100% / ${ [t.left, t.center, t.right].filter(Boolean).length })`"
@@ -49,10 +44,10 @@
           >
             <code-editor
               class="h-full w-full"
-              class-hidden="!$.selectedFile"
-              bind-status="$.selectedFile?.path || ''"
-              bind-value="$.selectedFile?.content || ''"
-              on-change="$.setFileContent($event.target.value)"
+              class-hidden="!$f.selectedFile"
+              bind-status="$f.selectedFile?.path || ''"
+              bind-value="$f.selectedFile?.content || ''"
+              on-change="$f.setFileContent($event.target.value)"
             ></code-editor>
           </div>
 
@@ -66,18 +61,22 @@
     </template>
   </div>
   <script setup>
-    import { computed } from "@li3/web";
-    import { useApp } from "@app/store.mjs";
+    import { computed } from '@li3/web';
+    import { useApp } from '@app/store/app.mjs';
+    import { useWorkspaces } from '@app/store/workspaces.mjs';
+    import { useProfile } from '@app/store/profile.mjs';
+    import { useFiles } from '@app/store/files.mjs';
 
-    window.addEventListener("unhandledrejection", (event) =>
-      console.error(event),
-    );
+    window.addEventListener('unhandledrejection', (event) => console.error(event));
 
     export default function () {
-      const $ = useApp();
+      const $app = useApp();
+      const $f = useFiles();
+      const $p = useProfile();
+      const $ws = useWorkspaces();
       const t = computed(() => $.layout);
 
-      return { $, t };
+      return { $app, $f, $p, $ws, t };
     }
   </script>
 </template>

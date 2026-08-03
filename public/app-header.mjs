@@ -1,11 +1,14 @@
 import { computed, onInit } from '@li3/web';
 import { signIn } from 'https://auth.api.apphor.de/index.mjs';
-import { useWorkspaces, useSessions, useProfile } from '@app/store.mjs';
+import { useWorkspaces } from '@app/store/workspaces.mjs';
+import { useSessions } from '@app/store/sessions.mjs';
+import { useProfile } from '@app/store/profile.mjs';
 
 export default function () {
   const $ws = useWorkspaces();
   const $s = useSessions();
   const $p = useProfile();
+
   const wsList = computed(() => ($ws.workspaceList || []).map((ws) => ({ label: ws.name, value: ws.name })));
   const sessionList = computed(() => ($s.sessionList || []).map((s) => ({ label: s.title || s.id, value: s.id })));
 
@@ -35,7 +38,7 @@ export default function () {
     $ws,
     $s,
     $p,
-    signIn,
+    signIn: () => signIn(true),
     wsList,
     sessionList,
     onCreateWorkspace,

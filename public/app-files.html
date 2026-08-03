@@ -21,7 +21,7 @@
     <div class="font-bold p-2 text-center text-sm" class-hidden="$.files?.length">No files in this workspace.</div>
   </div>
   <script setup>
-    import { useFiles } from '@app/store.mjs';
+    import { useFiles } from '@app/store/files.mjs';
 
     export default function () {
       return { $: useFiles() };

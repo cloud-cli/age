@@ -1,7 +1,7 @@
 <template component="chat-message">
   <script setup>
     import { defineProp } from '@li3/web';
-    import { useMessages } from '@app/store.mjs';
+    import { useMessages } from '@app/store/messages.mjs';
 
     export default function () {
       const $msg = useMessages();
@@ -123,7 +123,9 @@
 
   <script setup>
     import { computed } from '@li3/web';
-    import { useWorkspaces, useSessions, useMessages } from '@app/store.mjs';
+    import { useWorkspaces } from '@app/store/workspaces.mjs';
+    import { useSessions } from '@app/store/sessions.mjs';
+    import { useMessages } from '@app/store/messages.mjs';
 
     export default function () {
       const $ws = useWorkspaces();
