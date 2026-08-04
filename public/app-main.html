@@ -30,7 +30,7 @@
           </button>
         </div>
 
-        <div class="flex items-center justify-stretch w-full h-full" class-hidden="$p.profile && !$ws.workspace">
+        <div class="flex items-center justify-stretch w-full h-full" class-hidden="!$p.profile || !$ws.workspace" bind-p="$p.profile" bind-ws="$ws.workspace">
           <app-chat
             class="h-full flex-1 w-full"
             style-max-width="`calc(100% / ${ [t.left, t.center, t.right].filter(Boolean).length })`"
