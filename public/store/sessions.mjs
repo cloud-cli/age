@@ -11,7 +11,6 @@ export const useSessions = defineStore('sessions', function () {
 
   async function setSessionById(id) {
     setSession(sessionList.value.find((s) => s.id === id));
-    await reloadMessages();
   }
 
   async function createSession() {
@@ -57,6 +56,7 @@ export const useSessions = defineStore('sessions', function () {
 
   return {
     session,
+    sessionId,
     setSessionById,
     createSession,
     deleteSession,

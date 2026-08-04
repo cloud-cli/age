@@ -23,11 +23,6 @@ export const useMessages = defineStore('messages', function () {
     drafts.set($ws.workspace, v);
   }
 
-  effect(
-    () => $ws.workspace,
-    (v) => v && setNewMessage(drafts.get(v) || ''),
-  );
-
   async function reloadMessages() {
     if (workspace.value && session.value) {
       const json = await Sessions.read($ws.workspace.value, $sessions.sessionId);
@@ -77,6 +72,16 @@ export const useMessages = defineStore('messages', function () {
   async function reloadModelList() {
     modelList.value = await Models.list();
   }
+
+  effect(
+    () => $ws.workspace,
+    (v) => v && setNewMessage(drafts.get(v) || ''),
+  );
+
+  effect(
+    () => $session.sessionId,
+    reloadMessages,
+  )
 
   events.addEventListener('message', (e) => {
     const { sessionId, message } = e.detail;
