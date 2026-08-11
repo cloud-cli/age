@@ -24,8 +24,8 @@ export const useMessages = defineStore('messages', function () {
   }
 
   async function reloadMessages() {
-    if ($ws.workspace && $session.session) {
-      const json = await Sessions.read($ws.workspace, $sessions.sessionId);
+    if ($ws.workspace && $session.sessionId) {
+      const json = await Sessions.read($ws.workspace, $session.sessionId);
       setMessages(json.messages.reverse());
     } else {
       setMessages([]);
