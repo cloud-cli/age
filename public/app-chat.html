@@ -131,7 +131,7 @@
       const $ws = useWorkspaces();
       const $sessions = useSessions();
       const $msg = useMessages();
-      const modelListMapped = computed(() => ($.modelList || []).map((m) => ({ label: m.id, value: m.id })));
+      const modelListMapped = computed(() => ($msg.modelList || []).map((m) => ({ label: m.id, value: m.id })));
 
       function onKeyDown(e) {
         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
