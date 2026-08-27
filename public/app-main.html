@@ -74,7 +74,7 @@
       const $f = useFiles();
       const $p = useProfile();
       const $ws = useWorkspaces();
-      const t = computed(() => $.layout);
+      const t = computed(() => $app.layout);
 
       return { $app, $f, $p, $ws, t };
     }

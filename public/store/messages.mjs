@@ -34,7 +34,7 @@ export const useMessages = defineStore('messages', function () {
 
   async function deleteMessage(uid) {
     if ($ws.workspace && $session.session) {
-      await Sessions.deleteMessage($ws.workspace, $sessions.sessionId, uid);
+      await Sessions.deleteMessage($ws.workspace, $session.sessionId, uid);
       await reloadMessages();
     }
   }
@@ -42,12 +42,12 @@ export const useMessages = defineStore('messages', function () {
   async function sendMessage() {
     const message = newMessage.value;
 
-    if (!($ws.workspace && $sessions.sessionId && message)) return;
+    if (!($ws.workspace && $session.sessionId && message)) return;
 
     try {
       setSending(true);
       setNewMessage('');
-      const response = await Sessions.sendMessage($ws.workspace, $sessions.sessionId, {
+      const response = await Sessions.sendMessage($ws.workspace, $session.sessionId, {
         message,
         model: model.value,
       });
@@ -61,7 +61,7 @@ export const useMessages = defineStore('messages', function () {
   }
 
   async function retryMessage() {
-    Sessions.retry($ws.workspace, $sessions.sessionId);
+    Sessions.retry($ws.workspace, $session.sessionId);
   }
 
   async function pullModel(name) {
@@ -85,7 +85,7 @@ export const useMessages = defineStore('messages', function () {
 
   events.addEventListener('message', (e) => {
     const { sessionId, message } = e.detail;
-    if ($sessions.sessionId === sessionId) {
+    if ($session.sessionId === sessionId) {
       messages.value = [message, ...messages.value];
     }
   });
