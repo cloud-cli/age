@@ -1,82 +1,129 @@
 <template component="app-main">
-  <div class="bg-zinc-950 text-zinc-100 font-sans h-dvh">
-    <app-header class="absolute h-12 w-full"></app-header>
+  <div class="bg-zinc-950 text-zinc-100 font-sans h-dvh flex">
     <template if="$p.profile">
-      <main class="flex-1 flex flex-col justify-stretch items-stretch h-dvh pt-12 overflow-hidden">
-        <div class="flex items-center justify-center w-full h-4">
-          <button
-            on-click="$app.toggleLayout('left')"
-            class="inline-block rounded-full p-1"
-            bind-class="{ 'text-blue-400': t.left, 'text-white-400': !t.left }"
-            title="Toggle left panel"
+      <aside
+        class="w-72 shrink-0 border-r border-zinc-800 bg-zinc-900 flex flex-col max-md:w-full"
+        class-hidden="$ui.isCompact && $ui.chatVisible"
+      >
+        <header class="p-4 border-b border-zinc-800 flex justify-between items-center">
+          <strong>Workspaces</strong
+          ><button aria-label="Create workspace" title="Create workspace" on-click="onCreateWorkspace()">＋</button>
+        </header>
+        <nav aria-label="Projects" class="p-2 border-b border-zinc-800 space-y-1">
+          <div class="px-2 py-1 text-xs uppercase tracking-wide text-zinc-400">Projects</div>
+          <template for="w of $ws.workspaceList">
+            <button
+              class="w-full rounded px-3 py-2 text-left text-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2"
+              bind-class="{ 'bg-zinc-800 text-emerald-300': $ws.workspace === w.name }"
+              bind-inner-text="w.name"
+              on-click="$ws.setWorkspace(w.name)"
+            ></button>
+          </template>
+          <p class="px-2 py-1 text-xs text-zinc-500" class-hidden="$ws.workspaceList.length">No projects yet</p>
+        </nav>
+        <div class="px-3 flex justify-between items-center">
+          <span class="text-xs uppercase text-zinc-400">Sessions</span
+          ><button
+            aria-label="Create session"
+            title="Create session"
+            class="p-2 focus-visible:outline focus-visible:outline-2"
+            bind-disabled="!$ws.workspace"
+            on-click="$s.createSession()"
           >
-            <lucide-icon size="16" icon="panel-left"></lucide-icon>
-          </button>
-          <button
-            on-click="$app.toggleLayout('center')"
-            class="inline-block rounded-full p-1"
-            bind-class="{ 'text-blue-400': t.center, 'text-white-400': !t.center }"
-            title="Toggle center panel"
-          >
-            <lucide-icon size="16" icon="square-menu"></lucide-icon>
-          </button>
-          <button
-            on-click="$app.toggleLayout('right')"
-            class="inline-block rounded-full p-1"
-            bind-class="{ 'text-blue-400': t.right, 'text-white-400': !t.right }"
-            title="Toggle right panel"
-          >
-            <lucide-icon size="16" icon="panel-right"></lucide-icon>
+            ＋
           </button>
         </div>
-
-        <div class="flex items-center justify-stretch w-full h-full" class-hidden="!$p.profile || !$ws.workspace" bind-p="$p.profile" bind-ws="$ws.workspace">
-          <app-chat
-            class="h-full flex-1 w-full"
-            style-max-width="`calc(100% / ${ [t.left, t.center, t.right].filter(Boolean).length })`"
-            class-hidden="!t.left"
-          ></app-chat>
-
-          <div
-            class="h-full flex-1 w-full"
-            style-max-width="`calc(100% / ${ [t.left, t.center, t.right].filter(Boolean).length })`"
-            class-hidden="!t.center"
+        <section
+          class="mx-3 mt-3 rounded border border-zinc-800 bg-zinc-950/40 p-3 text-xs"
+          class-hidden="!$ws.workspace"
+        >
+          <div class="mb-1 font-medium text-zinc-300">Project brief</div>
+          <p
+            class="text-zinc-400"
+            bind-inner-text="$ws.project?.summary || 'Add goals and next steps in a planner session.'"
+          ></p>
+          <p class="mt-2 text-zinc-500" bind-inner-text="($ws.project?.nextSteps || []).slice(0, 2).join(' · ')"></p>
+        </section>
+        <nav aria-label="Sessions" class="flex-1 overflow-y-auto p-2">
+          <template for="s of $s.sessionList"
+            ><div
+              class="flex items-center rounded hover:bg-zinc-800"
+              bind-class="{ 'bg-zinc-800': $s.sessionId === s.id }"
+            >
+              <button
+                class="flex-1 text-left p-3 truncate focus-visible:outline focus-visible:outline-2"
+                bind-inner-text="s.title || s.id"
+                on-click="$s.setSessionById(s.id); $ui.chatVisible = true"
+              ></button
+              ><button
+                aria-label="Delete session"
+                title="Delete session"
+                class="p-2 text-zinc-400 hover:text-red-400"
+                on-click="onDeleteSession(s.id)"
+              >
+                ×
+              </button>
+            </div></template
           >
-            <code-editor
-              class="h-full w-full"
-              class-hidden="!$f.selectedFile"
-              bind-status="$f.selectedFile?.path || ''"
-              bind-value="$f.selectedFile?.content || ''"
-              on-change="$f.setFileContent($event.target.value)"
-            ></code-editor>
-          </div>
-
-          <app-files
-            class="h-full flex-1 w-full"
-            style-max-width="`calc(100% / ${ [t.left, t.center, t.right].filter(Boolean).length })`"
-            class-hidden="!t.right"
-          ></app-files>
+        </nav>
+        <div class="p-3 border-t border-zinc-800 flex gap-2">
+          <button class="text-sm" on-click="onCreateWorkspace()">＋ Workspace</button
+          ><button class="text-sm" on-click="$f.reloadFileList(); $ui.filesOpen = !$ui.filesOpen">Files</button>
         </div>
-      </main>
+      </aside>
+      <main class="flex-1 min-w-0 h-dvh"><app-chat class="h-full block" bind-ui="$ui"></app-chat></main>
     </template>
+    <template if="!$p.profile"
+      ><div class="m-auto">
+        <button on-click="signIn(true)" class="rounded border border-zinc-700 p-3">Sign in</button>
+      </div></template
+    >
+    <template if="$ui.filesOpen"
+      ><div class="fixed inset-0 z-20 bg-zinc-950/80" on-click="$ui.filesOpen = false">
+        <section class="absolute right-0 top-0 h-full w-full max-w-lg bg-zinc-900 p-4" on-click.stop>
+          <button class="mb-3" aria-label="Close files" on-click="$ui.filesOpen = false">Close</button
+          ><app-files class="block h-[90%]"></app-files>
+        </section></div
+    ></template>
   </div>
   <script setup>
-    import { computed } from '@li3/web';
-    import { useApp } from '@app/store/app.mjs';
-    import { useWorkspaces } from '@app/store/workspaces.mjs';
-    import { useProfile } from '@app/store/profile.mjs';
-    import { useFiles } from '@app/store/files.mjs';
-
-    window.addEventListener('unhandledrejection', (event) => console.error(event));
-
+    import { onInit, ref } from "@li3/web";
+    import { useWorkspaces } from "@app/store/workspaces.mjs";
+    import { useSessions } from "@app/store/sessions.mjs";
+    import { useProfile } from "@app/store/profile.mjs";
+    import { useFiles } from "@app/store/files.mjs";
+    import { signIn } from "https://auth.api.apphor.de/index.mjs";
     export default function () {
-      const $app = useApp();
-      const $f = useFiles();
-      const $p = useProfile();
-      const $ws = useWorkspaces();
-      const t = computed(() => $app.layout);
-
-      return { $app, $f, $p, $ws, t };
+      const $ws = useWorkspaces(),
+        $s = useSessions(),
+        $p = useProfile(),
+        $f = useFiles();
+      const isCompact = ref(window.matchMedia("(max-width: 767px)").matches);
+      const mediaQuery = window.matchMedia("(max-width: 767px)");
+      mediaQuery.addEventListener("change", (event) => {
+        isCompact.value = event.matches;
+      });
+      const $ui = { chatVisible: ref(false), filesOpen: ref(false), isCompact };
+      onInit(async () => {
+        await $p.reloadProfile();
+        if ($p.profile) {
+          await $ws.reloadWorkspaceList();
+        }
+      });
+      async function onCreateWorkspace() {
+        const name = prompt("Workspace name");
+        if (name) await $ws.createWorkspace(name);
+      }
+      async function onDeleteSession(id) {
+        if (confirm("Delete this session?")) {
+          if ($s.sessionId === id) await $s.deleteSession();
+          else {
+            await $s.setSessionById(id);
+            await $s.deleteSession();
+          }
+        }
+      }
+      return { $ws, $s, $p, $f, $ui, signIn: () => signIn(true), onCreateWorkspace, onDeleteSession };
     }
   </script>
 </template>

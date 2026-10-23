@@ -1,28 +1,28 @@
-import { adjectives, colors, names, uniqueNamesGenerator } from 'unique-names-generator';
-import { randomUUID } from 'node:crypto';
-import { createGzip } from 'node:zlib';
-import { createReadStream, existsSync } from 'node:fs';
-import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
-import { getModelList, pullModel } from './backend/ollama.mjs';
-import { dataDir } from './env.mjs';
-import { History } from './history.mjs';
-import { runAgentLoop } from './agents.mjs';
-import { publish } from './events.mjs';
+import { adjectives, colors, names, uniqueNamesGenerator } from "unique-names-generator";
+import { randomUUID } from "node:crypto";
+import { createGzip } from "node:zlib";
+import { createReadStream, existsSync } from "node:fs";
+import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
+import { getModelList, pullModel } from "./backend/ollama.mjs";
+import { dataDir } from "./env.mjs";
+import { History } from "./history.mjs";
+import { runAgentLoop } from "./agents.mjs";
+import { publish } from "./events.mjs";
 
 const randomName = () =>
   uniqueNamesGenerator({
     dictionaries: [adjectives, colors, names],
   }).toLowerCase();
 
-const sanitize = (str) => str.replace(/[^a-zA-Z0-9-_]/g, '');
+const sanitize = (str) => str.replace(/[^a-zA-Z0-9-_]/g, "");
 
 // returns a list of directories in the dataDir
 async function onReadWorkspaceList(req, res) {
   try {
     const files = await readdir(dataDir, {
       withFileTypes: true,
-      encoding: 'utf8',
+      encoding: "utf8",
     });
 
     const workspaces = files.filter((file) => file.isDirectory());
@@ -40,10 +40,10 @@ async function onReadWorkspaceList(req, res) {
   }
 }
 
-const workspaceFolders = ['files', 'history', 'config'];
+const workspaceFolders = ["files", "history", "config", "tasks"];
 
 async function onCreateWorkspace(req, res) {
-  const body = Buffer.concat(await req.toArray()).toString('utf8');
+  const body = Buffer.concat(await req.toArray()).toString("utf8");
   const name = sanitize((body.trim() && JSON.parse(body)?.name) || randomName());
 
   const workspacePath = join(dataDir, name);
@@ -54,6 +54,15 @@ async function onCreateWorkspace(req, res) {
     for (const folder of workspaceFolders) {
       await mkdir(join(workspacePath, folder), { recursive: true });
     }
+    await writeFile(
+      join(workspacePath, "config", "project.json"),
+      JSON.stringify(
+        { name, summary: "", goals: [], recentUpdates: [], nextSteps: [], createdAt: new Date().toISOString() },
+        null,
+        2,
+      ),
+      { flag: "wx" },
+    ).catch(() => {});
 
     res.sendJson({ name }, 201);
   } catch (err) {
@@ -61,21 +70,68 @@ async function onCreateWorkspace(req, res) {
   }
 }
 
-const exclude = ['.git'];
+async function onReadProject(_req, res, params) {
+  const name = sanitize(params.name);
+  const workspace = join(dataDir, name);
+  const config = join(workspace, "config");
+  const file = join(config, "project.json");
+  try {
+    if (!existsSync(workspace)) {
+      res.sendJson({ error: "Workspace not found" }, 404);
+      return;
+    }
+    await mkdir(config, { recursive: true });
+    if (!existsSync(file)) {
+      await writeFile(
+        file,
+        JSON.stringify(
+          { name, summary: "", goals: [], recentUpdates: [], nextSteps: [], createdAt: new Date().toISOString() },
+          null,
+          2,
+        ),
+        { flag: "wx" },
+      ).catch(() => {});
+    }
+    res.sendJson(JSON.parse(await readFile(file, "utf8")));
+  } catch (error) {
+    res.sendJson({ error: error instanceof Error ? error.message : "Failed to read project metadata" }, 500);
+  }
+}
+
+async function onReadTasks(_req, res, params) {
+  const workspace = join(dataDir, sanitize(params.name));
+  const directory = join(workspace, "tasks");
+  try {
+    if (!existsSync(workspace)) {
+      res.sendJson({ error: "Workspace not found" }, 404);
+      return;
+    }
+    await mkdir(directory, { recursive: true });
+    const files = (await readdir(directory)).filter((file) => file.endsWith(".json")).slice(0, 1000);
+    const tasks = await Promise.all(
+      files.map(async (file) => JSON.parse(await readFile(join(directory, file), "utf8"))),
+    );
+    res.sendJson(tasks);
+  } catch (error) {
+    res.sendJson({ error: error instanceof Error ? error.message : "Failed to read tasks" }, 500);
+  }
+}
+
+const exclude = [".git"];
 
 async function onReadWorkspace(req, res, params) {
   const name = sanitize(params.name);
-  const workspacePath = join(dataDir, name, 'files');
+  const workspacePath = join(dataDir, name, "files");
 
   if (!existsSync(workspacePath)) {
-    res.sendJson({ error: 'Workspace not found' }, 404);
+    res.sendJson({ error: "Workspace not found" }, 404);
     return;
   }
 
   async function readFolder(folderPath) {
     const files = await readdir(folderPath, {
       withFileTypes: true,
-      encoding: 'utf8',
+      encoding: "utf8",
     });
 
     const result = await Promise.all(
@@ -86,15 +142,15 @@ async function onReadWorkspace(req, res, params) {
         if (file.isDirectory()) {
           return {
             name: file.name,
-            path: filePath.replace(workspacePath, ''),
-            type: 'd',
+            path: filePath.replace(workspacePath, ""),
+            type: "d",
             files: await readFolder(filePath),
           };
         } else {
           return {
             name: file.name,
-            path: filePath.replace(workspacePath, ''),
-            type: 'f',
+            path: filePath.replace(workspacePath, ""),
+            type: "f",
           };
         }
       }),
@@ -104,10 +160,10 @@ async function onReadWorkspace(req, res, params) {
   }
 
   const workspaceFiles = await readFolder(workspacePath);
-  const acceptEncoding = (req.headers['accept-encoding'] || '').includes('gzip');
+  const acceptEncoding = (req.headers["accept-encoding"] || "").includes("gzip");
 
   if (acceptEncoding) {
-    res.writeHead(200, { 'Content-Encoding': 'gzip', 'Content-Type': 'application/json' });
+    res.writeHead(200, { "Content-Encoding": "gzip", "Content-Type": "application/json" });
     const src = createGzip();
     src.pipe(res);
     src.write(JSON.stringify(workspaceFiles));
@@ -119,42 +175,42 @@ async function onReadWorkspace(req, res, params) {
 
 async function onReadFile(_req, res, params, searchParams) {
   const name = sanitize(params.name);
-  const file = decodeURIComponent(searchParams.get('file'));
+  const file = decodeURIComponent(searchParams.get("file"));
 
   if (!file) {
-    res.sendJson('Not found', 400);
+    res.sendJson("Not found", 400);
     return;
   }
 
-  const workspacePath = join(dataDir, name, 'files');
-  const realPath = join(workspacePath, resolve('/', file));
+  const workspacePath = join(dataDir, name, "files");
+  const realPath = join(workspacePath, resolve("/", file));
 
   if (!existsSync(realPath)) {
-    res.sendJson('Not found', 404);
+    res.sendJson("Not found", 404);
     return;
   }
 
-  res.setHeader('content-type', 'text/plain');
+  res.setHeader("content-type", "text/plain");
   createReadStream(realPath).pipe(res);
 }
 
 async function onWriteFile(req, res, params, searchParams) {
   const name = sanitize(params.name);
-  const file = decodeURIComponent(searchParams.get('file'));
+  const file = decodeURIComponent(searchParams.get("file"));
 
   if (!file) {
-    res.sendJson('Not found', 400);
+    res.sendJson("Not found", 400);
     return;
   }
 
-  const workspacePath = join(dataDir, name, 'files');
-  const realPath = join(workspacePath, resolve('/', file));
+  const workspacePath = join(dataDir, name, "files");
+  const realPath = join(workspacePath, resolve("/", file));
   const content = Buffer.concat(await req.toArray());
 
   try {
     await writeFile(realPath, content);
     res.writeHead(202).end();
-    publish('filechange', { workspace: name, path: file });
+    publish("filechange", { workspace: name, path: file });
   } catch (e) {
     console.error(e);
     res.writeHead(500).end();
@@ -166,7 +222,7 @@ async function onDeleteWorkspace(req, res, params) {
   const workspacePath = join(dataDir, name);
 
   if (!existsSync(workspacePath)) {
-    res.sendJson({ error: 'Workspace not found' }, 404);
+    res.sendJson({ error: "Workspace not found" }, 404);
     return;
   }
 
@@ -180,23 +236,23 @@ async function onDeleteWorkspace(req, res, params) {
 
 async function onReadWorkspaceHistoryList(_req, res, params) {
   const name = sanitize(params.name);
-  const workspacePath = join(dataDir, name, 'history');
+  const workspacePath = join(dataDir, name, "history");
 
   if (!existsSync(workspacePath)) {
-    res.sendJson({ error: 'Workspace history not found' }, 404);
+    res.sendJson({ error: "Workspace history not found" }, 404);
     return;
   }
 
   // Implementation for reading workspace history
   const files = await readdir(workspacePath, {
     withFileTypes: true,
-    encoding: 'utf8',
+    encoding: "utf8",
   });
 
-  const sessions = files.filter((file) => file.isFile() && file.name.endsWith('.json'));
+  const sessions = files.filter((file) => file.isFile() && file.name.endsWith(".json"));
   const json = await Promise.all(
     sessions.map(async (file) => {
-      const content = await readFile(join(workspacePath, file.name), 'utf8');
+      const content = await readFile(join(workspacePath, file.name), "utf8");
       const json = JSON.parse(content);
       // delete messages from list API to reduce response length
       json.messages = [];
@@ -210,15 +266,15 @@ async function onReadWorkspaceHistoryList(_req, res, params) {
 async function onCreateWorkspaceHistory(req, res, params) {
   const name = sanitize(params.name);
   const uid = randomUUID();
-  const workspacePath = join(dataDir, name, 'history');
+  const workspacePath = join(dataDir, name, "history");
 
   if (!existsSync(workspacePath)) {
-    res.sendJson({ error: 'Workspace history not found' }, 404);
+    res.sendJson({ error: "Workspace history not found" }, 404);
     return;
   }
 
   try {
-    const body = JSON.parse(Buffer.concat(await req.toArray()).toString('utf8'));
+    const body = JSON.parse(Buffer.concat(await req.toArray()).toString("utf8"));
     const json = {
       id: uid,
       title: body.title,
@@ -237,15 +293,15 @@ async function onCreateWorkspaceHistory(req, res, params) {
 async function onReadWorkspaceHistory(_req, res, params) {
   const name = sanitize(params.name);
   const id = sanitize(params.id);
-  const workspacePath = join(dataDir, name, 'history', `${id}.json`);
+  const workspacePath = join(dataDir, name, "history", `${id}.json`);
 
   if (!existsSync(workspacePath)) {
-    res.sendJson({ error: 'Workspace history not found' }, 404);
+    res.sendJson({ error: "Workspace history not found" }, 404);
     return;
   }
 
   try {
-    const content = JSON.parse(await readFile(workspacePath, 'utf8'));
+    const content = JSON.parse(await readFile(workspacePath, "utf8"));
     res.sendJson(content);
   } catch (err) {
     res.sendJson({ error: err.message }, 500);
@@ -255,10 +311,10 @@ async function onReadWorkspaceHistory(_req, res, params) {
 async function onDeleteWorkspaceHistory(_req, res, params) {
   const name = sanitize(params.name);
   const id = sanitize(params.id);
-  const workspacePath = join(dataDir, name, 'history', `${id}.json`);
+  const workspacePath = join(dataDir, name, "history", `${id}.json`);
 
   if (!existsSync(workspacePath)) {
-    res.sendJson({ error: 'Workspace history not found' }, 404);
+    res.sendJson({ error: "Workspace history not found" }, 404);
     return;
   }
 
@@ -281,17 +337,17 @@ async function onMessage(req, res, params) {
     return;
   }
 
-  const body = Buffer.concat(await req.toArray()).toString('utf8');
+  const body = Buffer.concat(await req.toArray()).toString("utf8");
 
   try {
-    const { message, model = '', files } = JSON.parse(body);
-    const msg = { role: 'user', content: message, meta: { model, files, uid: randomUUID() } };
+    const { message, model = "", files } = JSON.parse(body);
+    const msg = { role: "user", content: message, meta: { model, files, uid: randomUUID() } };
     await history.push(msg);
     res.sendJson(msg);
     tryAgentLoop(name, sessionId);
   } catch (err) {
     console.error(`Failed to add message in session ${history.file}: ${err}`);
-    res.sendJson({ error: 'Failed to push message' }, 400);
+    res.sendJson({ error: "Failed to push message" }, 400);
     return;
   }
 }
@@ -315,7 +371,7 @@ async function tryAgentLoop(name, sessionId) {
   try {
     return await runAgentLoop(name, sessionId);
   } catch (e) {
-    console.log('Agent loop error', e);
+    console.log("Agent loop error", e);
   }
 }
 
@@ -354,25 +410,27 @@ async function onModelPull(_req, res, params) {
 }
 
 export default {
-  'GET /models': onModelList,
-  'POST /models/:name': onModelPull,
+  "GET /models": onModelList,
+  "POST /models/:name": onModelPull,
 
-  'GET /workspaces': onReadWorkspaceList,
-  'POST /workspaces': onCreateWorkspace,
+  "GET /workspaces": onReadWorkspaceList,
+  "POST /workspaces": onCreateWorkspace,
 
-  'DELETE /workspaces/:name/history/:id/message/:uid': onDeleteMessage,
-  'POST /workspaces/:name/history/:id/message': onMessage,
-  'POST /workspaces/:name/history/:id/retry': onRetry,
+  "DELETE /workspaces/:name/history/:id/message/:uid": onDeleteMessage,
+  "POST /workspaces/:name/history/:id/message": onMessage,
+  "POST /workspaces/:name/history/:id/retry": onRetry,
 
-  'GET /workspaces/:name/history/:id': onReadWorkspaceHistory,
-  'DELETE /workspaces/:name/history/:id': onDeleteWorkspaceHistory,
+  "GET /workspaces/:name/history/:id": onReadWorkspaceHistory,
+  "DELETE /workspaces/:name/history/:id": onDeleteWorkspaceHistory,
 
-  'GET /workspaces/:name/history': onReadWorkspaceHistoryList,
-  'POST /workspaces/:name/history': onCreateWorkspaceHistory,
+  "GET /workspaces/:name/history": onReadWorkspaceHistoryList,
+  "POST /workspaces/:name/history": onCreateWorkspaceHistory,
 
-  'GET /workspaces/:name/file': onReadFile,
-  'POST /workspaces/:name/file': onWriteFile,
+  "GET /workspaces/:name/file": onReadFile,
+  "POST /workspaces/:name/file": onWriteFile,
 
-  'GET /workspaces/:name': onReadWorkspace,
-  'DELETE /workspaces/:name': onDeleteWorkspace,
+  "GET /workspaces/:name": onReadWorkspace,
+  "GET /workspaces/:name/project": onReadProject,
+  "GET /workspaces/:name/tasks": onReadTasks,
+  "DELETE /workspaces/:name": onDeleteWorkspace,
 };

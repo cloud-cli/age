@@ -1,9 +1,9 @@
-import { Sessions } from '@app/api.mjs';
-import { useWorkspaces } from '@app/store/workspaces.mjs';
-import { defineStore } from '@li3/store';
-import { computed, hook, ref } from '@li3/web';
+import { Sessions } from "@app/api.mjs";
+import { useWorkspaces } from "@app/store/workspaces.mjs";
+import { defineStore } from "@li3/store";
+import { computed, hook, ref } from "@li3/web";
 
-export const useSessions = defineStore('sessions', function () {
+export const useSessions = defineStore("sessions", function () {
   const $ = useWorkspaces();
   const [session, setSession] = hook(null);
   const sessionList = ref([]);
@@ -25,7 +25,7 @@ export const useSessions = defineStore('sessions', function () {
     if (session.value) {
       await Sessions.delete($.workspace, session.value.id);
       setSession(null);
-      await reloadSessions();
+      await reloadSessionList();
     }
   }
 
@@ -39,7 +39,7 @@ export const useSessions = defineStore('sessions', function () {
     sessionList.value = list;
 
     if (!list?.length) {
-      setSessionById('');
+      setSessionById("");
       return;
     }
 

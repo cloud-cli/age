@@ -1,6 +1,6 @@
-const baseUrl = 'https://__BASE_URL__';
+const baseUrl = "https://__BASE_URL__";
 
-let authKey = localStorage.getItem('__key__') || '';
+let authKey = localStorage.getItem("__key__") || "";
 const env = {};
 
 export function getEnv(key) {
@@ -9,7 +9,7 @@ export function getEnv(key) {
 
 export function setKey(k) {
   authKey = k;
-  localStorage.setItem('__key__', k);
+  localStorage.setItem("__key__", k);
 }
 
 function authHeaders() {
@@ -28,7 +28,7 @@ export const Workspaces = {
 
   async create(name) {
     const res = await fetch(new URL(`/workspaces`, baseUrl), {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ name }),
       ...authHeaders(),
     });
@@ -50,7 +50,7 @@ export const Workspaces = {
 
   async delete(name) {
     const res = await fetch(new URL(`/workspaces/${name}`, baseUrl), {
-      method: 'DELETE',
+      method: "DELETE",
       ...authHeaders(),
     });
     if (!res.ok) {
@@ -58,9 +58,27 @@ export const Workspaces = {
     }
   },
 
+  async project(name) {
+    const res = await fetch(new URL(`/workspaces/${name}/project`, baseUrl), authHeaders());
+    if (!res.ok) {
+      throw new Error(`Failed to load project: ${res.status} ${res.statusText}`);
+    }
+
+    return res.json();
+  },
+
+  async tasks(name) {
+    const res = await fetch(new URL(`/workspaces/${name}/tasks`, baseUrl), authHeaders());
+    if (!res.ok) {
+      throw new Error(`Failed to load tasks: ${res.status} ${res.statusText}`);
+    }
+
+    return res.json();
+  },
+
   async readFile(name, path) {
     const url = new URL(`/workspaces/${name}/file`, baseUrl);
-    url.searchParams.set('file', path);
+    url.searchParams.set("file", path);
     const res = await fetch(url, authHeaders());
 
     if (!res.ok) {
@@ -72,9 +90,9 @@ export const Workspaces = {
 
   async writeFile(name, path, content) {
     const url = new URL(`/workspaces/${name}/file`, baseUrl);
-    url.searchParams.set('file', path);
+    url.searchParams.set("file", path);
     const res = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       body: content,
       ...authHeaders(),
     });
@@ -99,7 +117,7 @@ export const Sessions = {
 
   async create(name, values = {}) {
     const res = await fetch(new URL(`/workspaces/${name}/history`, baseUrl), {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ ...values }),
       ...authHeaders(),
     });
@@ -122,7 +140,7 @@ export const Sessions = {
 
   async delete(name, id) {
     const res = await fetch(new URL(`/workspaces/${name}/history/${id}`, baseUrl), {
-      method: 'DELETE',
+      method: "DELETE",
       ...authHeaders(),
     });
     if (!res.ok) {
@@ -133,7 +151,7 @@ export const Sessions = {
   async sendMessage(name, id, m) {
     const { message, model } = m;
     const res = await fetch(new URL(`/workspaces/${name}/history/${id}/message`, baseUrl), {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ message, model }),
       ...authHeaders(),
     });
@@ -147,7 +165,7 @@ export const Sessions = {
 
   async retry(name, id) {
     const res = await fetch(new URL(`/workspaces/${name}/history/${id}/retry`, baseUrl), {
-      method: 'POST',
+      method: "POST",
       ...authHeaders(),
     });
 
@@ -160,7 +178,7 @@ export const Sessions = {
 
   async deleteMessage(name, sessionId, uid) {
     const res = await fetch(new URL(`/workspaces/${name}/history/${sessionId}/message/${uid}`, baseUrl), {
-      method: 'DELETE',
+      method: "DELETE",
       ...authHeaders(),
     });
 
@@ -172,7 +190,7 @@ export const Sessions = {
 
 export const Models = {
   async list() {
-    const res = await fetch(new URL('/models', baseUrl), authHeaders());
+    const res = await fetch(new URL("/models", baseUrl), authHeaders());
 
     if (!res.ok) {
       throw new Error(`Failed to list workspace history: ${res.status} ${res.statusText}`);
@@ -182,8 +200,8 @@ export const Models = {
   },
 
   async pull(name) {
-    const res = await fetch(new URL('/models/' + name, baseUrl), {
-      method: 'POST',
+    const res = await fetch(new URL("/models/" + name, baseUrl), {
+      method: "POST",
       ...authHeaders(),
     });
 
@@ -198,7 +216,7 @@ export const Models = {
 export const events = new EventTarget();
 
 async function init() {
-  const res = await fetch('/.env');
+  const res = await fetch("/.env");
   const vars = await res.json();
   Object.assign(env, vars);
 
@@ -207,10 +225,10 @@ async function init() {
   let backoff = 1000;
 
   function connect() {
-    const ws = new WebSocket(new URL('/agents', vars.MESSAGE_HUB_URL));
+    const ws = new WebSocket(new URL("/agents", vars.MESSAGE_HUB_URL));
 
     ws.onmessage = async (e) => {
-      const json = typeof e.data !== 'string' ? await e.data.text() : e.data;
+      const json = typeof e.data !== "string" ? await e.data.text() : e.data;
       const { eventName, data } = JSON.parse(json);
       events.dispatchEvent(new CustomEvent(eventName, { detail: data }));
     };

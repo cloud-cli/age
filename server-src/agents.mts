@@ -1,19 +1,15 @@
-import { parseEnv } from 'node:util';
-import { join, resolve } from 'node:path';
-import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
-import { spawn } from 'node:child_process';
-import { tmpdir } from 'node:os';
-import { existsSync, readFileSync } from 'node:fs';
-import { tools, toolsByName } from './tools.mjs';
-import { callModel } from './backend/ollama.mjs';
-import { History } from './history.mjs';
-import { dataDir } from './env.mjs';
-import { publish } from './events.mjs';
+import { join, resolve, relative, sep } from "node:path";
+import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { existsSync, realpathSync } from "node:fs";
+import { tools, toolsByName } from "./tools.mjs";
+import { callModel } from "./backend/ollama.mjs";
+import { History } from "./history.mjs";
+import { dataDir } from "./env.mjs";
+import { publish } from "./events.mjs";
 
-const shell = process.env.SHELL || 'sh';
 const defaultModel = process.env.MODEL;
-const agentSystemPrompt = await readFile(new URL('./../system.txt', import.meta.url), 'utf8');
+const agentSystemPrompt = await readFile(new URL("./../system.txt", import.meta.url), "utf8");
 
 export class Context {
   workspace: string;
@@ -31,48 +27,21 @@ export class Context {
     return join(dataDir, this.workspace);
   }
 
-  getShell() {
-    const tmpEnv = join(tmpdir(), this.uid + '.env');
-    const env = { ...process.env, TMP_ENV: tmpEnv };
-
-    if (existsSync(tmpEnv)) {
-      Object.assign(env, parseEnv(readFileSync(tmpEnv, 'utf8')));
-    }
-
-    // const cwd = this.getPath('.');
-    const sh = spawn(shell, [], {
-      // cwd: env.PWD?.includes(cwd) ? env.PWD : cwd,
-      shell,
-      env,
-    });
-
-    function exec(v) {
-      const chunks = [];
-      sh.stdout.on('data', (c) => chunks.push(c));
-      sh.stderr.on('data', (c) => chunks.push(c));
-
-      return new Promise((resolve, reject) => {
-        sh.stdin.write(v + '\n');
-        sh.stdin.write('export shell_exit=$?\n');
-        sh.stdin.write('env > $TMP_ENV\n');
-        sh.stdin.write('exit $shell_exit\n');
-
-        sh.on('exit', (code) => {
-          const output = {
-            code,
-            output: Buffer.concat(chunks).toString('utf8')
-          };
-
-          code ? reject(output) : resolve(output);
-        });
-      });
-    }
-
-    return { exec };
-  }
-
   getPath(s) {
-    return join(this.workspacePath, 'files', resolve('/', s || '.'));
+    const root = resolve(this.workspacePath, "files");
+    const realRoot = realpathSync(root);
+    const input = String(s || ".").replace(/^[/\\]+/, "");
+    const target = resolve(root, input);
+    const rel = relative(root, target);
+    if (rel === ".." || rel.startsWith(`..${sep}`) || resolve(target) !== target)
+      throw new Error("Path escapes workspace");
+    // Resolve the nearest existing target so symlinks cannot escape the workspace.
+    let existing = target;
+    while (!existsSync(existing)) existing = resolve(existing, "..");
+    const realExisting = realpathSync(existing);
+    if (realExisting !== realRoot && !realExisting.startsWith(realRoot + sep))
+      throw new Error("Path escapes workspace");
+    return target;
   }
 }
 
@@ -84,7 +53,7 @@ export async function getModelResponse(history: History) {
     think: true,
     messages: [
       {
-        role: 'system',
+        role: "system",
         content: agentSystemPrompt,
       },
       ...(await history.getMessagesForModel()),
@@ -97,48 +66,84 @@ export async function getModelResponse(history: History) {
 
 function convertValue(value, type) {
   switch (type) {
-    case 'string':
+    case "string":
       return String(value);
-    case 'number':
+    case "number":
       return Number(value);
-    case 'boolean':
+    case "boolean":
       return Boolean(value);
-    case 'object':
-      return typeof value === 'object' ? value : JSON.parse(value);
+    case "object":
+      return typeof value === "object" ? value : JSON.parse(value);
 
     default:
       return value;
   }
 }
 
-export function executeFunction(functionName: string, modelArgs: any[], context: Context) {
+export async function executeFunction(functionName: string, modelArgs: any[], context: Context) {
   const specs = tools.find((next) => next.function.name === functionName);
 
   if (!specs) {
     throw new Error(`Function not found: ${functionName}`);
   }
 
-  const args = Object.entries(specs.function.parameters.properties);
-  const foundArgs = [];
+  if (!modelArgs || typeof modelArgs !== "object" || Array.isArray(modelArgs)) {
+    throw new Error("Tool arguments must be an object");
+  }
+  const args: [string, any][] = Object.entries(specs.function.parameters.properties);
+  const foundArgs: any[] = [];
 
   for (const [argName, x] of args) {
     const { type } = x;
     const value = modelArgs[argName];
 
     if (value === undefined) {
+      foundArgs.push(undefined);
       continue;
     }
 
+    if (type === "string" && typeof value !== "string") {
+      throw new Error(`Invalid argument: ${argName} must be a string`);
+    }
+    if (type === "number" && (typeof value !== "number" || !Number.isFinite(value))) {
+      throw new Error(`Invalid argument: ${argName} must be a number`);
+    }
+    if (type === "boolean" && typeof value !== "boolean") {
+      throw new Error(`Invalid argument: ${argName} must be a boolean`);
+    }
+    if (type === "object" && (typeof value !== "object" || value === null || Array.isArray(value))) {
+      throw new Error(`Invalid argument: ${argName} must be an object`);
+    }
     foundArgs.push(convertValue(value, type));
   }
 
   const f = toolsByName[functionName];
 
   console.log(`Call ${functionName}`, foundArgs);
-  return f.apply(context, foundArgs);
+  const required = specs.function.parameters.required || [];
+  if (required.some((name) => modelArgs[name] === undefined)) {
+    throw new Error("Missing required tool arguments");
+  }
+  const readOnly = [
+    "ReadFile",
+    "Glob",
+    "Grep",
+    "WebFetch",
+    "WebSearch",
+    "GetFileStats",
+    "ListFiles",
+    "ReadProject",
+    "ReadTasks",
+  ];
+  const safeTool = readOnly.includes(functionName);
+  if (!safeTool && process.env.ALLOW_MUTATING_TOOLS !== "true") {
+    return { status: "approval_required", tool: functionName };
+  }
+  return await f.apply(context, foundArgs);
 }
 
-export async function runAgentLoop(workspace, sessionId) {
+export async function runAgentLoop(workspace, sessionId, depth = 0) {
+  if (depth >= Number(process.env.AGENT_MAX_TOOL_ROUNDS || 12)) return;
   const history = new History(workspace, sessionId);
   let aiResponse;
 
@@ -146,18 +151,18 @@ export async function runAgentLoop(workspace, sessionId) {
     aiResponse = await getModelResponse(history);
 
     if (aiResponse.error) {
-      console.error('aiResp', aiResponse);
-      throw new Error('Invalid AI response');
+      console.error("aiResp", aiResponse);
+      throw new Error("Invalid AI response");
     }
   } catch (err) {
-    console.error('Error getting model response', err.toString('utf8'));
+    console.error("Error getting model response", err.toString("utf8"));
     throw err;
   }
 
   async function addMessage(message) {
     message.meta = { uid: randomUUID() };
     await history.push(message);
-    publish('message', { sessionId, message });
+    publish("message", { sessionId, message });
   }
 
   await addMessage(aiResponse);
@@ -175,21 +180,21 @@ export async function runAgentLoop(workspace, sessionId) {
       const functionResponse = await executeFunction(functionName, functionArgs, context);
 
       await addMessage({
-        role: 'tool',
+        role: "tool",
         tool_name: functionName,
-        content: typeof functionResponse === 'object' ? JSON.stringify(functionResponse) : String(functionResponse),
+        content: typeof functionResponse === "object" ? JSON.stringify(functionResponse) : String(functionResponse),
       });
     } catch (error) {
       console.error(`Error executing function: ${functionName} with args: ${JSON.stringify(functionArgs)}:\n ${error}`);
       await addMessage({
-        role: 'system',
+        role: "system",
         content: `Error executing function ${functionName} with args ${JSON.stringify(functionArgs)}:\nError: ${error.message}`,
       });
       break;
     }
   }
 
-  return runAgentLoop(workspace, sessionId);
+  return runAgentLoop(workspace, sessionId, depth + 1);
 }
 
 async function main() {

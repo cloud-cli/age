@@ -1,160 +1,178 @@
-<template component="chat-message">
-  <script setup>
-    import { defineProp } from '@li3/web';
-    import { useMessages } from '@app/store/messages.mjs';
-
-    export default function () {
-      const $msg = useMessages();
-      async function onDeleteMessage() {
-        const uid = m.meta?.uid;
-
-        if (!uid || !confirm('Are you sure?')) {
-          return;
-        }
-
-        await $msg.deleteMessage(uid);
-      }
-
-      const m = defineProp('message', { default: () => {} });
-
-      return { m, onDeleteMessage };
-    }
-  </script>
-
-  <div class="flex items-center justify-between text-xs mb-1">
-    <div>
-      <span class="inline-block rounded p-1 bg-zinc-700 empty:hidden" bind-inner-text="m.meta?.model || ''"></span>
-    </div>
-
-    <button class="text-red-400/70" class-hidden="m.meta?.thinking || !m.meta?.uid" on-click="onDeleteMessage()">
-      <lucide-icon icon="trash-2" size="16" title="Delete message"></lucide-icon>
-    </button>
-  </div>
-
-  <div
-    class="relative space-y-2 overflow-auto"
-    class-border-l.border-zinc-600.pl-4.py-2="m.role === 'assistant'"
-    bind-msg="m"
-  >
-    <template if="m.thinking">
-      <collapsed-text class="text-zinc-400 w-full block" bind-content="m.thinking || ''"></collapsed-text
-    ></template>
-
-    <template if="m.content">
-      <markdown-it bind-src="m.content" class="bg-zinc-900 rounded-md text-white p-1 w-full block"></markdown-it>
-    </template>
-
-    <template if="message.role === 'tool'">
-      <div class="text-emerald-500 px-1 py-0.5" bind-inner-text="m.tool_name || ''"></div>
-      <collapsed-text class="text-zinc-500" bind-content="m.content || ''"></collapsed-text>
-    </template>
-  </div>
-</template>
-
 <template component="app-chat">
-  <section class="flex flex-col bg-zinc-950 border-r border-zinc-800 h-full">
-    <div class="flex-1 overflow-y-auto p-4 font-mono text-xs flex flex-col-reverse gap-2">
-      <template for="m of $msg.messages">
-        <chat-message bind-message="m"></chat-message>
-      </template>
+  <section class="flex flex-col bg-zinc-950 h-full">
+    <header class="h-14 border-b border-zinc-800 flex items-center px-4 gap-3">
+      <button class="md:hidden" aria-label="Back to sessions" on-click="$ui.chatVisible = false">☰</button>
+      <div
+        class="font-medium"
+        bind-inner-text="$s.session?.title || ($ws.workspace ? 'New conversation' : 'Select a workspace')"
+      ></div>
+    </header>
+    <div class="flex-1 overflow-y-auto p-4 md:px-8 space-y-3" aria-live="polite">
+      <template for="m of $msg.messages"
+        ><article
+          class="max-w-3xl rounded-2xl px-4 py-3 text-sm"
+          bind-class="m.role === 'user' ? 'ml-auto bg-emerald-950 text-emerald-50' : m.role === 'tool' ? 'mx-auto bg-zinc-900 text-zinc-400' : 'mr-auto bg-zinc-800 text-zinc-100'"
+        >
+          <template if="m.role === 'tool'"
+            ><details>
+              <summary class="cursor-pointer" bind-inner-text="m.tool_name || 'Tool result'"></summary>
+              <collapsed-text bind-content="m.content || ''"></collapsed-text></details></template
+          ><template if="m.role !== 'tool'"
+            ><div class="whitespace-pre-wrap" bind-inner-text="m.content || ''"></div>
+            <div class="mt-2 flex justify-end gap-3" class-hidden="m.role !== 'assistant'">
+              <button type="button" aria-label="Read reply aloud" title="Read reply aloud" on-click="speak(m.content)">
+                ▶</button
+              ><button type="button" aria-label="Stop speaking" title="Stop speaking" on-click="stopSpeech()">■</button>
+            </div></template
+          >
+        </article></template
+      >
     </div>
-
-    <div class="p-3 border-t border-zinc-800 bg-zinc-900/20" class-hidden="!$ws.workspace || !$sessions.sessionId">
+    <div class="p-3 md:px-8 border-t border-zinc-800">
+      <label class="flex items-center gap-2 text-xs text-zinc-400 mb-2"
+        ><input type="checkbox" bind-checked="autoRead" on-change="setAutoRead($event.target.checked)" /> Read assistant
+        replies aloud</label
+      >
       <form
-        class="relative bg-zinc-900 border border-zinc-800 rounded-xl focus-within:border-zinc-700 transition p-2"
+        class="max-w-3xl mx-auto rounded-2xl bg-zinc-900 border border-zinc-700 p-2 focus-within:border-emerald-600"
         on-submit.prevent="$msg.sendMessage()"
       >
         <textarea
+          aria-label="Message draft"
           rows="2"
-          name="prompt"
-          placeholder="Next steps..."
+          placeholder="Write a message…"
           bind-value="$msg.newMessage"
           bind-disabled="$msg.sending"
-          class="w-full bg-transparent text-sm placeholder-zinc-600 focus:outline-none resize-none px-2 py-1"
-          class-text-zinc-200="!$msg.sending"
-          class-text-zinc-600="$msg.sending"
+          class="w-full bg-transparent resize-none p-2 focus:outline-none"
           on-input.stop="$msg.setNewMessage($event.target.value)"
           on-keydown="onKeyDown($event)"
         ></textarea>
-        <div class="flex justify-between items-center p-2 px-1">
-          <dynamic-list
-            label="Model"
-            placeholder="Model to use"
-            bind-list="modelListMapped"
-            bind-selected="$msg.model"
-            on-reload="$msg.reloadModelList()"
-            on-select="$msg.setModel($event.detail)"
-            on-add="onPullModel()"
-          ></dynamic-list>
-
-          <div class="flex items-center gap-3">
-            <button
-              type="submit"
-              class="bg-zinc-100 text-black hover:bg-zinc-200 font-semibold text-xs px-3 py-1 rounded-md transition"
-              class-animate-pulse="$msg.sending"
-              class-opacity-50="$msg.sendDisabled"
-              bind-disabled="$msg.sendDisabled"
+        <div class="flex justify-between items-center px-2">
+          <div class="flex gap-3">
+            <select
+              aria-label="Model"
+              class="bg-zinc-800 rounded px-2 py-1 text-xs"
+              bind-value="$msg.model"
+              on-change="$msg.setModel($event.target.value)"
             >
-              <lucide-icon icon="send-horizontal" size="24" title="Send"></lucide-icon>
-            </button>
-
-            <button
+              <option value="">Default model</option>
+              <template for="m of modelListMapped"
+                ><option bind-value="m.value" bind-inner-text="m.label"></option
+              ></template></select
+            ><button
               type="button"
-              on-click="$msg.retryMessage()"
-              class="text-xs text-zinc-600 font-mono"
-              class-hidden="!$sessions.sessionId"
+              aria-label="Start voice dictation"
+              title="Start voice dictation"
+              on-click="toggleDictation()"
+              bind-disabled="!speechAvailable"
             >
-              <lucide-icon icon="list-restart" size="24" title="Retry"></lucide-icon>
-            </button>
-
-            <button
-              type="button"
-              on-click="$msg.reloadMessages()"
-              class="text-xs text-zinc-600 font-mono"
-              class-hidden="!$sessions.sessionId"
-            >
-              <lucide-icon icon="refresh-cw" size="24" title="Reload"></lucide-icon>
+              🎙
             </button>
           </div>
+          <button
+            type="submit"
+            aria-label="Send message"
+            class="bg-emerald-700 rounded-lg px-4 py-2 focus-visible:outline focus-visible:outline-2"
+            bind-disabled="$msg.sendDisabled"
+          >
+            Send
+          </button>
         </div>
       </form>
+      <p class="text-xs text-center text-zinc-500 mt-1" role="status" bind-inner-text="voiceStatus"></p>
     </div>
   </section>
-
   <script setup>
-    import { computed } from '@li3/web';
-    import { useWorkspaces } from '@app/store/workspaces.mjs';
-    import { useSessions } from '@app/store/sessions.mjs';
-    import { useMessages } from '@app/store/messages.mjs';
-
+    import { computed, effect, ref } from "@li3/web";
+    import { useWorkspaces } from "@app/store/workspaces.mjs";
+    import { useSessions } from "@app/store/sessions.mjs";
+    import { useMessages } from "@app/store/messages.mjs";
     export default function () {
-      const $ws = useWorkspaces();
-      const $sessions = useSessions();
-      const $msg = useMessages();
+      const $ws = useWorkspaces(),
+        $s = useSessions(),
+        $msg = useMessages();
       const modelListMapped = computed(() => ($msg.modelList || []).map((m) => ({ label: m.id, value: m.id })));
-
+      const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const speechAvailable = Boolean(Speech),
+        voiceStatus = ref(""),
+        autoRead = ref(localStorage.getItem("age-auto-read") === "true");
+      let recognition,
+        dictationBase = "";
+      effect(
+        () => $msg.messages.value,
+        (items) => {
+          const latest = items?.[items.length - 1];
+          if (autoRead.value && latest?.role === "assistant" && latest.content && !latest.thinking)
+            speak(latest.content);
+        },
+      );
+      function toggleDictation() {
+        if (recognition) {
+          recognition.stop();
+          recognition = null;
+          voiceStatus.value = "Dictation stopped";
+          return;
+        }
+        if (!Speech) {
+          voiceStatus.value = "Voice dictation is not supported by this browser";
+          return;
+        }
+        recognition = new Speech();
+        recognition.interimResults = true;
+        recognition.continuous = true;
+        dictationBase = $msg.newMessage.value;
+        recognition.onresult = (event) => {
+          let finalText = "",
+            interim = "";
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) finalText += event.results[i][0].transcript;
+            else interim += event.results[i][0].transcript;
+          }
+          $msg.setNewMessage([dictationBase, finalText, interim].filter(Boolean).join(" "));
+        };
+        recognition.onerror = (event) => {
+          voiceStatus.value = `Dictation error: ${event.error}`;
+          recognition = null;
+        };
+        recognition.onend = () => {
+          recognition = null;
+        };
+        voiceStatus.value = "Listening…";
+        recognition.start();
+      }
+      function speak(text) {
+        if ("speechSynthesis" in window && text) {
+          if (recognition) recognition.stop();
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+        }
+      }
+      function stopSpeech() {
+        if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+      }
+      function setAutoRead(value) {
+        autoRead.value = value;
+        localStorage.setItem("age-auto-read", String(value));
+      }
       function onKeyDown(e) {
-        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
           e.preventDefault();
           $msg.sendMessage();
         }
       }
-
-      async function onPullModel() {
-        const name = prompt('Model name', '');
-
-        if (name) {
-          await $msg.pullModel(name);
-        }
-      }
-
       return {
         $ws,
+        $s,
         $msg,
-        $sessions,
         modelListMapped,
+        speechAvailable,
+        voiceStatus,
+        autoRead,
+        toggleDictation,
+        speak,
+        stopSpeech,
+        setAutoRead,
         onKeyDown,
-        onPullModel,
       };
     }
   </script>

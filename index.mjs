@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import router from "micro-router";
 import { readFileSync, existsSync, statSync, createReadStream } from "node:fs";
+import { timingSafeEqual } from "node:crypto";
 import { resolve, parse, join } from "node:path";
 import workspaces from "./server/workspaces.mjs";
 
@@ -18,25 +19,34 @@ const mimeTypes = {
   ".jpg": "image/jpeg",
 };
 
-const env = JSON.stringify(
-  Object.fromEntries(
-    Object.entries(process.env)
-      .filter(([key]) => key.startsWith("APP_"))
-      .map(([key, value]) => [key.replace("APP_", ""), value])
-  )
-);
+const env = JSON.stringify({
+  MESSAGE_HUB_URL: process.env.APP_MESSAGE_HUB_URL || "",
+});
+
+const authKey = process.env.AUTH_KEY;
+if (!authKey) {
+  throw new Error("AUTH_KEY must be configured");
+}
+
+function authorized(value) {
+  const received = Buffer.from(String(value || ""));
+  const expected = Buffer.from(authKey);
+  return received.length === expected.length && timingSafeEqual(received, expected);
+}
 
 const server = createServer((req, res) => {
-  res.on('finish', () => { console.log(`[${new Date().toISOString().slice(0, 19)}] [${res.statusCode}] ${req.method} ${req.url}`); });
+  res.on("finish", () => {
+    console.log(`[${new Date().toISOString().slice(0, 19)}] [${res.statusCode}] ${req.method} ${req.url}`);
+  });
 
   const url = new URL(req.url, "http://a");
   const route = `${req.method} ${url.pathname}`;
 
-  if (route === 'GET /.env') {
+  if (route === "GET /.env") {
     res.writeHead(200, { "content-type": "application/json" });
     res.end(env);
     return;
-  };
+  }
 
   if (route === "GET /favicon.ico") {
     res.writeHead(404).end();
@@ -87,7 +97,7 @@ const server = createServer((req, res) => {
     res.end();
   };
 
-  if (req.headers.authorization !== process.env.AUTH_KEY) {
+  if (!authorized(req.headers.authorization)) {
     res.sendJson({ error: "Not authorized" }, 401);
     return;
   }

@@ -1,17 +1,17 @@
-import { events, Models, Sessions } from '@app/api.mjs';
-import { useSessions } from '@app/store/sessions.mjs';
-import { useWorkspaces } from '@app/store/workspaces.mjs';
-import { defineStore } from '@li3/store';
-import { computed, effect, hook, ref } from '@li3/web';
+import { events, Models, Sessions } from "@app/api.mjs";
+import { useSessions } from "@app/store/sessions.mjs";
+import { useWorkspaces } from "@app/store/workspaces.mjs";
+import { defineStore } from "@li3/store";
+import { computed, effect, hook, ref } from "@li3/web";
 
-export const useMessages = defineStore('messages', function () {
+export const useMessages = defineStore("messages", function () {
   const $ws = useWorkspaces();
   const $session = useSessions();
   const [messages, setMessages] = hook([]);
-  const [model, setModel] = hook('');
-  const [modelList, setModelList] = hook('');
+  const [model, setModel] = hook("");
+  const [modelList, setModelList] = hook("");
   const [sending, setSending] = hook(false);
-  const newMessage = ref('');
+  const newMessage = ref("");
   const sendDisabled = computed(
     () => sending.value || !$ws.workspace || !$session.sessionId || !newMessage.value.trim(),
   );
@@ -20,13 +20,13 @@ export const useMessages = defineStore('messages', function () {
 
   function setNewMessage(v) {
     newMessage.value = v;
-    drafts.set($ws.workspace, v);
+    drafts.set(`${$ws.workspace}:${$session.sessionId || ""}`, v);
   }
 
   async function reloadMessages() {
     if ($ws.workspace && $session.sessionId) {
       const json = await Sessions.read($ws.workspace, $session.sessionId);
-      setMessages(json.messages.reverse());
+      setMessages(json.messages || []);
     } else {
       setMessages([]);
     }
@@ -46,12 +46,12 @@ export const useMessages = defineStore('messages', function () {
 
     try {
       setSending(true);
-      setNewMessage('');
+      setNewMessage("");
       const response = await Sessions.sendMessage($ws.workspace, $session.sessionId, {
         message,
         model: model.value,
       });
-      setMessages([response, ...messages.value]);
+      setMessages([...messages.value, response]);
     } catch (e) {
       setNewMessage(message);
       console.log(e);
@@ -74,19 +74,16 @@ export const useMessages = defineStore('messages', function () {
   }
 
   effect(
-    () => $ws.workspace,
-    (v) => v && setNewMessage(drafts.get(v) || ''),
+    () => `${$ws.workspace}:${$session.sessionId || ""}`,
+    (key) => setNewMessage(drafts.get(key) || ""),
   );
 
-  effect(
-    () => $session.sessionId,
-    reloadMessages,
-  )
+  effect(() => $session.sessionId, reloadMessages);
 
-  events.addEventListener('message', (e) => {
+  events.addEventListener("message", (e) => {
     const { sessionId, message } = e.detail;
     if ($session.sessionId === sessionId) {
-      messages.value = [message, ...messages.value];
+      messages.value = [...messages.value, message];
     }
   });
 
