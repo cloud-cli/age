@@ -27,7 +27,7 @@
         <section class="px-3 pt-3" class-hidden="!$ws.workspace">
           <button
             class="w-full rounded px-3 py-2 text-left text-sm hover:bg-zinc-800"
-            on-click="$s.setSessionById(''); $app.chatVisible = false"
+            on-click="$s.setSessionById(''); $app.openSidebar()"
           >
             Project overview
           </button>
@@ -53,7 +53,7 @@
             title="Create session"
             class="p-2 focus-visible:outline focus-visible:outline-2"
             bind-disabled="!$ws.workspace"
-            on-click="$s.createSession(); $app.chatVisible = true"
+            on-click="$s.createSession(); $app.openChat()"
           >
             ＋
           </button>
@@ -61,7 +61,7 @@
         <nav aria-label="Sessions" class="flex-1 overflow-y-auto p-2">
           <button
             class="w-full rounded px-3 py-2 text-left text-sm text-emerald-300 hover:bg-zinc-800"
-            on-click="$s.createSession({ role: 'planner' }); $app.chatVisible = true"
+            on-click="$s.createSession({ role: 'planner' }); $app.openChat()"
           >
             Planner · New planning session
           </button>
@@ -85,7 +85,7 @@
               <button
                 class="flex-1 text-left p-3 truncate focus-visible:outline focus-visible:outline-2"
                 bind-inner-text="s.title || s.id"
-                on-click="$s.setSessionById(s.id); $app.chatVisible = true"
+                on-click="$s.setSessionById(s.id); $app.openChat()"
               ></button
               ><button
                 aria-label="Delete session"
@@ -133,7 +133,7 @@
         if (!name?.trim()) return;
         try {
           await $ws.createWorkspace(name.trim());
-          $app.chatVisible = true;
+          $app.openChat();
         } catch (error) {
           alert(`Could not create the workspace: ${error instanceof Error ? error.message : "Unknown error"}`);
         }

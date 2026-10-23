@@ -1,7 +1,7 @@
 <template component="app-chat">
   <section class="flex flex-col bg-zinc-950 h-full" class-hidden="$app.isCompact && !$app.chatVisible">
     <header class="h-14 border-b border-zinc-800 flex items-center px-4 gap-3">
-      <button class="md:hidden" aria-label="Back to sessions" on-click="$app.chatVisible = false">☰</button>
+      <button class="md:hidden" aria-label="Back to sessions" on-click="$app.openSidebar()">☰</button>
       <div
         class="font-medium"
         bind-inner-text="$s.session?.title || ($ws.workspace ? 'New conversation' : 'Select a workspace')"
@@ -48,7 +48,7 @@
             </div>
             <button
               class="mt-6 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium"
-              on-click="$s.createSession({ role: 'planner', title: 'Planner' }); $app.chatVisible = true"
+              on-click="$s.createSession({ role: 'planner', title: 'Planner' }); $app.openChat()"
             >
               Open planner
             </button>

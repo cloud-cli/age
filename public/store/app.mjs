@@ -18,6 +18,8 @@ export const useApp = defineStore("app", function () {
     isCompact.value = event.matches;
   });
   const toggleLayout = (x) => (layout.value[x] = !layout.value[x]);
+  const openChat = () => (chatVisible.value = true);
+  const openSidebar = () => (chatVisible.value = false);
 
   effect(
     () => profile.profile,
@@ -49,5 +51,7 @@ export const useApp = defineStore("app", function () {
     toggleLayout,
     chatVisible,
     isCompact,
+    openChat,
+    openSidebar,
   };
 });
