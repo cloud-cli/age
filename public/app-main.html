@@ -130,7 +130,13 @@
       });
       async function onCreateWorkspace() {
         const name = prompt("Workspace name");
-        if (name) await $ws.createWorkspace(name);
+        if (!name?.trim()) return;
+        try {
+          await $ws.createWorkspace(name.trim());
+          $app.chatVisible = true;
+        } catch (error) {
+          alert(`Could not create the workspace: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
       }
       async function onDeleteSession(id) {
         if (confirm("Delete this session?")) {

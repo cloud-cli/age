@@ -7,9 +7,14 @@ export const useWorkspaces = defineStore("workspaces", function () {
   const workspaceList = ref([]);
   const project = ref(null);
   const tasks = ref([]);
+  let workspaceListRequest = 0;
 
   async function reloadWorkspaceList() {
-    workspaceList.value = await Workspaces.list();
+    const request = ++workspaceListRequest;
+    const list = await Workspaces.list();
+    if (request === workspaceListRequest) {
+      workspaceList.value = Array.isArray(list) ? list : [];
+    }
   }
 
   async function removeWorkspace() {
@@ -36,9 +41,12 @@ export const useWorkspaces = defineStore("workspaces", function () {
   }
 
   async function createWorkspace(nameInput) {
-    const { name } = await Workspaces.create(nameInput);
+    const created = await Workspaces.create(nameInput);
+    workspaceListRequest += 1;
+    workspaceList.value = [...workspaceList.value.filter((workspace) => workspace.name !== created.name), created];
+    setWorkspace(created.name);
     await reloadWorkspaceList();
-    await setWorkspace(name);
+    return created;
   }
 
   effect(
