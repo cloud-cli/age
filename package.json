@@ -3,6 +3,7 @@
   "dependencies": {
     "@cloud-cli/exec": "^1.2.1",
     "micro-router": "latest",
+    "openid-client": "^6.8.8",
     "unique-names-generator": "^4.7.1"
   },
   "devDependencies": {

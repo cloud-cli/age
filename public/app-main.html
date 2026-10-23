@@ -6,8 +6,11 @@
         class-hidden="$ui.isCompact && $ui.chatVisible"
       >
         <header class="p-4 border-b border-zinc-800 flex justify-between items-center">
-          <strong>Workspaces</strong
-          ><button aria-label="Create workspace" title="Create workspace" on-click="onCreateWorkspace()">＋</button>
+          <strong>Workspaces</strong>
+          <div class="flex items-center gap-2">
+            <button aria-label="Create workspace" title="Create workspace" on-click="onCreateWorkspace()">＋</button>
+            <button class="text-xs text-zinc-400 hover:text-zinc-100" on-click="signOut()">Sign out</button>
+          </div>
         </header>
         <nav aria-label="Projects" class="p-2 border-b border-zinc-800 space-y-1">
           <div class="px-2 py-1 text-xs uppercase tracking-wide text-zinc-400">Projects</div>
@@ -67,8 +70,7 @@
           >
         </nav>
         <div class="p-3 border-t border-zinc-800 flex gap-2">
-          <button class="text-sm" on-click="onCreateWorkspace()">＋ Workspace</button
-          ><button class="text-sm" on-click="$f.reloadFileList(); $ui.filesOpen = !$ui.filesOpen">Files</button>
+          <button class="text-sm" on-click="onCreateWorkspace()">＋ Workspace</button>
         </div>
       </aside>
       <main class="flex-1 min-w-0 h-dvh"><app-chat class="h-full block" bind-ui="$ui"></app-chat></main>
@@ -78,32 +80,23 @@
         <button on-click="signIn(true)" class="rounded border border-zinc-700 p-3">Sign in</button>
       </div></template
     >
-    <template if="$ui.filesOpen"
-      ><div class="fixed inset-0 z-20 bg-zinc-950/80" on-click="$ui.filesOpen = false">
-        <section class="absolute right-0 top-0 h-full w-full max-w-lg bg-zinc-900 p-4" on-click.stop>
-          <button class="mb-3" aria-label="Close files" on-click="$ui.filesOpen = false">Close</button
-          ><app-files class="block h-[90%]"></app-files>
-        </section></div
-    ></template>
   </div>
   <script setup>
     import { onInit, ref } from "@li3/web";
     import { useWorkspaces } from "@app/store/workspaces.mjs";
     import { useSessions } from "@app/store/sessions.mjs";
     import { useProfile } from "@app/store/profile.mjs";
-    import { useFiles } from "@app/store/files.mjs";
-    import { signIn } from "https://auth.api.apphor.de/index.mjs";
+    import { signIn, signOut } from "@app/store/profile.mjs";
     export default function () {
       const $ws = useWorkspaces(),
         $s = useSessions(),
-        $p = useProfile(),
-        $f = useFiles();
+        $p = useProfile();
       const isCompact = ref(window.matchMedia("(max-width: 767px)").matches);
       const mediaQuery = window.matchMedia("(max-width: 767px)");
       mediaQuery.addEventListener("change", (event) => {
         isCompact.value = event.matches;
       });
-      const $ui = { chatVisible: ref(false), filesOpen: ref(false), isCompact };
+      const $ui = { chatVisible: ref(false), isCompact };
       onInit(async () => {
         await $p.reloadProfile();
         if ($p.profile) {
@@ -123,7 +116,7 @@
           }
         }
       }
-      return { $ws, $s, $p, $f, $ui, signIn: () => signIn(true), onCreateWorkspace, onDeleteSession };
+      return { $ws, $s, $p, $ui, signIn, signOut, onCreateWorkspace, onDeleteSession };
     }
   </script>
 </template>

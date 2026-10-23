@@ -6,9 +6,7 @@
     <link rel="manifest" href="/public/manifest.json" />
 
     <link rel="component" href="/public/app-main.html" />
-    <link rel="component" href="/public/app-header.html" />
     <link rel="component" href="/public/app-chat.html" />
-    <link rel="component" href="/public/app-files.html" />
     <link rel="component" href="/public/collapsed-text.html" />
     <link rel="component" href="/public/markdown-it.html" />
     <link rel="component" href="/public/dynamic-list.html" />
@@ -28,9 +26,9 @@
     <app-main></app-main>
 
     <script type="module">
-      import { load } from '@li3/web';
+      import { load } from "@li3/web";
 
-      const components = ['lucide-icon', 'code-editor', 'file-tree'];
+      const components = ["lucide-icon"];
       components.map((x) => load(`https://sodium.static.apphor.de/${x}.html`));
     </script>
     <script type="module" async defer src="https://console.apphor.de/index.mjs"></script>
