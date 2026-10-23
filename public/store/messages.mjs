@@ -24,9 +24,11 @@ export const useMessages = defineStore("messages", function () {
   }
 
   async function reloadMessages() {
-    if ($ws.workspace && $session.sessionId) {
-      const json = await Sessions.read($ws.workspace, $session.sessionId);
-      setMessages(json.messages || []);
+    const workspace = $ws.workspace;
+    const sessionId = $session.sessionId;
+    if (workspace && sessionId) {
+      const json = await Sessions.read(workspace, sessionId);
+      if ($ws.workspace === workspace && $session.sessionId === sessionId) setMessages(json.messages || []);
     } else {
       setMessages([]);
     }
@@ -41,19 +43,21 @@ export const useMessages = defineStore("messages", function () {
 
   async function sendMessage() {
     const message = newMessage.value;
+    const workspace = $ws.workspace;
+    const sessionId = $session.sessionId;
 
-    if (!($ws.workspace && $session.sessionId && message)) return;
+    if (!(workspace && sessionId && message)) return;
 
     try {
       setSending(true);
       setNewMessage("");
-      const response = await Sessions.sendMessage($ws.workspace, $session.sessionId, {
+      const response = await Sessions.sendMessage(workspace, sessionId, {
         message,
         model: model.value,
       });
-      setMessages([...messages.value, response]);
+      if ($ws.workspace === workspace && $session.sessionId === sessionId) setMessages([...messages.value, response]);
     } catch (e) {
-      setNewMessage(message);
+      if ($ws.workspace === workspace && $session.sessionId === sessionId) setNewMessage(message);
       console.log(e);
     } finally {
       setSending(false);

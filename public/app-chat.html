@@ -1,5 +1,5 @@
 <template component="app-chat">
-  <section class="flex flex-col bg-zinc-950 h-full">
+  <section class="flex flex-col bg-zinc-950 h-full" class-hidden="$ui.isCompact && !$ui.chatVisible">
     <header class="h-14 border-b border-zinc-800 flex items-center px-4 gap-3">
       <button class="md:hidden" aria-label="Back to sessions" on-click="$ui.chatVisible = false">☰</button>
       <div
@@ -7,7 +7,56 @@
         bind-inner-text="$s.session?.title || ($ws.workspace ? 'New conversation' : 'Select a workspace')"
       ></div>
     </header>
-    <div class="flex-1 overflow-y-auto p-4 md:px-8 space-y-3" aria-live="polite">
+    <template if="!$s.sessionId">
+      <section class="flex-1 overflow-y-auto p-6 md:p-10">
+        <div class="mx-auto max-w-3xl rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+          <p class="text-xs font-semibold uppercase tracking-wide text-emerald-400">Project overview</p>
+          <h1
+            class="mt-2 text-2xl font-semibold"
+            bind-inner-text="$ws.project?.name || $ws.workspace || 'Choose a project'"
+          ></h1>
+          <p
+            class="mt-4 text-zinc-300"
+            bind-inner-text="$ws.project?.summary || 'Start a planner session to capture the project goal and plan.'"
+          ></p>
+          <template if="$ws.workspace">
+            <div class="mt-6 grid gap-5 md:grid-cols-3">
+              <section>
+                <h2 class="text-sm font-medium">Goals</h2>
+                <ul class="mt-2 space-y-1 text-sm text-zinc-400">
+                  <template for="goal of ($ws.project?.goals || ['No goals recorded'])"
+                    ><li bind-inner-text="goal"></li
+                  ></template>
+                </ul>
+              </section>
+              <section>
+                <h2 class="text-sm font-medium">Recent updates</h2>
+                <ul class="mt-2 space-y-1 text-sm text-zinc-400">
+                  <template for="update of ($ws.project?.recentUpdates || ['No updates recorded'])"
+                    ><li bind-inner-text="update"></li
+                  ></template>
+                </ul>
+              </section>
+              <section>
+                <h2 class="text-sm font-medium">Next steps</h2>
+                <ul class="mt-2 space-y-1 text-sm text-zinc-400">
+                  <template for="step of ($ws.project?.nextSteps || ['No next steps recorded'])"
+                    ><li bind-inner-text="step"></li
+                  ></template>
+                </ul>
+              </section>
+            </div>
+            <button
+              class="mt-6 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium"
+              on-click="$s.createSession({ role: 'planner', title: 'Planner' }); $ui.chatVisible = true"
+            >
+              Open planner
+            </button>
+          </template>
+        </div>
+      </section>
+    </template>
+    <div class="flex-1 overflow-y-auto p-4 md:px-8 space-y-3" aria-live="polite" class-hidden="!$s.sessionId">
       <template for="m of $msg.messages"
         ><article
           class="max-w-3xl rounded-2xl px-4 py-3 text-sm"
@@ -83,14 +132,15 @@
     </div>
   </section>
   <script setup>
-    import { computed, effect, ref } from "@li3/web";
+    import { computed, defineProp, effect, ref } from "@li3/web";
     import { useWorkspaces } from "@app/store/workspaces.mjs";
     import { useSessions } from "@app/store/sessions.mjs";
     import { useMessages } from "@app/store/messages.mjs";
     export default function () {
       const $ws = useWorkspaces(),
         $s = useSessions(),
-        $msg = useMessages();
+        $msg = useMessages(),
+        $ui = defineProp("ui", { default: () => ({ isCompact: false, chatVisible: false }) });
       const modelListMapped = computed(() => ($msg.modelList || []).map((m) => ({ label: m.id, value: m.id })));
       const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
       const speechAvailable = Boolean(Speech),
@@ -164,6 +214,7 @@
         $ws,
         $s,
         $msg,
+        $ui,
         modelListMapped,
         speechAvailable,
         voiceStatus,

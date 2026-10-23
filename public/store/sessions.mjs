@@ -13,9 +13,9 @@ export const useSessions = defineStore("sessions", function () {
     setSession(sessionList.value.find((s) => s.id === id));
   }
 
-  async function createSession() {
+  async function createSession(values = {}) {
     if ($.workspace) {
-      const newSession = await Sessions.create($.workspace);
+      const newSession = await Sessions.create($.workspace, values);
       setSessionList(sessionList.value.concat(newSession));
       setSession(newSession);
     }
@@ -27,6 +27,13 @@ export const useSessions = defineStore("sessions", function () {
       setSession(null);
       await reloadSessionList();
     }
+  }
+
+  async function deleteSessionById(id) {
+    if (!$.workspace || !id) return;
+    await Sessions.delete($.workspace, id);
+    if (sessionId.value === id) setSession(null);
+    await reloadSessionList();
   }
 
   async function reloadSessionList() {
@@ -60,6 +67,7 @@ export const useSessions = defineStore("sessions", function () {
     setSessionById,
     createSession,
     deleteSession,
+    deleteSessionById,
     reloadSessionList,
     setSessionList,
   };

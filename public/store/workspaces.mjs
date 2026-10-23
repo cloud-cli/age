@@ -6,6 +6,7 @@ export const useWorkspaces = defineStore("workspaces", function () {
   const [workspace, setWorkspace] = hook("");
   const workspaceList = ref([]);
   const project = ref(null);
+  const tasks = ref([]);
 
   async function reloadWorkspaceList() {
     workspaceList.value = await Workspaces.list();
@@ -21,7 +22,17 @@ export const useWorkspaces = defineStore("workspaces", function () {
   }
 
   async function reloadProject() {
-    project.value = workspace.value ? await Workspaces.project(workspace.value) : null;
+    const name = workspace.value;
+    if (!name) {
+      project.value = null;
+      tasks.value = [];
+      return;
+    }
+    const [brief, taskList] = await Promise.all([Workspaces.project(name), Workspaces.tasks(name)]);
+    if (workspace.value === name) {
+      project.value = brief;
+      tasks.value = taskList;
+    }
   }
 
   async function createWorkspace(nameInput) {
@@ -39,6 +50,7 @@ export const useWorkspaces = defineStore("workspaces", function () {
     workspace,
     workspaceList,
     project,
+    tasks,
     reloadWorkspaceList,
     reloadProject,
     removeWorkspace,

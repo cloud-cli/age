@@ -19,6 +19,8 @@ export const useApp = defineStore("app", function () {
       if (v) {
         await workspaces.reloadWorkspaceList();
         await messages.reloadModelList();
+        await workspaces.reloadProject();
+        await sessions.reloadSessionList();
       }
     },
   );
@@ -30,7 +32,9 @@ export const useApp = defineStore("app", function () {
       sessions.setSessionById("");
       sessions.setSessionList([]);
       messages.setModel("");
-      await sessions.reloadSessionList();
+      if (workspaces.workspace) {
+        await Promise.all([sessions.reloadSessionList(), messages.reloadModelList(), workspaces.reloadProject()]);
+      }
     },
   );
 
