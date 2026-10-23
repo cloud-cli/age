@@ -11,6 +11,12 @@ export const useApp = defineStore("app", function () {
   const messages = useMessages();
   const profile = useProfile();
   const layout = ref({ left: true, center: true, right: true });
+  const chatVisible = ref(false);
+  const isCompact = ref(window.matchMedia("(max-width: 767px)").matches);
+  const compactMediaQuery = window.matchMedia("(max-width: 767px)");
+  compactMediaQuery.addEventListener("change", (event) => {
+    isCompact.value = event.matches;
+  });
   const toggleLayout = (x) => (layout.value[x] = !layout.value[x]);
 
   effect(
@@ -41,5 +47,7 @@ export const useApp = defineStore("app", function () {
   return {
     layout,
     toggleLayout,
+    chatVisible,
+    isCompact,
   };
 });

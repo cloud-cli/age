@@ -1,7 +1,7 @@
 <template component="app-chat">
-  <section class="flex flex-col bg-zinc-950 h-full" class-hidden="$ui.isCompact && !$ui.chatVisible">
+  <section class="flex flex-col bg-zinc-950 h-full" class-hidden="$app.isCompact && !$app.chatVisible">
     <header class="h-14 border-b border-zinc-800 flex items-center px-4 gap-3">
-      <button class="md:hidden" aria-label="Back to sessions" on-click="$ui.chatVisible = false">☰</button>
+      <button class="md:hidden" aria-label="Back to sessions" on-click="$app.chatVisible = false">☰</button>
       <div
         class="font-medium"
         bind-inner-text="$s.session?.title || ($ws.workspace ? 'New conversation' : 'Select a workspace')"
@@ -48,7 +48,7 @@
             </div>
             <button
               class="mt-6 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium"
-              on-click="$s.createSession({ role: 'planner', title: 'Planner' }); $ui.chatVisible = true"
+              on-click="$s.createSession({ role: 'planner', title: 'Planner' }); $app.chatVisible = true"
             >
               Open planner
             </button>
@@ -132,15 +132,16 @@
     </div>
   </section>
   <script setup>
-    import { computed, defineProp, effect, ref } from "@li3/web";
+    import { computed, effect, ref } from "@li3/web";
     import { useWorkspaces } from "@app/store/workspaces.mjs";
     import { useSessions } from "@app/store/sessions.mjs";
     import { useMessages } from "@app/store/messages.mjs";
+    import { useApp } from "@app/store/app.mjs";
     export default function () {
       const $ws = useWorkspaces(),
         $s = useSessions(),
         $msg = useMessages(),
-        $ui = defineProp("ui", { default: () => ({ isCompact: false, chatVisible: false }) });
+        $app = useApp();
       const modelListMapped = computed(() => ($msg.modelList || []).map((m) => ({ label: m.id, value: m.id })));
       const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
       const speechAvailable = Boolean(Speech),
@@ -214,7 +215,7 @@
         $ws,
         $s,
         $msg,
-        $ui,
+        $app,
         modelListMapped,
         speechAvailable,
         voiceStatus,
