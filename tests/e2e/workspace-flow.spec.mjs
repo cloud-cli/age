@@ -12,7 +12,7 @@ test.describe("authenticated workspace flow", () => {
     let workspaceCreated = false;
 
     async function screenshot(name) {
-      await page.screenshot({ path: testInfo.outputPath(`${name}.png`), fullPage: true });
+      await page.screenshot({ path: testInfo.outputPath(`${name}.png`) });
     }
 
     try {
