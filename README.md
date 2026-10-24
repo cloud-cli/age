@@ -55,6 +55,9 @@ Each workspace is stored below `DATA_PATH`:
 
 Optional runtime configuration includes `MODEL`, `APP_MESSAGE_HUB_URL`, `WEB_SEARCH_URL`, and
 `WEB_SEARCH_API_KEY`. Mutating agent tools remain disabled unless `ALLOW_MUTATING_TOOLS=true` is deliberately set.
+The connector settings interface requires `CONNECTOR_ENCRYPTION_KEY`, a stable secret used to encrypt per-user provider
+credentials at rest. It currently accepts Gemini and OpenAI API keys and Ollama server URLs. ChatGPT Plus OAuth sign-in
+and connector use in agent model requests are not wired up yet.
 
 ## Key routes
 

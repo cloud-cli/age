@@ -58,9 +58,13 @@ const server = createServer(async (req, res) => {
     const challenge = await oidc.calculatePKCECodeChallenge(verifier);
     const binding = randomId();
     for (const [key, login] of pendingLogins) {
-      if (login.expires <= Date.now()) pendingLogins.delete(key);
+      if (login.expires <= Date.now()) {
+        pendingLogins.delete(key);
+      }
     }
-    while (pendingLogins.size >= SESSION_MAX) pendingLogins.delete(pendingLogins.keys().next().value);
+    while (pendingLogins.size >= SESSION_MAX) {
+      pendingLogins.delete(pendingLogins.keys().next().value);
+    }
     pendingLogins.set(state, { binding, nonce, verifier, expires: Date.now() + 10 * 60 * 1000 });
     setCookie(res, LOGIN_COOKIE, binding, 10 * 60);
     const target = oidc.buildAuthorizationUrl(oidcConfig, {
@@ -98,7 +102,9 @@ const server = createServer(async (req, res) => {
         claims: { sub: claims.sub, name: claims.name, email: claims.email },
         expires: Date.now() + SESSION_TTL,
       });
-      while (sessions.size > SESSION_MAX) sessions.delete(sessions.keys().next().value);
+      while (sessions.size > SESSION_MAX) {
+        sessions.delete(sessions.keys().next().value);
+      }
       res.setHeader("Set-Cookie", [
         `${LOGIN_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`,
         `${COOKIE}=${sid}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_TTL / 1000}`,
@@ -117,7 +123,9 @@ const server = createServer(async (req, res) => {
       return;
     }
     const sid = cookieValue(req.headers.cookie, COOKIE);
-    if (sid) sessions.delete(sid);
+    if (sid) {
+      sessions.delete(sid);
+    }
     setSessionCookie(res, "", 0);
     res.writeHead(204).end();
     return;
@@ -204,12 +212,16 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  req.authSubject = session.claims.sub;
+
   handler(req, res);
 });
 
 async function start() {
   const missing = requiredOidcEnv.filter((name) => !process.env[name]);
-  if (missing.length) throw new Error(`Missing required OIDC configuration: ${missing.join(", ")}`);
+  if (missing.length) {
+    throw new Error(`Missing required OIDC configuration: ${missing.join(", ")}`);
+  }
   const issuer = new URL(process.env.OIDC_ISSUER);
   oidcConfig = await oidc.discovery(
     issuer,

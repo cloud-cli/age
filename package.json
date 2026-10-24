@@ -7,12 +7,20 @@
     "unique-names-generator": "^4.7.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.64.1",
     "@types/node": "^26.1.1",
-    "typescript": "^6.0.3"
+    "eslint": "^10.13.0",
+    "prettier": "^3.9.10",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.0"
   },
   "peerDependencies": {
     "@li3/store": "0.x",
     "@li3/web": "0.x"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --write ."
   }
 }

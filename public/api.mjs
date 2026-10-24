@@ -207,6 +207,28 @@ export const Models = {
   },
 };
 
+export const Connectors = {
+  async list() {
+    const res = await fetch(new URL("/connectors", baseUrl), authOptions());
+    if (!res.ok) {
+      throw new Error(`Failed to load connectors: ${res.status} ${res.statusText}`);
+    }
+    return res.json();
+  },
+
+  async save(values) {
+    const res = await fetch(
+      new URL("/connectors", baseUrl),
+      authOptions({ method: "PUT", body: JSON.stringify(values) }),
+    );
+    const result = await res.json();
+    if (!res.ok) {
+      throw new Error(result.error || `Failed to save connector: ${res.status}`);
+    }
+    return result;
+  },
+};
+
 export const events = new EventTarget();
 
 async function init() {
@@ -214,7 +236,9 @@ async function init() {
   const vars = await res.json();
   Object.assign(env, vars);
 
-  if (!vars.MESSAGE_HUB_URL) return;
+  if (!vars.MESSAGE_HUB_URL) {
+    return;
+  }
 
   let backoff = 1000;
 

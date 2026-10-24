@@ -9,6 +9,26 @@ import { dataDir } from "./env.mjs";
 import { History } from "./history.mjs";
 import { runAgentLoop } from "./agents.mjs";
 import { publish } from "./events.mjs";
+import { listConnectors, saveConnector } from "./connectors.mjs";
+
+async function onListConnectors(req, res) {
+  try {
+    res.sendJson(await listConnectors(req.authSubject));
+  } catch (error) {
+    res.sendJson({ error: error instanceof Error ? error.message : "Could not load connector settings" }, 500);
+  }
+}
+
+async function onSaveConnector(req, res) {
+  try {
+    const body = Buffer.concat(await req.toArray()).toString("utf8");
+    res.sendJson(await saveConnector(req.authSubject, JSON.parse(body)));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not save connector settings";
+    const status = /^(Unsupported|Invalid|Enter|Ollama)/.test(message) ? 400 : 500;
+    res.sendJson({ error: message }, status);
+  }
+}
 
 const randomName = () =>
   uniqueNamesGenerator({
@@ -136,7 +156,9 @@ async function onReadWorkspace(req, res, params) {
 
     const result = await Promise.all(
       files.map(async (file) => {
-        if (exclude.includes(file.name)) return null;
+        if (exclude.includes(file.name)) {
+          return null;
+        }
 
         const filePath = join(folderPath, file.name);
         if (file.isDirectory()) {
@@ -410,6 +432,8 @@ async function onModelPull(_req, res, params) {
 }
 
 export default {
+  "GET /connectors": onListConnectors,
+  "PUT /connectors": onSaveConnector,
   "GET /models": onModelList,
   "POST /models/:name": onModelPull,
 
