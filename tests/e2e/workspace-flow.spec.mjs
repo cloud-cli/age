@@ -87,8 +87,6 @@ test.describe("authenticated workspace flow", () => {
           { timeout: 90_000, intervals: [1_000, 2_000, 3_000] },
         )
         .toBe(true);
-      await page.reload({ waitUntil: "networkidle" });
-      await project.click();
       await expect(page.getByText("E2E workspace flow complete.", { exact: true })).toBeVisible({ timeout: 15_000 });
       await screenshot("05-agent-completed");
     } finally {
