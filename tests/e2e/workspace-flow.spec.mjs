@@ -48,12 +48,6 @@ test.describe("authenticated workspace flow", () => {
       expect(created.name).toBe(workspaceName);
 
       await page.reload({ waitUntil: "networkidle" });
-      console.log(
-        "project rows:",
-        await page
-          .locator('nav[aria-label="Projects"] button')
-          .evaluateAll((buttons) => buttons.map((button) => ({ text: button.textContent, html: button.outerHTML }))),
-      );
       const project = page.locator('nav[aria-label="Projects"]').getByRole("button", { name: workspaceName });
       await expect(project).toBeVisible();
       await screenshot("02-workspace-created-and-refreshed");
@@ -95,7 +89,7 @@ test.describe("authenticated workspace flow", () => {
         .toBe(true);
       await page.reload({ waitUntil: "networkidle" });
       await project.click();
-      await expect(page.getByText(/E2E workspace flow complete/)).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByText("E2E workspace flow complete.", { exact: true })).toBeVisible({ timeout: 15_000 });
       await screenshot("05-agent-completed");
     } finally {
       if (workspaceCreated) {
