@@ -42,11 +42,10 @@
 </template>
 
 <template component="app-main">
-  <div class="bg-zinc-950 text-zinc-100 font-sans h-dvh flex">
+  <div class="bg-zinc-950 text-zinc-100 font-sans h-dvh flex flex-col md:flex-row">
     <template if="$p.profile">
       <aside
-        class="w-72 shrink-0 border-r border-zinc-800 bg-zinc-900 flex flex-col max-md:w-full"
-        class-hidden="$app.isCompact && $app.chatVisible"
+        class="w-full md:w-72 h-[calc(100dvh-4rem)] md:h-dvh shrink-0 border-r border-zinc-800 bg-zinc-900 flex flex-col"
       >
         <header class="p-4 border-b border-zinc-800 flex justify-between items-center">
           <strong>Workspaces</strong>
@@ -55,6 +54,32 @@
             <button class="text-xs text-zinc-400 hover:text-zinc-100" on-click="signOut()">Sign out</button>
           </div>
         </header>
+        <nav aria-label="App pages" class="hidden grid-cols-3 gap-1 border-b border-zinc-800 p-2 md:grid">
+          <button
+            class="rounded px-2 py-2 text-xs"
+            bind-class="{ 'bg-zinc-800': $app.page === 'workspaces', 'text-zinc-100': $app.page === 'workspaces', 'text-zinc-400': $app.page !== 'workspaces' }"
+            bind-aria-current="$app.page === 'workspaces' ? 'page' : null"
+            on-click="openWorkspaces()"
+          >
+            Workspaces
+          </button>
+          <button
+            class="rounded px-2 py-2 text-xs"
+            bind-aria-current="$app.page === 'chat' ? 'page' : null"
+            bind-class="{ 'bg-zinc-800': $app.page === 'chat', 'text-zinc-100': $app.page === 'chat', 'text-zinc-400': $app.page !== 'chat' }"
+            on-click="openChatPage()"
+          >
+            Chat
+          </button>
+          <button
+            class="rounded px-2 py-2 text-xs"
+            bind-aria-current="$app.page === 'integrations' ? 'page' : null"
+            bind-class="{ 'bg-zinc-800': $app.page === 'integrations', 'text-zinc-100': $app.page === 'integrations', 'text-zinc-400': $app.page !== 'integrations' }"
+            on-click="openConnectors()"
+          >
+            Integrations
+          </button>
+        </nav>
         <project-list></project-list>
         <section class="px-3 pt-3" class-hidden="!$ws.workspace">
           <button class="w-full rounded px-3 py-2 text-left text-sm hover:bg-zinc-800" on-click="showProjectOverview()">
@@ -85,14 +110,6 @@
             on-click="createSession()"
           >
             ＋
-          </button>
-        </div>
-        <div class="px-3 pt-2">
-          <button
-            class="w-full rounded border border-zinc-700 px-3 py-2 text-left text-sm hover:bg-zinc-800"
-            on-click="openConnectors()"
-          >
-            AI connectors
           </button>
         </div>
         <nav aria-label="Sessions" class="flex-1 overflow-y-auto p-2">
@@ -139,17 +156,30 @@
           <button class="text-sm" on-click="onCreateWorkspace()">＋ Workspace</button>
         </div>
       </aside>
-      <section data-connectors-page hidden class="flex-1 min-w-0 h-dvh overflow-y-auto bg-zinc-950 p-5 md:p-10">
+      <section
+        data-connectors-page
+        hidden
+        class="flex-1 min-w-0 h-[calc(100dvh-4rem)] md:h-dvh overflow-y-auto bg-zinc-950 p-5 md:p-10"
+      >
         <div class="mx-auto max-w-4xl space-y-6">
           <header class="flex items-center justify-between">
             <div>
               <h1 class="text-2xl font-semibold">Integrations</h1>
               <p class="mt-1 text-sm text-zinc-400">Connect a model provider to use it in your conversations.</p>
             </div>
-            <button class="rounded border border-zinc-700 px-3 py-2 text-sm" on-click="closeConnectors()">
+            <button class="rounded border border-zinc-700 px-3 py-2 text-sm" on-click="openChatPage()">
               Back to chat
             </button>
           </header>
+          <nav aria-label="App pages" class="hidden gap-2 border-b border-zinc-800 pb-4 md:flex">
+            <button class="rounded px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-800" on-click="openWorkspaces()">
+              Workspaces
+            </button>
+            <button class="rounded px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-800" on-click="openChatPage()">
+              Chat
+            </button>
+            <span class="rounded bg-zinc-800 px-3 py-2 text-sm" aria-current="page">Integrations</span>
+          </nav>
           <p data-page-status class="text-sm text-amber-300" role="status"></p>
           <p class="text-sm text-zinc-400">
             API keys are encrypted on the server and never returned to this browser. Leave an existing key blank to keep
@@ -281,7 +311,85 @@
           </div>
         </div>
       </section>
-      <main data-chat-main class="flex-1 min-w-0 h-dvh"><app-chat class="h-full block"></app-chat></main>
+      <main data-workspace-main hidden class="flex-1 min-w-0 h-dvh overflow-y-auto bg-zinc-950 p-6 md:p-10">
+        <article class="mx-auto max-w-4xl rounded-2xl border border-zinc-800 bg-zinc-900 p-6 md:p-8">
+          <template if="$ws.workspace">
+            <p class="text-xs font-semibold uppercase tracking-wide text-emerald-400">Workspace overview</p>
+            <h1 class="mt-2 text-2xl font-semibold" bind-inner-text="$ws.project?.name || $ws.workspace"></h1>
+            <p class="mt-4 text-zinc-300" bind-inner-text="$ws.project?.summary || 'No project summary yet.'"></p>
+            <div class="mt-6 grid gap-5 md:grid-cols-3">
+              <section>
+                <h2 class="text-sm font-medium">Goals</h2>
+                <p
+                  class="mt-2 text-sm text-zinc-400"
+                  bind-inner-text="($ws.project?.goals || []).join(' · ') || 'None yet'"
+                ></p>
+              </section>
+              <section>
+                <h2 class="text-sm font-medium">Recent updates</h2>
+                <p
+                  class="mt-2 text-sm text-zinc-400"
+                  bind-inner-text="($ws.project?.recentUpdates || []).join(' · ') || 'None yet'"
+                ></p>
+              </section>
+              <section>
+                <h2 class="text-sm font-medium">Next steps</h2>
+                <p
+                  class="mt-2 text-sm text-zinc-400"
+                  bind-inner-text="($ws.project?.nextSteps || []).join(' · ') || 'None yet'"
+                ></p>
+              </section>
+            </div>
+            <button
+              class="mt-6 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium"
+              on-click="createPlannerSession()"
+            >
+              Open planner
+            </button>
+          </template>
+          <template if="!$ws.workspace">
+            <p class="text-xs font-semibold uppercase tracking-wide text-emerald-400">Your workspace</p>
+            <h1 class="mt-2 text-2xl font-semibold">Choose a project to get started</h1>
+            <p class="mt-3 text-sm text-zinc-400">
+              Select a workspace from the sidebar, or create one for your next project.
+            </p>
+            <button class="mt-6 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium" on-click="onCreateWorkspace()">
+              ＋ Create workspace
+            </button>
+          </template>
+        </article>
+      </main>
+      <main data-chat-main hidden class="flex-1 min-w-0 h-[calc(100dvh-4rem)] md:h-dvh">
+        <app-chat class="h-full block"></app-chat>
+      </main>
+      <nav aria-label="Primary navigation" class="h-16 shrink-0 border-t border-zinc-800 bg-zinc-900 md:hidden">
+        <div class="grid h-full grid-cols-3">
+          <button
+            class="flex flex-col items-center justify-center gap-1 text-xs"
+            bind-class="{ 'text-emerald-300': $app.page === 'workspaces', 'text-zinc-400': $app.page !== 'workspaces' }"
+            bind-aria-current="$app.page === 'workspaces' ? 'page' : null"
+            on-click="openWorkspaces()"
+          >
+            <span aria-hidden="true">▦</span><span>Workspaces</span>
+          </button>
+          <button
+            class="flex flex-col items-center justify-center gap-1 text-xs"
+            bind-class="{ 'text-emerald-300': $app.page === 'chat', 'text-zinc-400': $app.page !== 'chat' }"
+            bind-aria-current="$app.page === 'chat' ? 'page' : null"
+            on-click="openChatPage()"
+          >
+            <span aria-hidden="true">◌</span><span>Chat</span>
+          </button>
+          <button
+            class="flex flex-col items-center justify-center gap-1 text-xs"
+            bind-class="{ 'text-emerald-300': $app.page === 'integrations', 'text-zinc-400': $app.page !== 'integrations' }"
+            bind-aria-current="$app.page === 'integrations' ? 'page' : null"
+            on-click="openConnectors()"
+          >
+            <span aria-hidden="true">◇</span><span>Integrations</span>
+          </button>
+        </div>
+      </nav>
     </template>
     <template if="!$p.profile"
       ><div class="m-auto">
@@ -290,7 +398,7 @@
     >
   </div>
   <script setup>
-    import { getElement, onInit } from "@li3/web";
+    import { effect, getElement, onInit } from "@li3/web";
     import { useWorkspaces } from "@app/store/workspaces.mjs";
     import { useSessions } from "@app/store/sessions.mjs";
     import { useProfile } from "@app/store/profile.mjs";
@@ -305,11 +413,30 @@
         $p = useProfile(),
         $app = useApp(),
         $msg = useMessages();
+      function syncPages() {
+        const sidebar = element.querySelector("aside");
+        if (!sidebar) {
+          return;
+        }
+        const compact = $app.isCompact;
+        const visibility = [
+          [sidebar, $app.page !== "integrations" && (!compact || $app.page === "workspaces")],
+          [element.querySelector("[data-connectors-page]"), $app.page === "integrations"],
+          [element.querySelector("[data-workspace-main]"), $app.page === "workspaces" && !compact],
+          [element.querySelector("[data-chat-main]"), $app.page === "chat"],
+        ];
+        for (const [node, visible] of visibility) {
+          node.hidden = !visible;
+          node.style.display = visible ? "" : "none";
+        }
+      }
+      effect(() => `${$app.page}:${$app.isCompact}`, syncPages);
       onInit(async () => {
         await $p.reloadProfile();
         if ($p.profile) {
           await $ws.reloadWorkspaceList();
         }
+        syncPages();
       });
       async function onCreateWorkspace() {
         const name = prompt("Workspace name");
@@ -323,8 +450,17 @@
       }
 
       function showProjectOverview() {
-        $s.setSessionById("");
         $app.openSidebar();
+        $s.setSessionById("");
+      }
+
+      function openWorkspaces() {
+        $app.openSidebar();
+        $s.setSessionById("");
+      }
+
+      function openChatPage() {
+        $app.openChat();
       }
 
       async function createSession() {
@@ -348,10 +484,9 @@
         }
       }
       async function openConnectors() {
+        $app.openIntegrations();
         const page = element.querySelector("[data-connectors-page]");
-        page.hidden = false;
         page.querySelector("[data-page-status]").textContent = "";
-        element.querySelector("[data-chat-main]").hidden = true;
         try {
           const connectors = await Connectors.list();
           for (const connector of connectors) {
@@ -368,10 +503,6 @@
         } catch (error) {
           page.querySelector("[data-page-status]").textContent = error.message;
         }
-      }
-      function closeConnectors() {
-        element.querySelector("[data-connectors-page]").hidden = true;
-        element.querySelector("[data-chat-main]").hidden = false;
       }
       async function saveConnector(event) {
         const form = event.currentTarget;
@@ -434,7 +565,8 @@
         openSession,
         onDeleteSession,
         openConnectors,
-        closeConnectors,
+        openWorkspaces,
+        openChatPage,
         saveConnector,
         testConnector,
         removeConnector,

@@ -1,7 +1,7 @@
 <template component="app-chat">
-  <section class="flex flex-col bg-zinc-950 h-full" class-hidden="$app.isCompact && !$app.chatVisible">
+  <section class="flex flex-col bg-zinc-950 h-full" class-hidden="$app.isCompact && $app.page === 'workspaces'">
     <header class="h-14 border-b border-zinc-800 flex items-center px-4 gap-3">
-      <button class="md:hidden" aria-label="Back to sessions" on-click="$app.openSidebar()">☰</button>
+      <button class="md:hidden" aria-label="Back to workspaces" on-click="$app.openSidebar()">☰</button>
       <div
         class="font-medium"
         bind-inner-text="$s.session?.title || ($ws.workspace ? 'New conversation' : 'Select a workspace')"

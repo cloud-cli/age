@@ -11,15 +11,34 @@ export const useApp = defineStore("app", function () {
   const messages = useMessages();
   const profile = useProfile();
   const layout = ref({ left: true, center: true, right: true });
-  const chatVisible = ref(false);
+  const pages = new Set(["workspaces", "chat", "integrations"]);
+  const pageFromUrl = () => {
+    const page = window.location.hash.slice(2);
+    return pages.has(page) ? page : "workspaces";
+  };
+  const page = ref(pageFromUrl());
+  if (!pages.has(window.location.hash.slice(2))) {
+    window.history.replaceState(null, "", "#/workspaces");
+  }
+  window.addEventListener("popstate", () => {
+    page.value = pageFromUrl();
+  });
   const isCompact = ref(window.matchMedia("(max-width: 767px)").matches);
   const compactMediaQuery = window.matchMedia("(max-width: 767px)");
   compactMediaQuery.addEventListener("change", (event) => {
     isCompact.value = event.matches;
   });
   const toggleLayout = (x) => (layout.value[x] = !layout.value[x]);
-  const openChat = () => (chatVisible.value = true);
-  const openSidebar = () => (chatVisible.value = false);
+  function navigate(nextPage) {
+    if (!pages.has(nextPage) || page.value === nextPage) {
+      return;
+    }
+    page.value = nextPage;
+    window.history.pushState(null, "", `#/${nextPage}`);
+  }
+  const openChat = () => navigate("chat");
+  const openSidebar = () => navigate("workspaces");
+  const openIntegrations = () => navigate("integrations");
 
   effect(
     () => profile.profile,
@@ -49,9 +68,10 @@ export const useApp = defineStore("app", function () {
   return {
     layout,
     toggleLayout,
-    chatVisible,
+    page,
     isCompact,
     openChat,
     openSidebar,
+    openIntegrations,
   };
 });
