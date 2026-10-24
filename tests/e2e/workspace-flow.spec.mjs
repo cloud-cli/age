@@ -103,8 +103,13 @@ test.describe("authenticated workspace flow", () => {
           .catch(() => {});
       }
       await page
-        .getByRole("button", { name: "Sign out" })
-        .click()
+        .evaluate(async () => {
+          await fetch("/auth/logout", {
+            method: "POST",
+            credentials: "same-origin",
+            signal: AbortSignal.timeout(5_000),
+          });
+        })
         .catch(() => {});
     }
   });
