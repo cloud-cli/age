@@ -24,6 +24,7 @@ export const useWorkspaces = defineStore("workspaces", function () {
     setWorkspace("");
     await Workspaces.delete(name);
     await reloadWorkspaceList();
+    window.dispatchEvent(new Event("age:workspaces-changed"));
   }
 
   async function reloadProject() {
@@ -46,6 +47,7 @@ export const useWorkspaces = defineStore("workspaces", function () {
     workspaceList.value = [...workspaceList.value.filter((workspace) => workspace.name !== created.name), created];
     setWorkspace(created.name);
     await reloadWorkspaceList();
+    window.dispatchEvent(new Event("age:workspaces-changed"));
     return created;
   }
 
