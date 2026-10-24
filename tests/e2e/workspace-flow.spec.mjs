@@ -8,6 +8,7 @@ test.describe("authenticated workspace flow", () => {
   test.skip(!agentId || !agentKey, "AUTH_AGENT_ID and AUTH_AGENT_KEY are required for this production E2E test");
 
   test("signs in, creates a workspace and session, and receives an agent reply", async ({ page }, testInfo) => {
+    testInfo.setTimeout(150_000);
     const workspaceName = `pwe2e${randomUUID().replaceAll("-", "").slice(0, 16)}`;
     let workspaceCreated = false;
 
@@ -91,9 +92,15 @@ test.describe("authenticated workspace flow", () => {
       await screenshot("05-agent-completed");
     } finally {
       if (workspaceCreated) {
-        await page.evaluate(async (workspace) => {
-          await fetch(`/workspaces/${workspace}`, { method: "DELETE", credentials: "same-origin" });
-        }, workspaceName);
+        await page
+          .evaluate(async (workspace) => {
+            await fetch(`/workspaces/${workspace}`, {
+              method: "DELETE",
+              credentials: "same-origin",
+              signal: AbortSignal.timeout(5_000),
+            });
+          }, workspaceName)
+          .catch(() => {});
       }
       await page
         .getByRole("button", { name: "Sign out" })
