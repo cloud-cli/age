@@ -1,3 +1,22 @@
+<template component="workspace-row">
+  <button
+    class="w-full rounded px-3 py-2 text-left text-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2"
+    bind-class="{ 'bg-zinc-800 text-emerald-300': $ws.workspace === workspace.name }"
+    bind-inner-text="workspace.name || 'Untitled project'"
+    on-click="$ws.setWorkspace(workspace.name)"
+  ></button>
+  <script setup>
+    import { defineProp } from "@li3/web";
+    import { useWorkspaces } from "@app/store/workspaces.mjs";
+
+    export default function () {
+      const $ws = useWorkspaces();
+      const workspace = defineProp("workspace", { default: () => ({}) });
+      return { $ws, workspace };
+    }
+  </script>
+</template>
+
 <template component="app-main">
   <div class="bg-zinc-950 text-zinc-100 font-sans h-dvh flex">
     <template if="$p.profile">
@@ -15,13 +34,7 @@
         <nav aria-label="Projects" class="p-2 border-b border-zinc-800 space-y-1">
           <div class="px-2 py-1 text-xs uppercase tracking-wide text-zinc-400">Projects</div>
           <template for="w of $ws.workspaceList">
-            <button
-              class="w-full rounded px-3 py-2 text-left text-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2"
-              bind-class="{ 'bg-zinc-800 text-emerald-300': $ws.workspace === w.name }"
-              on-click="$ws.setWorkspace(w.name)"
-            >
-              {{ w.name }}
-            </button>
+            <workspace-row bind-workspace="w"></workspace-row>
           </template>
           <p class="px-2 py-1 text-xs text-zinc-500" class-hidden="$ws.workspaceList.length">No projects yet</p>
         </nav>
