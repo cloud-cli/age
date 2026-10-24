@@ -263,44 +263,23 @@
                 </button>
               </div>
             </form>
-            <form
-              data-provider-form="ollama"
-              class="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900 p-5"
-              on-submit.prevent="saveConnector($event)"
-            >
-              <div>
-                <h2 class="font-semibold">Ollama</h2>
-                <p data-provider-status="ollama" class="mt-1 text-xs text-zinc-400" role="status">Not connected</p>
-              </div>
-              <label class="block text-sm"
-                >Server URL<input
-                  name="url"
-                  type="url"
-                  class="mt-1 w-full rounded bg-zinc-800 p-2"
-                  placeholder="https://ollama.example.com"
-                  required
-              /></label>
-              <p class="-mt-2 text-xs text-zinc-500">The server must be reachable from this app server.</p>
-              <label class="block text-sm"
-                >Default model<input name="model" class="mt-1 w-full rounded bg-zinc-800 p-2" placeholder="llama3.2"
-              /></label>
-              <div class="flex flex-wrap gap-2">
-                <button class="rounded bg-emerald-700 px-3 py-2 text-sm" type="submit">Save</button
-                ><button
+            <section class="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900 p-5 md:col-span-2">
+              <header class="flex items-center justify-between gap-3">
+                <div>
+                  <h2 class="font-semibold">Ollama servers</h2>
+                  <p class="mt-1 text-xs text-zinc-400">Connect and manage multiple servers independently.</p>
+                </div>
+                <button
                   type="button"
                   class="rounded border border-zinc-700 px-3 py-2 text-sm"
-                  on-click="testConnector('ollama')"
+                  on-click="addOllamaServer()"
                 >
-                  Test connection</button
-                ><button
-                  type="button"
-                  class="rounded px-3 py-2 text-sm text-red-300"
-                  on-click="removeConnector('ollama')"
-                >
-                  Disconnect
+                  ＋ Add server
                 </button>
-              </div>
-            </form>
+              </header>
+              <div data-ollama-servers class="grid gap-4 md:grid-cols-2"></div>
+              <p class="text-xs text-zinc-500">Each server must be reachable from this app server.</p>
+            </section>
             <section class="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900 p-5 md:col-span-2">
               <h2 class="font-semibold">ChatGPT Plus</h2>
               <p class="text-sm text-zinc-400">
@@ -490,16 +469,17 @@
         try {
           const connectors = await Connectors.list();
           for (const connector of connectors) {
+            if (connector.provider === "ollama") {
+              continue;
+            }
             const form = page.querySelector(`[data-provider-form="${connector.provider}"]`);
             const status = form.querySelector(`[data-provider-status="${connector.provider}"]`);
             status.textContent = connector.configured
               ? `Configured${connector.model ? ` · default model: ${connector.model}` : ""}`
               : "Not connected";
             form.elements.model.value = connector.model;
-            if (connector.provider === "ollama") {
-              form.elements.url.value = connector.url || "";
-            }
           }
+          renderOllamaServers(connectors.filter((connector) => connector.provider === "ollama"));
         } catch (error) {
           page.querySelector("[data-page-status]").textContent = error.message;
         }
@@ -509,11 +489,18 @@
         const values = Object.fromEntries(new FormData(form));
         const provider = form.dataset.providerForm;
         values.provider = provider;
+        if (provider === "ollama" && form.dataset.connectorId) {
+          values.id = form.dataset.connectorId;
+        }
         const status = form.querySelector(`[data-provider-status="${provider}"]`);
         status.textContent = "Saving…";
         try {
           const connector = await Connectors.save(values);
           status.textContent = `${connector.provider} settings saved. Test the connection to load available models.`;
+          if (connector.provider === "ollama") {
+            form.dataset.connectorId = connector.id;
+            form.querySelector("[data-connector-name]").textContent = connector.name;
+          }
           if (form.elements.credential) {
             form.elements.credential.value = "";
           }
@@ -522,12 +509,15 @@
           status.textContent = error.message;
         }
       }
-      async function testConnector(provider) {
-        const form = element.querySelector(`[data-provider-form="${provider}"]`);
+      async function testConnector(provider, form = element.querySelector(`[data-provider-form="${provider}"]`)) {
         const status = form.querySelector(`[data-provider-status="${provider}"]`);
+        if (provider === "ollama" && !form.dataset.connectorId) {
+          status.textContent = "Save this server before testing its connection.";
+          return;
+        }
         status.textContent = "Testing connection…";
         try {
-          const models = await Connectors.test(provider);
+          const models = await Connectors.test(provider, form.dataset.connectorId);
           status.textContent = `Connected · ${models.length} model${models.length === 1 ? "" : "s"} available`;
           if (!form.elements.model.value && models.length) {
             form.elements.model.value = models[0].name;
@@ -536,20 +526,96 @@
           status.textContent = error.message;
         }
       }
-      async function removeConnector(provider) {
+      async function removeConnector(provider, form = element.querySelector(`[data-provider-form="${provider}"]`)) {
         if (!confirm(`Disconnect ${provider}?`)) {
           return;
         }
-        const form = element.querySelector(`[data-provider-form="${provider}"]`);
         const status = form.querySelector(`[data-provider-status="${provider}"]`);
         try {
-          await Connectors.remove(provider);
-          form.reset();
-          status.textContent = "Disconnected";
+          await Connectors.remove(provider, form.dataset.connectorId);
+          if (provider === "ollama") {
+            const connectors = await Connectors.list();
+            renderOllamaServers(connectors.filter((connector) => connector.provider === "ollama"));
+          } else {
+            form.reset();
+            status.textContent = "Disconnected";
+          }
           await $msg.reloadModelList();
         } catch (error) {
           status.textContent = error.message;
         }
+      }
+      function createOllamaForm(connector = {}) {
+        const form = document.createElement("form");
+        form.dataset.providerForm = "ollama";
+        if (connector.id) {
+          form.dataset.connectorId = connector.id;
+        }
+        form.className = "space-y-4 rounded-xl border border-zinc-800 bg-zinc-950 p-4";
+
+        const heading = document.createElement("h3");
+        heading.className = "font-medium";
+        heading.dataset.connectorName = "";
+        heading.textContent = connector.name || "New Ollama server";
+        form.append(heading);
+
+        const status = document.createElement("p");
+        status.className = "text-xs text-zinc-400";
+        status.dataset.providerStatus = "ollama";
+        status.setAttribute("role", "status");
+        status.textContent = connector.id ? "Configured" : "Not saved";
+        form.append(status);
+
+        const addInput = (labelText, name, type, value, placeholder, required = false) => {
+          const label = document.createElement("label");
+          label.className = "block text-sm";
+          label.append(document.createTextNode(labelText));
+          const input = document.createElement("input");
+          input.name = name;
+          input.type = type;
+          input.value = value || "";
+          input.placeholder = placeholder;
+          input.required = required;
+          input.className = "mt-1 w-full rounded bg-zinc-800 p-2";
+          label.append(input);
+          form.append(label);
+        };
+        addInput("Server name", "name", "text", connector.name, "Home Ollama", true);
+        addInput("Server URL", "url", "url", connector.url, "https://ollama.example.com", true);
+        addInput("Default model", "model", "text", connector.model, "llama3.2");
+
+        const actions = document.createElement("div");
+        actions.className = "flex flex-wrap gap-2";
+        const addButton = (label, className, handler, submit = false) => {
+          const button = document.createElement("button");
+          button.type = submit ? "submit" : "button";
+          button.className = className;
+          button.textContent = label;
+          if (handler) {
+            button.addEventListener("click", handler);
+          }
+          actions.append(button);
+        };
+        addButton("Save server", "rounded bg-emerald-700 px-3 py-2 text-sm", null, true);
+        addButton("Test connection", "rounded border border-zinc-700 px-3 py-2 text-sm", () =>
+          testConnector("ollama", form),
+        );
+        if (connector.id) {
+          addButton("Disconnect", "rounded px-3 py-2 text-sm text-red-300", () => removeConnector("ollama", form));
+        }
+        form.append(actions);
+        form.addEventListener("submit", (event) => {
+          event.preventDefault();
+          saveConnector(event);
+        });
+        return form;
+      }
+      function renderOllamaServers(connectors) {
+        const list = element.querySelector("[data-ollama-servers]");
+        list.replaceChildren(...(connectors.length ? connectors.map(createOllamaForm) : [createOllamaForm()]));
+      }
+      function addOllamaServer() {
+        element.querySelector("[data-ollama-servers]").append(createOllamaForm());
       }
       return {
         $ws,
@@ -570,6 +636,7 @@
         saveConnector,
         testConnector,
         removeConnector,
+        addOllamaServer,
       };
     }
   </script>

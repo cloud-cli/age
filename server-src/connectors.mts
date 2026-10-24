@@ -1,10 +1,21 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from "node:crypto";
 import { isIP } from "node:net";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { dataDir } from "./env.mjs";
 
 const providers = ["gemini", "openai", "ollama"] as const;
+
+function ollamaConnections(stored: any) {
+  if (Array.isArray(stored.ollama)) {
+    return stored.ollama;
+  }
+  if (stored.ollama?.url) {
+    const id = `ollama-${createHash("sha256").update(stored.ollama.url).digest("hex").slice(0, 12)}`;
+    return [{ ...stored.ollama, id, name: "Ollama" }];
+  }
+  return [];
+}
 
 function validateOllamaUrl(value: string) {
   const url = new URL(value);
@@ -63,72 +74,96 @@ async function readConnectors(subject: string) {
 
 export async function listConnectors(subject: string) {
   const stored = await readConnectors(subject);
-  return providers.map((provider) => ({
-    provider,
-    configured: Boolean(stored[provider]?.credential || stored[provider]?.url),
-    model: stored[provider]?.model || "",
-    url: provider === "ollama" ? stored[provider]?.url || "" : undefined,
-  }));
+  return [
+    ...providers
+      .filter((provider) => provider !== "ollama")
+      .map((provider) => ({
+        provider,
+        configured: Boolean(stored[provider]?.credential),
+        model: stored[provider]?.model || "",
+      })),
+    ...ollamaConnections(stored).map(({ id, name, model, url }) => ({
+      provider: "ollama",
+      id,
+      name,
+      model: model || "",
+      url,
+      configured: true,
+    })),
+  ];
 }
 
-export async function deleteConnector(subject: string, provider: string) {
+export async function deleteConnector(subject: string, provider: string, id?: string) {
   if (!providers.includes(provider as (typeof providers)[number])) {
     throw new Error("Unsupported connector");
   }
   const stored = await readConnectors(subject);
-  delete stored[provider];
+  if (provider === "ollama") {
+    const connections = ollamaConnections(stored);
+    if (id) {
+      stored.ollama = connections.filter((connection) => connection.id !== id);
+    } else {
+      stored.ollama = [];
+    }
+  } else {
+    delete stored[provider];
+  }
   await writeConnectors(subject, stored);
 }
 
-export async function getConfiguredModels(subject: string, onlyProvider?: string) {
+export async function getConfiguredModels(subject: string, onlyProvider?: string, onlyConnectionId?: string) {
   const stored = await readConnectors(subject);
   const results = await Promise.all(
-    providers.map(async (provider) => {
-      try {
-        if (onlyProvider && provider !== onlyProvider) {
-          return [];
-        }
-        const connector = stored[provider];
-        if (!connector) {
-          return [];
-        }
-        const ollamaURL = provider === "ollama" ? validateOllamaUrl(connector.url) : undefined;
-        const url =
-          provider === "gemini"
-            ? "https://generativelanguage.googleapis.com/v1beta/openai/models"
-            : provider === "openai"
-              ? "https://api.openai.com/v1/models"
-              : `${ollamaURL!.origin}/v1/models`;
-        const response = await fetch(url, {
-          headers:
-            provider === "gemini"
-              ? { "x-goog-api-key": connector.credential }
-              : connector.credential
-                ? { Authorization: `Bearer ${connector.credential}` }
-                : {},
-          signal: AbortSignal.timeout(15_000),
-          redirect: "error",
+    providers
+      .filter((provider) => !onlyProvider || onlyProvider === provider)
+      .flatMap((provider) => {
+        const connectors =
+          provider === "ollama"
+            ? ollamaConnections(stored).filter((connector) => !onlyConnectionId || connector.id === onlyConnectionId)
+            : stored[provider]
+              ? [{ ...stored[provider], id: undefined, name: undefined }]
+              : [];
+        return connectors.map(async (connector) => {
+          try {
+            const ollamaURL = provider === "ollama" ? validateOllamaUrl(connector.url) : undefined;
+            const url =
+              provider === "gemini"
+                ? "https://generativelanguage.googleapis.com/v1beta/openai/models"
+                : provider === "openai"
+                  ? "https://api.openai.com/v1/models"
+                  : `${ollamaURL!.origin}/v1/models`;
+            const response = await fetch(url, {
+              headers:
+                provider === "gemini"
+                  ? { "x-goog-api-key": connector.credential }
+                  : connector.credential
+                    ? { Authorization: `Bearer ${connector.credential}` }
+                    : {},
+              signal: AbortSignal.timeout(15_000),
+              redirect: "error",
+            });
+            if (!response.ok) {
+              throw new Error(`${provider} model lookup failed (${response.status})`);
+            }
+            const body: any = await response.json();
+            return (body.data || []).map((model, index) => {
+              const name = provider === "gemini" ? model.id.replace(/^models\//, "") : model.id;
+              return {
+                id: provider === "ollama" ? `ollama:${connector.id}/${name}` : `${provider}/${name}`,
+                name,
+                provider,
+                ...(provider === "ollama" ? { serverName: connector.name } : {}),
+                default: connector.model ? connector.model === name : index === 0,
+              };
+            });
+          } catch (error) {
+            if (onlyProvider) {
+              throw error;
+            }
+            return [];
+          }
         });
-        if (!response.ok) {
-          throw new Error(`${provider} model lookup failed (${response.status})`);
-        }
-        const body: any = await response.json();
-        return (body.data || []).map((model, index) => {
-          const name = provider === "gemini" ? model.id.replace(/^models\//, "") : model.id;
-          return {
-            id: `${provider}/${name}`,
-            name,
-            provider,
-            default: connector.model ? connector.model === name : index === 0,
-          };
-        });
-      } catch (error) {
-        if (onlyProvider) {
-          throw error;
-        }
-        return [];
-      }
-    }),
+      }),
   );
   return results.flat();
 }
@@ -139,7 +174,8 @@ export async function callConfiguredModel(subject: string, requestBody: any) {
   if (separator < 1) {
     return undefined;
   }
-  const provider = requested.slice(0, separator);
+  const providerKey = requested.slice(0, separator);
+  const [provider, connectionId] = providerKey.split(":", 2);
   if (!providers.includes(provider as (typeof providers)[number])) {
     return undefined;
   }
@@ -147,7 +183,12 @@ export async function callConfiguredModel(subject: string, requestBody: any) {
   if (!model) {
     throw new Error("Select a model in AI settings before sending a message");
   }
-  const connector = (await readConnectors(subject))[provider];
+  const stored = await readConnectors(subject);
+  const connector =
+    provider === "ollama"
+      ? ollamaConnections(stored).find((item) => item.id === connectionId) ||
+        (!connectionId ? ollamaConnections(stored)[0] : undefined)
+      : stored[provider];
   if (!connector) {
     throw new Error(`${provider} is not configured. Open AI settings to connect it.`);
   }
@@ -205,7 +246,7 @@ export async function callConfiguredModel(subject: string, requestBody: any) {
 }
 
 export async function saveConnector(subject: string, input: any) {
-  const { provider, credential, model, url } = input || {};
+  const { provider, credential, model, url, id, name } = input || {};
   if (!providers.includes(provider)) {
     throw new Error("Unsupported connector");
   }
@@ -221,19 +262,41 @@ export async function saveConnector(subject: string, input: any) {
       }
       throw error;
     }
+    if (typeof name !== "string" || !name.trim() || name.length > 100) {
+      throw new Error("Enter an Ollama server name");
+    }
   } else if (credential !== undefined && (typeof credential !== "string" || credential.length > 4096)) {
     throw new Error("Invalid API key");
   }
 
   const stored = await readConnectors(subject);
+  if (provider === "ollama") {
+    const connections = ollamaConnections(stored);
+    const previous = id ? connections.find((connection) => connection.id === id) : undefined;
+    if (id && !previous) {
+      throw new Error("Ollama server not found");
+    }
+    const connection = {
+      id: previous?.id || randomUUID(),
+      name: name.trim(),
+      url: validateOllamaUrl(url).origin,
+      model: model.trim() || previous?.model || "",
+    };
+    stored.ollama = previous
+      ? connections.map((item) => (item.id === previous.id ? connection : item))
+      : [...connections, connection];
+    await writeConnectors(subject, stored);
+    return (await listConnectors(subject)).find(
+      (connector) => connector.provider === provider && connector.id === connection.id,
+    );
+  }
+
   const previous = stored[provider] || {};
   stored[provider] = {
-    ...(provider === "ollama"
-      ? { url: validateOllamaUrl(url).origin }
-      : { credential: credential?.trim() || previous.credential }),
+    credential: credential?.trim() || previous.credential,
     model: model.trim() || previous.model || "",
   };
-  if (provider !== "ollama" && !stored[provider].credential) {
+  if (!stored[provider].credential) {
     throw new Error("Enter an API key");
   }
   await writeConnectors(subject, stored);

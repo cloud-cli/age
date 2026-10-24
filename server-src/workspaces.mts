@@ -30,9 +30,9 @@ async function onSaveConnector(req, res) {
   }
 }
 
-async function onDeleteConnector(_req, res, params) {
+async function onDeleteConnector(req, res, params) {
   try {
-    await deleteConnector(_req.authSubject, params.provider);
+    await deleteConnector(req.authSubject, params.provider, params.id);
     res.writeHead(204).end();
   } catch (error) {
     res.sendJson({ error: error instanceof Error ? error.message : "Could not disconnect provider" }, 400);
@@ -41,7 +41,7 @@ async function onDeleteConnector(_req, res, params) {
 
 async function onTestConnector(req, res, params) {
   try {
-    const models = await getConfiguredModels(req.authSubject, params.provider);
+    const models = await getConfiguredModels(req.authSubject, params.provider, params.id);
     if (!models.length) {
       res.sendJson({ error: "No models were returned by this connector" }, 502);
       return;
@@ -461,7 +461,9 @@ export default {
   "GET /connectors": onListConnectors,
   "PUT /connectors": onSaveConnector,
   "DELETE /connectors/:provider": onDeleteConnector,
+  "DELETE /connectors/ollama/:id": onDeleteConnector,
   "GET /connectors/:provider/models": onTestConnector,
+  "GET /connectors/ollama/:id/models": onTestConnector,
   "GET /models": onModelList,
   "POST /models/:name": onModelPull,
 

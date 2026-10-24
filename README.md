@@ -55,8 +55,9 @@ Each workspace is stored below `DATA_PATH`:
 
 Optional runtime configuration includes `MODEL`, `APP_MESSAGE_HUB_URL`, `WEB_SEARCH_URL`, and
 `WEB_SEARCH_API_KEY`. Mutating agent tools remain disabled unless `ALLOW_MUTATING_TOOLS=true` is deliberately set.
-The Integrations page supports per-user Gemini/OpenAI API keys and Ollama server URLs, including model discovery,
-connection checks, and disconnect. Set `CONNECTOR_ENCRYPTION_KEY` to a stable secret to encrypt credentials at rest.
+The Integrations page supports per-user Gemini/OpenAI API keys and multiple named Ollama servers, including per-server
+model discovery, connection checks, and disconnect. Set `CONNECTOR_ENCRYPTION_KEY` to a stable secret to encrypt
+credentials at rest.
 ChatGPT Plus OAuth sign-in is not wired up yet. The PWA supports pull-down-to-refresh and revalidates app assets on
 reload.
 

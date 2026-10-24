@@ -228,8 +228,12 @@ export const Connectors = {
     return result;
   },
 
-  async test(provider) {
-    const res = await fetch(new URL(`/connectors/${provider}/models`, baseUrl), authOptions());
+  async test(provider, id) {
+    const path =
+      provider === "ollama" && id
+        ? `/connectors/ollama/${encodeURIComponent(id)}/models`
+        : `/connectors/${provider}/models`;
+    const res = await fetch(new URL(path, baseUrl), authOptions());
     const result = await res.json();
     if (!res.ok) {
       throw new Error(result.error || `Connector test failed: ${res.status}`);
@@ -237,8 +241,10 @@ export const Connectors = {
     return result.models;
   },
 
-  async remove(provider) {
-    const res = await fetch(new URL(`/connectors/${provider}`, baseUrl), authOptions({ method: "DELETE" }));
+  async remove(provider, id) {
+    const path =
+      provider === "ollama" && id ? `/connectors/ollama/${encodeURIComponent(id)}` : `/connectors/${provider}`;
+    const res = await fetch(new URL(path, baseUrl), authOptions({ method: "DELETE" }));
     if (!res.ok) {
       throw new Error(`Failed to disconnect ${provider}: ${res.status}`);
     }
