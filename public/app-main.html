@@ -57,10 +57,7 @@
         </header>
         <project-list></project-list>
         <section class="px-3 pt-3" class-hidden="!$ws.workspace">
-          <button
-            class="w-full rounded px-3 py-2 text-left text-sm hover:bg-zinc-800"
-            on-click="$s.setSessionById(''); $app.openSidebar()"
-          >
+          <button class="w-full rounded px-3 py-2 text-left text-sm hover:bg-zinc-800" on-click="showProjectOverview()">
             Project overview
           </button>
           <div class="mt-2 text-xs uppercase text-zinc-400">Project brief</div>
@@ -85,7 +82,7 @@
             title="Create session"
             class="p-2 focus-visible:outline focus-visible:outline-2"
             bind-disabled="!$ws.workspace"
-            on-click="$s.createSession(); $app.openChat()"
+            on-click="createSession()"
           >
             ＋
           </button>
@@ -93,7 +90,7 @@
         <nav aria-label="Sessions" class="flex-1 overflow-y-auto p-2">
           <button
             class="w-full rounded px-3 py-2 text-left text-sm text-emerald-300 hover:bg-zinc-800"
-            on-click="$s.createSession({ role: 'planner' }); $app.openChat()"
+            on-click="createPlannerSession()"
           >
             Planner · New planning session
           </button>
@@ -116,7 +113,7 @@
             >
               <button
                 class="flex-1 text-left p-3 truncate focus-visible:outline focus-visible:outline-2"
-                on-click="$s.setSessionById(s.id); $app.openChat()"
+                on-click="openSession(s.id)"
               >
                 {{ s.title || s.id }}</button
               ><button
@@ -170,12 +167,46 @@
           alert(`Could not create the workspace: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
       }
+
+      function showProjectOverview() {
+        $s.setSessionById("");
+        $app.openSidebar();
+      }
+
+      async function createSession() {
+        await $s.createSession();
+        $app.openChat();
+      }
+
+      async function createPlannerSession() {
+        await $s.createSession({ role: "planner", title: "Planner" });
+        $app.openChat();
+      }
+
+      async function openSession(id) {
+        await $s.setSessionById(id);
+        $app.openChat();
+      }
+
       async function onDeleteSession(id) {
         if (confirm("Delete this session?")) {
           await $s.deleteSessionById(id);
         }
       }
-      return { $ws, $s, $p, $app, signIn, signOut, onCreateWorkspace, onDeleteSession };
+      return {
+        $ws,
+        $s,
+        $p,
+        $app,
+        signIn,
+        signOut,
+        onCreateWorkspace,
+        showProjectOverview,
+        createSession,
+        createPlannerSession,
+        openSession,
+        onDeleteSession,
+      };
     }
   </script>
 </template>

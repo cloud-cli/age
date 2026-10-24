@@ -48,7 +48,7 @@
             </div>
             <button
               class="mt-6 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium"
-              on-click="$s.createSession({ role: 'planner', title: 'Planner' }); $app.openChat()"
+              on-click="createPlannerSession()"
             >
               Open planner
             </button>
@@ -211,6 +211,10 @@
           $msg.sendMessage();
         }
       }
+      async function createPlannerSession() {
+        await $s.createSession({ role: "planner", title: "Planner" });
+        $app.openChat();
+      }
       return {
         $ws,
         $s,
@@ -225,6 +229,7 @@
         stopSpeech,
         setAutoRead,
         onKeyDown,
+        createPlannerSession,
       };
     }
   </script>
