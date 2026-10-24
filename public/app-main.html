@@ -139,64 +139,149 @@
           <button class="text-sm" on-click="onCreateWorkspace()">＋ Workspace</button>
         </div>
       </aside>
-      <dialog
-        data-connectors-dialog
-        class="w-[min(36rem,calc(100%-2rem))] rounded-xl border border-zinc-700 bg-zinc-900 p-0 text-zinc-100 backdrop:bg-black/70"
-      >
-        <form class="space-y-4 p-5" on-submit.prevent="saveConnector($event)">
-          <div class="flex items-center justify-between">
-            <h2 class="text-lg font-semibold">AI connectors</h2>
-            <button type="button" aria-label="Close" on-click="closeConnectors()">×</button>
-          </div>
-          <p class="text-sm text-zinc-400">API keys are encrypted on the server and never returned to this browser.</p>
-          <label class="block text-sm"
-            >Provider<select
-              name="provider"
-              class="mt-1 w-full rounded bg-zinc-800 p-2"
-              on-change="selectConnector($event.target.value)"
+      <section data-connectors-page hidden class="flex-1 min-w-0 h-dvh overflow-y-auto bg-zinc-950 p-5 md:p-10">
+        <div class="mx-auto max-w-4xl space-y-6">
+          <header class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-semibold">Integrations</h1>
+              <p class="mt-1 text-sm text-zinc-400">Connect a model provider to use it in your conversations.</p>
+            </div>
+            <button class="rounded border border-zinc-700 px-3 py-2 text-sm" on-click="closeConnectors()">
+              Back to chat
+            </button>
+          </header>
+          <p data-page-status class="text-sm text-amber-300" role="status"></p>
+          <p class="text-sm text-zinc-400">
+            API keys are encrypted on the server and never returned to this browser. Leave an existing key blank to keep
+            it unchanged.
+          </p>
+          <div class="grid gap-4 md:grid-cols-2">
+            <form
+              data-provider-form="gemini"
+              class="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900 p-5"
+              on-submit.prevent="saveConnector($event)"
             >
-              <option value="gemini">Google Gemini API</option>
-              <option value="openai">OpenAI API</option>
-              <option value="ollama">Ollama server</option>
-            </select></label
-          >
-          <label data-connector-key class="block text-sm"
-            >API key<input
-              name="credential"
-              type="password"
-              autocomplete="new-password"
-              class="mt-1 w-full rounded bg-zinc-800 p-2"
-              placeholder="Enter API key"
-          /></label>
-          <label data-connector-url class="hidden text-sm"
-            >Server URL<input
-              name="url"
-              type="url"
-              class="mt-1 w-full rounded bg-zinc-800 p-2"
-              placeholder="http://localhost:11434"
-          /></label>
-          <label class="block text-sm"
-            >Default model<input
-              name="model"
-              class="mt-1 w-full rounded bg-zinc-800 p-2"
-              placeholder="e.g. gpt-4o-mini, gemini-2.5-flash"
-          /></label>
-          <p data-connector-status class="text-sm text-zinc-400" role="status"></p>
-          <section class="rounded border border-zinc-800 p-3 text-sm">
-            <h3 class="font-medium">ChatGPT Plus</h3>
-            <p class="mt-1 text-zinc-400">
-              OpenCode connects ChatGPT through OpenAI OAuth and subscription token sharing, not by collecting your
-              password or automating a browser session. OAuth sign-in for this app is not wired up yet.
-            </p>
-          </section>
-          <div class="flex justify-end gap-2">
-            <button type="button" class="rounded px-3 py-2 text-sm hover:bg-zinc-800" on-click="closeConnectors()">
-              Close</button
-            ><button class="rounded bg-emerald-700 px-3 py-2 text-sm" type="submit">Save connector</button>
+              <div>
+                <h2 class="font-semibold">Google Gemini</h2>
+                <p data-provider-status="gemini" class="mt-1 text-xs text-zinc-400" role="status">Not connected</p>
+              </div>
+              <label class="block text-sm"
+                >Gemini API key<input
+                  name="credential"
+                  type="password"
+                  autocomplete="new-password"
+                  class="mt-1 w-full rounded bg-zinc-800 p-2"
+                  placeholder="Paste API key"
+              /></label>
+              <label class="block text-sm"
+                >Default model<input
+                  name="model"
+                  class="mt-1 w-full rounded bg-zinc-800 p-2"
+                  placeholder="gemini-2.5-flash"
+              /></label>
+              <div class="flex flex-wrap gap-2">
+                <button class="rounded bg-emerald-700 px-3 py-2 text-sm" type="submit">Save</button
+                ><button
+                  type="button"
+                  class="rounded border border-zinc-700 px-3 py-2 text-sm"
+                  on-click="testConnector('gemini')"
+                >
+                  Test connection</button
+                ><button
+                  type="button"
+                  class="rounded px-3 py-2 text-sm text-red-300"
+                  on-click="removeConnector('gemini')"
+                >
+                  Disconnect
+                </button>
+              </div>
+            </form>
+            <form
+              data-provider-form="openai"
+              class="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900 p-5"
+              on-submit.prevent="saveConnector($event)"
+            >
+              <div>
+                <h2 class="font-semibold">OpenAI API</h2>
+                <p data-provider-status="openai" class="mt-1 text-xs text-zinc-400" role="status">Not connected</p>
+              </div>
+              <label class="block text-sm"
+                >OpenAI API key<input
+                  name="credential"
+                  type="password"
+                  autocomplete="new-password"
+                  class="mt-1 w-full rounded bg-zinc-800 p-2"
+                  placeholder="Paste API key"
+              /></label>
+              <label class="block text-sm"
+                >Default model<input name="model" class="mt-1 w-full rounded bg-zinc-800 p-2" placeholder="gpt-4o-mini"
+              /></label>
+              <div class="flex flex-wrap gap-2">
+                <button class="rounded bg-emerald-700 px-3 py-2 text-sm" type="submit">Save</button
+                ><button
+                  type="button"
+                  class="rounded border border-zinc-700 px-3 py-2 text-sm"
+                  on-click="testConnector('openai')"
+                >
+                  Test connection</button
+                ><button
+                  type="button"
+                  class="rounded px-3 py-2 text-sm text-red-300"
+                  on-click="removeConnector('openai')"
+                >
+                  Disconnect
+                </button>
+              </div>
+            </form>
+            <form
+              data-provider-form="ollama"
+              class="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900 p-5"
+              on-submit.prevent="saveConnector($event)"
+            >
+              <div>
+                <h2 class="font-semibold">Ollama</h2>
+                <p data-provider-status="ollama" class="mt-1 text-xs text-zinc-400" role="status">Not connected</p>
+              </div>
+              <label class="block text-sm"
+                >Server URL<input
+                  name="url"
+                  type="url"
+                  class="mt-1 w-full rounded bg-zinc-800 p-2"
+                  placeholder="https://ollama.example.com"
+                  required
+              /></label>
+              <p class="-mt-2 text-xs text-zinc-500">The server must be reachable from this app server.</p>
+              <label class="block text-sm"
+                >Default model<input name="model" class="mt-1 w-full rounded bg-zinc-800 p-2" placeholder="llama3.2"
+              /></label>
+              <div class="flex flex-wrap gap-2">
+                <button class="rounded bg-emerald-700 px-3 py-2 text-sm" type="submit">Save</button
+                ><button
+                  type="button"
+                  class="rounded border border-zinc-700 px-3 py-2 text-sm"
+                  on-click="testConnector('ollama')"
+                >
+                  Test connection</button
+                ><button
+                  type="button"
+                  class="rounded px-3 py-2 text-sm text-red-300"
+                  on-click="removeConnector('ollama')"
+                >
+                  Disconnect
+                </button>
+              </div>
+            </form>
+            <section class="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900 p-5 md:col-span-2">
+              <h2 class="font-semibold">ChatGPT Plus</h2>
+              <p class="text-sm text-zinc-400">
+                OpenCode connects ChatGPT through OpenAI OAuth and subscription token-sharing consent—not by collecting
+                your password or automating a browser session. OAuth sign-in for this app is not wired up yet.
+              </p>
+            </section>
           </div>
-        </form>
-      </dialog>
-      <main class="flex-1 min-w-0 h-dvh"><app-chat class="h-full block"></app-chat></main>
+        </div>
+      </section>
+      <main data-chat-main class="flex-1 min-w-0 h-dvh"><app-chat class="h-full block"></app-chat></main>
     </template>
     <template if="!$p.profile"
       ><div class="m-auto">
@@ -211,13 +296,15 @@
     import { useProfile } from "@app/store/profile.mjs";
     import { signIn, signOut } from "@app/store/profile.mjs";
     import { useApp } from "@app/store/app.mjs";
+    import { useMessages } from "@app/store/messages.mjs";
     import { Connectors } from "@app/api.mjs";
     export default function () {
       const element = getElement();
       const $ws = useWorkspaces(),
         $s = useSessions(),
         $p = useProfile(),
-        $app = useApp();
+        $app = useApp(),
+        $msg = useMessages();
       onInit(async () => {
         await $p.reloadProfile();
         if ($p.profile) {
@@ -261,37 +348,74 @@
         }
       }
       async function openConnectors() {
-        const dialog = element.querySelector("[data-connectors-dialog]");
-        dialog.showModal();
-        const status = dialog.querySelector("[data-connector-status]");
+        const page = element.querySelector("[data-connectors-page]");
+        page.hidden = false;
+        page.querySelector("[data-page-status]").textContent = "";
+        element.querySelector("[data-chat-main]").hidden = true;
         try {
           const connectors = await Connectors.list();
-          status.textContent =
-            connectors
-              .filter((x) => x.configured)
-              .map((x) => `${x.provider}: configured${x.model ? ` · ${x.model}` : ""}`)
-              .join("\n") || "No connectors configured yet.";
+          for (const connector of connectors) {
+            const form = page.querySelector(`[data-provider-form="${connector.provider}"]`);
+            const status = form.querySelector(`[data-provider-status="${connector.provider}"]`);
+            status.textContent = connector.configured
+              ? `Configured${connector.model ? ` · default model: ${connector.model}` : ""}`
+              : "Not connected";
+            form.elements.model.value = connector.model;
+            if (connector.provider === "ollama") {
+              form.elements.url.value = connector.url || "";
+            }
+          }
         } catch (error) {
-          status.textContent = error.message;
+          page.querySelector("[data-page-status]").textContent = error.message;
         }
       }
       function closeConnectors() {
-        element.querySelector("[data-connectors-dialog]").close();
-      }
-      function selectConnector(provider) {
-        const dialog = element.querySelector("[data-connectors-dialog]");
-        dialog.querySelector("[data-connector-key]").classList.toggle("hidden", provider === "ollama");
-        dialog.querySelector("[data-connector-url]").classList.toggle("hidden", provider !== "ollama");
+        element.querySelector("[data-connectors-page]").hidden = true;
+        element.querySelector("[data-chat-main]").hidden = false;
       }
       async function saveConnector(event) {
         const form = event.currentTarget;
         const values = Object.fromEntries(new FormData(form));
-        const status = form.querySelector("[data-connector-status]");
+        const provider = form.dataset.providerForm;
+        values.provider = provider;
+        const status = form.querySelector(`[data-provider-status="${provider}"]`);
         status.textContent = "Saving…";
         try {
           const connector = await Connectors.save(values);
-          status.textContent = `${connector.provider} settings saved.`;
-          form.elements.credential.value = "";
+          status.textContent = `${connector.provider} settings saved. Test the connection to load available models.`;
+          if (form.elements.credential) {
+            form.elements.credential.value = "";
+          }
+          await $msg.reloadModelList();
+        } catch (error) {
+          status.textContent = error.message;
+        }
+      }
+      async function testConnector(provider) {
+        const form = element.querySelector(`[data-provider-form="${provider}"]`);
+        const status = form.querySelector(`[data-provider-status="${provider}"]`);
+        status.textContent = "Testing connection…";
+        try {
+          const models = await Connectors.test(provider);
+          status.textContent = `Connected · ${models.length} model${models.length === 1 ? "" : "s"} available`;
+          if (!form.elements.model.value && models.length) {
+            form.elements.model.value = models[0].name;
+          }
+        } catch (error) {
+          status.textContent = error.message;
+        }
+      }
+      async function removeConnector(provider) {
+        if (!confirm(`Disconnect ${provider}?`)) {
+          return;
+        }
+        const form = element.querySelector(`[data-provider-form="${provider}"]`);
+        const status = form.querySelector(`[data-provider-status="${provider}"]`);
+        try {
+          await Connectors.remove(provider);
+          form.reset();
+          status.textContent = "Disconnected";
+          await $msg.reloadModelList();
         } catch (error) {
           status.textContent = error.message;
         }
@@ -311,8 +435,9 @@
         onDeleteSession,
         openConnectors,
         closeConnectors,
-        selectConnector,
         saveConnector,
+        testConnector,
+        removeConnector,
       };
     }
   </script>

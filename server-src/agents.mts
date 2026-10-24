@@ -33,19 +33,23 @@ export class Context {
     const input = String(s || ".").replace(/^[/\\]+/, "");
     const target = resolve(root, input);
     const rel = relative(root, target);
-    if (rel === ".." || rel.startsWith(`..${sep}`) || resolve(target) !== target)
+    if (rel === ".." || rel.startsWith(`..${sep}`) || resolve(target) !== target) {
       throw new Error("Path escapes workspace");
+    }
     // Resolve the nearest existing target so symlinks cannot escape the workspace.
     let existing = target;
-    while (!existsSync(existing)) existing = resolve(existing, "..");
+    while (!existsSync(existing)) {
+      existing = resolve(existing, "..");
+    }
     const realExisting = realpathSync(existing);
-    if (realExisting !== realRoot && !realExisting.startsWith(realRoot + sep))
+    if (realExisting !== realRoot && !realExisting.startsWith(realRoot + sep)) {
       throw new Error("Path escapes workspace");
+    }
     return target;
   }
 }
 
-export async function getModelResponse(history: History) {
+export async function getModelResponse(history: History, subject?: string) {
   const requestBody = {
     model: (await history.getModel()) || defaultModel,
     tools,
@@ -60,7 +64,7 @@ export async function getModelResponse(history: History) {
     ],
   };
 
-  const m = await callModel(requestBody);
+  const m = await callModel(requestBody, subject);
   return m.message;
 }
 
@@ -142,13 +146,15 @@ export async function executeFunction(functionName: string, modelArgs: any[], co
   return await f.apply(context, foundArgs);
 }
 
-export async function runAgentLoop(workspace, sessionId, depth = 0) {
-  if (depth >= Number(process.env.AGENT_MAX_TOOL_ROUNDS || 12)) return;
+export async function runAgentLoop(workspace, sessionId, depth = 0, subject?: string) {
+  if (depth >= Number(process.env.AGENT_MAX_TOOL_ROUNDS || 12)) {
+    return;
+  }
   const history = new History(workspace, sessionId);
   let aiResponse;
 
   try {
-    aiResponse = await getModelResponse(history);
+    aiResponse = await getModelResponse(history, subject);
 
     if (aiResponse.error) {
       console.error("aiResp", aiResponse);
@@ -173,9 +179,11 @@ export async function runAgentLoop(workspace, sessionId, depth = 0) {
 
   for (const call of aiResponse.tool_calls) {
     const functionName = call.function.name;
-    const functionArgs = call.function.arguments;
+    let functionArgs;
 
     try {
+      functionArgs =
+        typeof call.function.arguments === "string" ? JSON.parse(call.function.arguments) : call.function.arguments;
       const context = new Context({ sessionId, workspace });
       const functionResponse = await executeFunction(functionName, functionArgs, context);
 
@@ -185,16 +193,17 @@ export async function runAgentLoop(workspace, sessionId, depth = 0) {
         content: typeof functionResponse === "object" ? JSON.stringify(functionResponse) : String(functionResponse),
       });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`Error executing function: ${functionName} with args: ${JSON.stringify(functionArgs)}:\n ${error}`);
       await addMessage({
         role: "system",
-        content: `Error executing function ${functionName} with args ${JSON.stringify(functionArgs)}:\nError: ${error.message}`,
+        content: `Error executing function ${functionName} with args ${JSON.stringify(functionArgs)}:\nError: ${errorMessage}`,
       });
       break;
     }
   }
 
-  return runAgentLoop(workspace, sessionId, depth + 1);
+  return runAgentLoop(workspace, sessionId, depth + 1, subject);
 }
 
 async function main() {
@@ -203,7 +212,7 @@ async function main() {
   try {
     await runAgentLoop(workspace, sessionId);
     return process.exit(0);
-  } catch (e) {
+  } catch {
     process.exit(1);
   }
 }

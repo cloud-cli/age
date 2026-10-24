@@ -142,7 +142,9 @@
         $s = useSessions(),
         $msg = useMessages(),
         $app = useApp();
-      const modelListMapped = computed(() => ($msg.modelList || []).map((m) => ({ label: m.id, value: m.id })));
+      const modelListMapped = computed(() =>
+        ($msg.modelList || []).map((m) => ({ label: `${m.name} · ${m.provider}`, value: m.id })),
+      );
       const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
       const speechAvailable = Boolean(Speech),
         voiceStatus = ref(""),

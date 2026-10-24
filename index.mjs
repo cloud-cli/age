@@ -155,6 +155,7 @@ const server = createServer(async (req, res) => {
   }
 
   if (route === "GET /") {
+    res.setHeader("Cache-Control", "no-store");
     res.end(indexPage);
     return;
   }
@@ -166,7 +167,7 @@ const server = createServer(async (req, res) => {
       .writeHead(200, {
         "Content-Type": "text/javascript",
         "Content-Length": code.length,
-        "Cache-Control": "max-age=3600, must-revalidate",
+        "Cache-Control": "no-cache, max-age=0, must-revalidate",
         "Access-Control-Allow-Origin": "*",
       })
       .end(code);
@@ -176,7 +177,7 @@ const server = createServer(async (req, res) => {
   if (route.startsWith("GET /public/")) {
     const fullPath = join(process.cwd(), "public", resolve("/", url.pathname.replace("/public/", "")));
 
-    res.setHeader("Cache-Control", `max-age=${url.searchParams.has("nocache") ? 1 : 300}, must-revalidate`);
+    res.setHeader("Cache-Control", "no-cache, max-age=0, must-revalidate");
 
     if (existsSync(fullPath) && statSync(fullPath).isFile()) {
       const extension = parse(fullPath).ext.toLowerCase();

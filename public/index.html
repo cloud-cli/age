@@ -33,5 +33,59 @@
     </script>
     <script type="module" async defer src="https://console.apphor.de/index.mjs"></script>
     <script async src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+      let touchStart;
+
+      function scrollAreaAtTop(target) {
+        for (
+          let element = target instanceof Element ? target : null;
+          element && element !== document.body;
+          element = element.parentElement
+        ) {
+          const overflowY = getComputedStyle(element).overflowY;
+          if ((overflowY === "auto" || overflowY === "scroll") && element.scrollHeight > element.clientHeight) {
+            return element.scrollTop <= 0;
+          }
+        }
+        return window.scrollY <= 0;
+      }
+
+      document.addEventListener(
+        "touchstart",
+        (event) => {
+          if (
+            event.touches.length !== 1 ||
+            (event.target instanceof Element && event.target.closest("input, textarea, select, [role=dialog]"))
+          ) {
+            touchStart = undefined;
+            return;
+          }
+          const touch = event.touches[0];
+          touchStart = scrollAreaAtTop(event.target)
+            ? { x: touch.clientX, y: touch.clientY, at: Date.now() }
+            : undefined;
+        },
+        { passive: true },
+      );
+
+      document.addEventListener(
+        "touchend",
+        (event) => {
+          if (!touchStart || !event.changedTouches.length) {
+            touchStart = undefined;
+            return;
+          }
+          const touch = event.changedTouches[0];
+          const distance = touch.clientY - touchStart.y;
+          const horizontalDistance = Math.abs(touch.clientX - touchStart.x);
+          const quickGesture = Date.now() - touchStart.at < 1500;
+          touchStart = undefined;
+          if (distance > 100 && horizontalDistance < 70 && quickGesture) {
+            window.location.reload();
+          }
+        },
+        { passive: true },
+      );
+    </script>
   </body>
 </html>

@@ -9,7 +9,7 @@ import { dataDir } from "./env.mjs";
 import { History } from "./history.mjs";
 import { runAgentLoop } from "./agents.mjs";
 import { publish } from "./events.mjs";
-import { listConnectors, saveConnector } from "./connectors.mjs";
+import { deleteConnector, getConfiguredModels, listConnectors, saveConnector } from "./connectors.mjs";
 
 async function onListConnectors(req, res) {
   try {
@@ -27,6 +27,28 @@ async function onSaveConnector(req, res) {
     const message = error instanceof Error ? error.message : "Could not save connector settings";
     const status = /^(Unsupported|Invalid|Enter|Ollama)/.test(message) ? 400 : 500;
     res.sendJson({ error: message }, status);
+  }
+}
+
+async function onDeleteConnector(_req, res, params) {
+  try {
+    await deleteConnector(_req.authSubject, params.provider);
+    res.writeHead(204).end();
+  } catch (error) {
+    res.sendJson({ error: error instanceof Error ? error.message : "Could not disconnect provider" }, 400);
+  }
+}
+
+async function onTestConnector(req, res, params) {
+  try {
+    const models = await getConfiguredModels(req.authSubject, params.provider);
+    if (!models.length) {
+      res.sendJson({ error: "No models were returned by this connector" }, 502);
+      return;
+    }
+    res.sendJson({ models });
+  } catch (error) {
+    res.sendJson({ error: error instanceof Error ? error.message : "Could not reach connector" }, 502);
   }
 }
 
@@ -366,7 +388,7 @@ async function onMessage(req, res, params) {
     const msg = { role: "user", content: message, meta: { model, files, uid: randomUUID() } };
     await history.push(msg);
     res.sendJson(msg);
-    tryAgentLoop(name, sessionId);
+    tryAgentLoop(name, sessionId, req.authSubject);
   } catch (err) {
     console.error(`Failed to add message in session ${history.file}: ${err}`);
     res.sendJson({ error: "Failed to push message" }, 400);
@@ -374,7 +396,7 @@ async function onMessage(req, res, params) {
   }
 }
 
-async function onRetry(_req, res, params) {
+async function onRetry(req, res, params) {
   const name = sanitize(params.name);
   const sessionId = sanitize(params.id);
   const history = new History(name, sessionId);
@@ -386,12 +408,12 @@ async function onRetry(_req, res, params) {
   }
 
   res.sendJson({}, 202);
-  tryAgentLoop(name, sessionId);
+  tryAgentLoop(name, sessionId, req.authSubject);
 }
 
-async function tryAgentLoop(name, sessionId) {
+async function tryAgentLoop(name, sessionId, subject) {
   try {
-    return await runAgentLoop(name, sessionId);
+    return await runAgentLoop(name, sessionId, 0, subject);
   } catch (e) {
     console.log("Agent loop error", e);
   }
@@ -421,8 +443,12 @@ async function onDeleteMessage(_req, res, params) {
   }
 }
 
-async function onModelList(_req, res) {
-  res.sendJson(await getModelList());
+async function onModelList(req, res) {
+  try {
+    res.sendJson(await getModelList(req.authSubject));
+  } catch (error) {
+    res.sendJson({ error: error instanceof Error ? error.message : "Could not load models" }, 502);
+  }
 }
 
 async function onModelPull(_req, res, params) {
@@ -434,6 +460,8 @@ async function onModelPull(_req, res, params) {
 export default {
   "GET /connectors": onListConnectors,
   "PUT /connectors": onSaveConnector,
+  "DELETE /connectors/:provider": onDeleteConnector,
+  "GET /connectors/:provider/models": onTestConnector,
   "GET /models": onModelList,
   "POST /models/:name": onModelPull,
 

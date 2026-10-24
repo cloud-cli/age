@@ -28,7 +28,9 @@ export const useMessages = defineStore("messages", function () {
     const sessionId = $session.sessionId;
     if (workspace && sessionId) {
       const json = await Sessions.read(workspace, sessionId);
-      if ($ws.workspace === workspace && $session.sessionId === sessionId) setMessages(json.messages || []);
+      if ($ws.workspace === workspace && $session.sessionId === sessionId) {
+        setMessages(json.messages || []);
+      }
     } else {
       setMessages([]);
     }
@@ -46,7 +48,9 @@ export const useMessages = defineStore("messages", function () {
     const workspace = $ws.workspace;
     const sessionId = $session.sessionId;
 
-    if (!(workspace && sessionId && message)) return;
+    if (!(workspace && sessionId && message)) {
+      return;
+    }
 
     try {
       setSending(true);
@@ -55,9 +59,13 @@ export const useMessages = defineStore("messages", function () {
         message,
         model: model.value,
       });
-      if ($ws.workspace === workspace && $session.sessionId === sessionId) setMessages([...messages.value, response]);
+      if ($ws.workspace === workspace && $session.sessionId === sessionId) {
+        setMessages([...messages.value, response]);
+      }
     } catch (e) {
-      if ($ws.workspace === workspace && $session.sessionId === sessionId) setNewMessage(message);
+      if ($ws.workspace === workspace && $session.sessionId === sessionId) {
+        setNewMessage(message);
+      }
       console.log(e);
     } finally {
       setSending(false);
@@ -75,6 +83,9 @@ export const useMessages = defineStore("messages", function () {
 
   async function reloadModelList() {
     modelList.value = await Models.list();
+    if (!modelList.value.some((item) => item.id === model.value)) {
+      model.value = modelList.value.find((item) => item.default)?.id || "";
+    }
   }
 
   effect(

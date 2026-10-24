@@ -227,6 +227,22 @@ export const Connectors = {
     }
     return result;
   },
+
+  async test(provider) {
+    const res = await fetch(new URL(`/connectors/${provider}/models`, baseUrl), authOptions());
+    const result = await res.json();
+    if (!res.ok) {
+      throw new Error(result.error || `Connector test failed: ${res.status}`);
+    }
+    return result.models;
+  },
+
+  async remove(provider) {
+    const res = await fetch(new URL(`/connectors/${provider}`, baseUrl), authOptions({ method: "DELETE" }));
+    if (!res.ok) {
+      throw new Error(`Failed to disconnect ${provider}: ${res.status}`);
+    }
+  },
 };
 
 export const events = new EventTarget();
