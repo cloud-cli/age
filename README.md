@@ -55,16 +55,16 @@ Each workspace is stored below `DATA_PATH`:
 
 Optional runtime configuration includes `MODEL`, `APP_MESSAGE_HUB_URL`, `WEB_SEARCH_URL`, and
 `WEB_SEARCH_API_KEY`. Mutating agent tools remain disabled unless `ALLOW_MUTATING_TOOLS=true` is deliberately set.
-The Integrations page supports per-user Gemini/OpenAI API keys and multiple named Ollama servers, including per-server
-model discovery, connection checks, and disconnect. Set `CONNECTOR_ENCRYPTION_KEY` to a stable secret to encrypt
-credentials at rest.
-ChatGPT Plus OAuth sign-in is not wired up yet. The PWA supports pull-down-to-refresh and revalidates app assets on
-reload.
+The Integrations page supports per-user Gemini/OpenAI API keys, multiple named Ollama servers, and ChatGPT Plus/Pro
+device authorization using the OpenCode-style device-code flow. ChatGPT credentials and provider keys are encrypted at
+rest with `CONNECTOR_ENCRYPTION_KEY`.
+The PWA supports pull-down-to-refresh and revalidates app assets on reload.
 
 ## Key routes
 
 - `GET /auth/login`, `GET /auth/callback`, `POST /auth/logout` — OIDC session lifecycle
 - `GET /api/me` — current authenticated user
+- `POST /connectors/chatgpt/login` and `GET /connectors/chatgpt/login/:id` — ChatGPT device authorization
 - `GET|POST|DELETE /workspaces` — project workspaces
 - `GET|POST|DELETE /workspaces/:name/history` — conversations
 - `GET /workspaces/:name/project` and `GET /workspaces/:name/tasks` — project state

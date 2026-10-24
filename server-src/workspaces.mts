@@ -9,7 +9,14 @@ import { dataDir } from "./env.mjs";
 import { History } from "./history.mjs";
 import { runAgentLoop } from "./agents.mjs";
 import { publish } from "./events.mjs";
-import { deleteConnector, getConfiguredModels, listConnectors, saveConnector } from "./connectors.mjs";
+import {
+  deleteConnector,
+  getConfiguredModels,
+  listConnectors,
+  pollChatgptLogin,
+  saveConnector,
+  startChatgptLogin,
+} from "./connectors.mjs";
 
 async function onListConnectors(req, res) {
   try {
@@ -49,6 +56,22 @@ async function onTestConnector(req, res, params) {
     res.sendJson({ models });
   } catch (error) {
     res.sendJson({ error: error instanceof Error ? error.message : "Could not reach connector" }, 502);
+  }
+}
+
+async function onStartChatgptLogin(req, res) {
+  try {
+    res.sendJson(await startChatgptLogin(req.authSubject));
+  } catch (error) {
+    res.sendJson({ error: error instanceof Error ? error.message : "Could not start ChatGPT sign-in" }, 502);
+  }
+}
+
+async function onPollChatgptLogin(req, res, params) {
+  try {
+    res.sendJson(await pollChatgptLogin(req.authSubject, params.id));
+  } catch (error) {
+    res.sendJson({ error: error instanceof Error ? error.message : "Could not complete ChatGPT sign-in" }, 400);
   }
 }
 
@@ -460,6 +483,8 @@ async function onModelPull(_req, res, params) {
 export default {
   "GET /connectors": onListConnectors,
   "PUT /connectors": onSaveConnector,
+  "POST /connectors/chatgpt/login": onStartChatgptLogin,
+  "GET /connectors/chatgpt/login/:id": onPollChatgptLogin,
   "DELETE /connectors/:provider": onDeleteConnector,
   "DELETE /connectors/ollama/:id": onDeleteConnector,
   "GET /connectors/:provider/models": onTestConnector,

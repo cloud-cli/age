@@ -281,11 +281,36 @@
               <p class="text-xs text-zinc-500">Each server must be reachable from this app server.</p>
             </section>
             <section class="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900 p-5 md:col-span-2">
-              <h2 class="font-semibold">ChatGPT Plus</h2>
+              <h2 class="font-semibold">ChatGPT Plus / Pro</h2>
+              <p data-chatgpt-status class="text-sm text-zinc-400" role="status">Not connected</p>
               <p class="text-sm text-zinc-400">
-                OpenCode connects ChatGPT through OpenAI OAuth and subscription token-sharing consent—not by collecting
-                your password or automating a browser session. OAuth sign-in for this app is not wired up yet.
+                Sign in with OpenAI’s device authorization. Your ChatGPT password is never shared with this app.
               </p>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  data-chatgpt-connect
+                  class="rounded bg-emerald-700 px-3 py-2 text-sm"
+                  on-click="connectChatgpt()"
+                >
+                  Connect ChatGPT
+                </button>
+                <button
+                  type="button"
+                  data-chatgpt-disconnect
+                  class="rounded border border-zinc-700 px-3 py-2 text-sm text-red-300"
+                  on-click="removeConnector('chatgpt')"
+                >
+                  Disconnect
+                </button>
+              </div>
+              <a
+                data-chatgpt-link
+                class="text-sm text-emerald-300 underline"
+                target="_blank"
+                rel="noopener noreferrer"
+                hidden
+              ></a>
             </section>
           </div>
         </div>
@@ -468,8 +493,13 @@
         page.querySelector("[data-page-status]").textContent = "";
         try {
           const connectors = await Connectors.list();
+          const chatgpt = connectors.find((connector) => connector.provider === "chatgpt");
+          page.querySelector("[data-chatgpt-status]").textContent = chatgpt?.configured
+            ? `Connected${chatgpt.model ? ` · default model: ${chatgpt.model}` : ""}`
+            : "Not connected";
+          page.querySelector("[data-chatgpt-disconnect]").hidden = !chatgpt?.configured;
           for (const connector of connectors) {
-            if (connector.provider === "ollama") {
+            if (connector.provider === "ollama" || connector.provider === "chatgpt") {
               continue;
             }
             const form = page.querySelector(`[data-provider-form="${connector.provider}"]`);
@@ -530,6 +560,18 @@
         if (!confirm(`Disconnect ${provider}?`)) {
           return;
         }
+        if (provider === "chatgpt") {
+          const status = element.querySelector("[data-chatgpt-status]");
+          try {
+            await Connectors.remove(provider);
+            status.textContent = "Disconnected";
+            element.querySelector("[data-chatgpt-disconnect]").hidden = true;
+            await $msg.reloadModelList();
+          } catch (error) {
+            status.textContent = error.message;
+          }
+          return;
+        }
         const status = form.querySelector(`[data-provider-status="${provider}"]`);
         try {
           await Connectors.remove(provider, form.dataset.connectorId);
@@ -543,6 +585,34 @@
           await $msg.reloadModelList();
         } catch (error) {
           status.textContent = error.message;
+        }
+      }
+      async function connectChatgpt() {
+        const status = element.querySelector("[data-chatgpt-status]");
+        const link = element.querySelector("[data-chatgpt-link]");
+        const button = element.querySelector("[data-chatgpt-connect]");
+        button.disabled = true;
+        link.hidden = true;
+        try {
+          const login = await Connectors.startChatgptLogin();
+          link.href = login.verificationUrl;
+          link.textContent = `Open ${login.verificationUrl} and enter code: ${login.userCode}`;
+          link.hidden = false;
+          status.textContent = "Open the verification link, enter the code, and approve access in OpenAI.";
+          while (true) {
+            await new Promise((resolve) => window.setTimeout(resolve, login.interval * 1000));
+            const result = await Connectors.pollChatgptLogin(login.loginId);
+            if (!result.pending) {
+              link.hidden = true;
+              status.textContent = "Connected to ChatGPT. Choose a ChatGPT model in Chat.";
+              element.querySelector("[data-chatgpt-disconnect]").hidden = false;
+              await $msg.reloadModelList();
+              return;
+            }
+          }
+        } catch (error) {
+          status.textContent = error.message;
+          button.disabled = false;
         }
       }
       function createOllamaForm(connector = {}) {
@@ -636,6 +706,7 @@
         saveConnector,
         testConnector,
         removeConnector,
+        connectChatgpt,
         addOllamaServer,
       };
     }

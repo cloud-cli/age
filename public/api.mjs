@@ -241,6 +241,27 @@ export const Connectors = {
     return result.models;
   },
 
+  async startChatgptLogin() {
+    const res = await fetch(new URL("/connectors/chatgpt/login", baseUrl), authOptions({ method: "POST" }));
+    const body = await res.json();
+    if (!res.ok) {
+      throw new Error(body.error || `Failed to start ChatGPT sign-in: ${res.status}`);
+    }
+    return body;
+  },
+
+  async pollChatgptLogin(loginId) {
+    const res = await fetch(
+      new URL(`/connectors/chatgpt/login/${encodeURIComponent(loginId)}`, baseUrl),
+      authOptions(),
+    );
+    const body = await res.json();
+    if (!res.ok) {
+      throw new Error(body.error || `Failed to check ChatGPT sign-in: ${res.status}`);
+    }
+    return body;
+  },
+
   async remove(provider, id) {
     const path =
       provider === "ollama" && id ? `/connectors/ollama/${encodeURIComponent(id)}` : `/connectors/${provider}`;

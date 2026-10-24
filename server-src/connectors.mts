@@ -4,7 +4,116 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { dataDir } from "./env.mjs";
 
-const providers = ["gemini", "openai", "ollama"] as const;
+const providers = ["gemini", "openai", "ollama", "chatgpt"] as const;
+const CHATGPT_CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann";
+const CHATGPT_ISSUER = "https://auth.openai.com";
+const chatgptModels = ["gpt-5.3-codex", "gpt-5.2-codex", "gpt-5.1-codex", "gpt-5.1-codex-mini"];
+const pendingChatgptLogins = new Map<
+  string,
+  { subject: string; deviceAuthId: string; userCode: string; expires: number }
+>();
+
+function parseJwtClaims(token: string) {
+  try {
+    return JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString());
+  } catch {
+    return {};
+  }
+}
+
+function accountIdFromTokens(tokens: any) {
+  const claims = parseJwtClaims(tokens.id_token || tokens.access_token);
+  return (
+    claims.chatgpt_account_id ||
+    claims["https://api.openai.com/auth"]?.chatgpt_account_id ||
+    claims.organizations?.[0]?.id
+  );
+}
+
+export async function startChatgptLogin(subject: string) {
+  for (const [id, pending] of pendingChatgptLogins) {
+    if (pending.expires <= Date.now()) {
+      pendingChatgptLogins.delete(id);
+    }
+  }
+  const response = await fetch(`${CHATGPT_ISSUER}/api/accounts/deviceauth/usercode`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "user-agent": "age/1.0" },
+    body: JSON.stringify({ client_id: CHATGPT_CLIENT_ID }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!response.ok) {
+    throw new Error(`Could not start ChatGPT sign-in (${response.status})`);
+  }
+  const data: any = await response.json();
+  const loginId = randomUUID();
+  const interval = Math.max(Number(data.interval) || 5, 1);
+  pendingChatgptLogins.set(loginId, {
+    subject: createHash("sha256").update(subject).digest("hex"),
+    deviceAuthId: data.device_auth_id,
+    userCode: data.user_code,
+    expires: Date.now() + Math.min(Number(data.expires_in) || 600, 900) * 1000,
+  });
+  return { loginId, verificationUrl: `${CHATGPT_ISSUER}/codex/device`, userCode: data.user_code, interval };
+}
+
+export async function pollChatgptLogin(subject: string, loginId: string) {
+  const pending = pendingChatgptLogins.get(loginId);
+  if (!pending) {
+    throw new Error("ChatGPT sign-in expired. Start again.");
+  }
+  if (pending.subject !== createHash("sha256").update(subject).digest("hex")) {
+    throw new Error("ChatGPT sign-in does not belong to this user");
+  }
+  if (pending.expires <= Date.now()) {
+    pendingChatgptLogins.delete(loginId);
+    throw new Error("ChatGPT sign-in expired. Start again.");
+  }
+  const response = await fetch(`${CHATGPT_ISSUER}/api/accounts/deviceauth/token`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "user-agent": "age/1.0" },
+    body: JSON.stringify({ device_auth_id: pending.deviceAuthId, user_code: pending.userCode }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (response.status === 403 || response.status === 404) {
+    return { pending: true };
+  }
+  if (!response.ok) {
+    pendingChatgptLogins.delete(loginId);
+    throw new Error(`ChatGPT authorization check failed (${response.status})`);
+  }
+  pendingChatgptLogins.delete(loginId);
+  const authorization: any = await response.json();
+  const tokenResponse = await fetch(`${CHATGPT_ISSUER}/oauth/token`, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      code: authorization.authorization_code,
+      redirect_uri: `${CHATGPT_ISSUER}/deviceauth/callback`,
+      client_id: CHATGPT_CLIENT_ID,
+      code_verifier: authorization.code_verifier,
+    }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!tokenResponse.ok) {
+    throw new Error(`ChatGPT token exchange failed (${tokenResponse.status})`);
+  }
+  const tokens: any = await tokenResponse.json();
+  if (!tokens.access_token || !tokens.refresh_token) {
+    throw new Error("ChatGPT returned an incomplete token response");
+  }
+  const stored = await readConnectors(subject);
+  stored.chatgpt = {
+    access: tokens.access_token,
+    refresh: tokens.refresh_token,
+    expires: Date.now() + (Number(tokens.expires_in) || 3600) * 1000,
+    accountId: accountIdFromTokens(tokens),
+    model: stored.chatgpt?.model || chatgptModels[0],
+  };
+  await writeConnectors(subject, stored);
+  return { pending: false, configured: true };
+}
 
 function ollamaConnections(stored: any) {
   if (Array.isArray(stored.ollama)) {
@@ -79,7 +188,7 @@ export async function listConnectors(subject: string) {
       .filter((provider) => provider !== "ollama")
       .map((provider) => ({
         provider,
-        configured: Boolean(stored[provider]?.credential),
+        configured: provider === "chatgpt" ? Boolean(stored.chatgpt?.refresh) : Boolean(stored[provider]?.credential),
         model: stored[provider]?.model || "",
       })),
     ...ollamaConnections(stored).map(({ id, name, model, url }) => ({
@@ -113,9 +222,18 @@ export async function deleteConnector(subject: string, provider: string, id?: st
 
 export async function getConfiguredModels(subject: string, onlyProvider?: string, onlyConnectionId?: string) {
   const stored = await readConnectors(subject);
+  const chatgptResult =
+    (!onlyProvider || onlyProvider === "chatgpt") && stored.chatgpt?.refresh
+      ? chatgptModels.map((name, index) => ({
+          id: `chatgpt/${name}`,
+          name,
+          provider: "chatgpt",
+          default: (stored.chatgpt.model || chatgptModels[0]) === name || (!stored.chatgpt.model && index === 0),
+        }))
+      : [];
   const results = await Promise.all(
     providers
-      .filter((provider) => !onlyProvider || onlyProvider === provider)
+      .filter((provider) => provider !== "chatgpt" && (!onlyProvider || onlyProvider === provider))
       .flatMap((provider) => {
         const connectors =
           provider === "ollama"
@@ -165,7 +283,7 @@ export async function getConfiguredModels(subject: string, onlyProvider?: string
         });
       }),
   );
-  return results.flat();
+  return [...chatgptResult, ...results.flat()];
 }
 
 export async function callConfiguredModel(subject: string, requestBody: any) {
@@ -184,6 +302,112 @@ export async function callConfiguredModel(subject: string, requestBody: any) {
     throw new Error("Select a model in AI settings before sending a message");
   }
   const stored = await readConnectors(subject);
+  if (provider === "chatgpt") {
+    const credential = stored.chatgpt;
+    if (!credential?.refresh) {
+      throw new Error("ChatGPT is not connected. Connect it in Integrations.");
+    }
+    let access = credential.access;
+    if (!access || credential.expires <= Date.now()) {
+      const response = await fetch(`${CHATGPT_ISSUER}/oauth/token`, {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "refresh_token",
+          refresh_token: credential.refresh,
+          client_id: CHATGPT_CLIENT_ID,
+        }),
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!response.ok) {
+        throw new Error(`ChatGPT token refresh failed (${response.status}); reconnect in Integrations.`);
+      }
+      const tokens: any = await response.json();
+      access = tokens.access_token;
+      stored.chatgpt = {
+        ...credential,
+        access,
+        refresh: tokens.refresh_token || credential.refresh,
+        expires: Date.now() + (Number(tokens.expires_in) || 3600) * 1000,
+        accountId: accountIdFromTokens(tokens) || credential.accountId,
+      };
+      await writeConnectors(subject, stored);
+    }
+    const input = (requestBody.messages || [])
+      .filter((message) => message.role !== "system")
+      .flatMap((message) => {
+        if (message.role === "tool") {
+          return [{ type: "function_call_output", call_id: message.tool_call_id, output: message.content }];
+        }
+        if (message.role === "assistant" && message.tool_calls?.length) {
+          return message.tool_calls.map((call) => ({
+            type: "function_call",
+            call_id: call.id,
+            name: call.function.name,
+            arguments: call.function.arguments,
+          }));
+        }
+        return [{ role: message.role, content: message.content }];
+      });
+    const instructions = (requestBody.messages || [])
+      .filter((message) => message.role === "system")
+      .map((message) => message.content)
+      .join("\n\n");
+    const tools = (requestBody.tools || []).map((tool) => ({ type: "function", ...tool.function }));
+    const headers: Record<string, string> = {
+      authorization: `Bearer ${access}`,
+      "content-type": "application/json",
+      accept: "text/event-stream",
+      "openai-beta": "responses=experimental",
+      originator: "opencode",
+      session_id: randomUUID(),
+    };
+    if (credential.accountId) {
+      headers["chatgpt-account-id"] = credential.accountId;
+    }
+    const response = await fetch("https://chatgpt.com/backend-api/codex/responses", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ model, instructions, input, tools, store: false, stream: true }),
+      signal: AbortSignal.timeout(180_000),
+      redirect: "error",
+    });
+    if (!response.ok) {
+      throw new Error(`ChatGPT request failed (${response.status}): ${(await response.text()).slice(0, 500)}`);
+    }
+    const text = await response.text();
+    let completed: any;
+    for (const line of text.split("\n")) {
+      if (!line.startsWith("data: ") || line === "data: [DONE]") {
+        continue;
+      }
+      try {
+        const event = JSON.parse(line.slice(6));
+        if (event.type === "response.completed") {
+          completed = event.response;
+        }
+      } catch {
+        // Ignore non-JSON SSE lines.
+      }
+    }
+    if (!completed) {
+      throw new Error("ChatGPT returned an incomplete response");
+    }
+    const output = completed.output || [];
+    const content = output
+      .flatMap((item) => item.content || [])
+      .filter((item) => item.type === "output_text")
+      .map((item) => item.text)
+      .join("");
+    const toolCalls = output
+      .filter((item) => item.type === "function_call")
+      .map((item) => ({
+        id: item.call_id || item.id,
+        type: "function",
+        function: { name: item.name, arguments: item.arguments },
+      }));
+    return { message: { role: "assistant", content, ...(toolCalls.length ? { tool_calls: toolCalls } : {}) } };
+  }
   const connector =
     provider === "ollama"
       ? ollamaConnections(stored).find((item) => item.id === connectionId) ||
