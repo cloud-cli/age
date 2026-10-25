@@ -49,17 +49,26 @@ test.describe("authenticated workspace flow", () => {
       expect(created.name).toBe(workspaceName);
 
       await page.reload({ waitUntil: "networkidle" });
-      const project = page.locator('nav[aria-label="Projects"]').getByRole("button", { name: workspaceName });
+      await page
+        .getByRole("navigation", { name: "Primary navigation" })
+        .getByRole("button", { name: "Workspaces" })
+        .click();
+      const project = page.getByRole("button", { name: new RegExp(workspaceName) });
       await expect(project).toBeVisible();
       await screenshot("02-workspace-created-and-refreshed");
       await project.click();
       await screenshot("03-workspace-refreshed-and-selected");
+      await expect(page.getByRole("heading", { name: workspaceName })).toBeVisible();
 
       const sessionResponse = page.waitForResponse(
         (response) =>
           response.request().method() === "POST" && response.url().endsWith(`/workspaces/${workspaceName}/history`),
       );
-      await page.getByRole("button", { name: "Create session" }).click();
+      await page
+        .getByRole("navigation", { name: "Primary navigation" })
+        .getByRole("button", { name: "Sessions" })
+        .click();
+      await page.getByRole("button", { name: "New chat" }).click();
       const session = await (await sessionResponse).json();
       await expect(page.getByRole("textbox", { name: "Message draft" })).toBeEnabled();
       await screenshot("04-session-created");
@@ -77,7 +86,9 @@ test.describe("authenticated workspace flow", () => {
                 const response = await fetch(`/workspaces/${workspace}/history/${sessionId}`, {
                   credentials: "same-origin",
                 });
-                if (!response.ok) return false;
+                if (!response.ok) {
+                  return false;
+                }
                 const history = await response.json();
                 return history.messages.some(
                   (message) => message.role === "assistant" && message.content && !message.tool_calls?.length,
@@ -97,7 +108,7 @@ test.describe("authenticated workspace flow", () => {
             await fetch(`/workspaces/${workspace}`, {
               method: "DELETE",
               credentials: "same-origin",
-              signal: AbortSignal.timeout(5_000),
+              signal: globalThis.AbortSignal.timeout(5_000),
             });
           }, workspaceName)
           .catch(() => {});
@@ -107,7 +118,7 @@ test.describe("authenticated workspace flow", () => {
           await fetch("/auth/logout", {
             method: "POST",
             credentials: "same-origin",
-            signal: AbortSignal.timeout(5_000),
+            signal: globalThis.AbortSignal.timeout(5_000),
           });
         })
         .catch(() => {});

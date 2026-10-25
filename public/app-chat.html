@@ -1,7 +1,7 @@
 <template component="app-chat">
-  <section class="flex flex-col bg-zinc-950 h-full" class-hidden="$app.isCompact && $app.page === 'workspaces'">
+  <section class="flex flex-col bg-zinc-950 h-full">
     <header class="h-14 border-b border-zinc-800 flex items-center px-4 gap-3">
-      <button class="md:hidden" aria-label="Back to workspaces" on-click="$app.openSidebar()">☰</button>
+      <button class="md:hidden" aria-label="Back to sessions" on-click="$app.openSessions()">←</button>
       <div
         class="font-medium"
         bind-inner-text="$s.session?.title || ($ws.workspace ? 'New conversation' : 'Select a workspace')"
@@ -10,47 +10,35 @@
     <template if="!$s.sessionId">
       <section class="flex-1 overflow-y-auto p-6 md:p-10">
         <div class="mx-auto max-w-3xl rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
-          <p class="text-xs font-semibold uppercase tracking-wide text-emerald-400">Project overview</p>
+          <p class="text-xs font-semibold uppercase tracking-wide text-emerald-400">No conversation open</p>
           <h1
             class="mt-2 text-2xl font-semibold"
-            bind-inner-text="$ws.project?.name || $ws.workspace || 'Choose a project'"
+            bind-inner-text="$ws.workspace ? 'Choose what to work on' : 'Choose a workspace first'"
           ></h1>
           <p
             class="mt-4 text-zinc-300"
-            bind-inner-text="$ws.project?.summary || 'Start a planner session to capture the project goal and plan.'"
+            bind-inner-text="$ws.workspace ? 'Start a planning session or open one of your existing conversations.' : 'Open Workspaces, choose a project, then start a planning session.'"
           ></p>
           <template if="$ws.workspace">
-            <div class="mt-6 grid gap-5 md:grid-cols-3">
-              <section>
-                <h2 class="text-sm font-medium">Goals</h2>
-                <ul class="mt-2 space-y-1 text-sm text-zinc-400">
-                  <template for="goal of ($ws.project?.goals || ['No goals recorded'])"
-                    ><li bind-inner-text="goal"></li
-                  ></template>
-                </ul>
-              </section>
-              <section>
-                <h2 class="text-sm font-medium">Recent updates</h2>
-                <ul class="mt-2 space-y-1 text-sm text-zinc-400">
-                  <template for="update of ($ws.project?.recentUpdates || ['No updates recorded'])"
-                    ><li bind-inner-text="update"></li
-                  ></template>
-                </ul>
-              </section>
-              <section>
-                <h2 class="text-sm font-medium">Next steps</h2>
-                <ul class="mt-2 space-y-1 text-sm text-zinc-400">
-                  <template for="step of ($ws.project?.nextSteps || ['No next steps recorded'])"
-                    ><li bind-inner-text="step"></li
-                  ></template>
-                </ul>
-              </section>
-            </div>
             <button
               class="mt-6 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium"
               on-click="createPlannerSession()"
             >
-              Open planner
+              Start planning →
+            </button>
+            <button
+              class="ml-3 mt-6 rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium"
+              on-click="$app.openSessions()"
+            >
+              View sessions
+            </button>
+          </template>
+          <template if="!$ws.workspace">
+            <button
+              class="mt-6 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white"
+              on-click="$app.openSidebar()"
+            >
+              Choose a workspace →
             </button>
           </template>
         </div>

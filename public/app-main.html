@@ -8,10 +8,12 @@
     import { getElement, onInit } from "@li3/web";
     import { Workspaces } from "@app/api.mjs";
     import { useWorkspaces } from "@app/store/workspaces.mjs";
+    import { useApp } from "@app/store/app.mjs";
 
     export default function () {
       const element = getElement();
       const $ws = useWorkspaces();
+      const $app = useApp();
 
       async function reload() {
         const workspaces = await Workspaces.list();
@@ -24,7 +26,10 @@
             button.className =
               "w-full rounded px-3 py-2 text-left text-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2";
             button.textContent = workspace.name;
-            button.addEventListener("click", () => $ws.setWorkspace(workspace.name));
+            button.addEventListener("click", () => {
+              $ws.setWorkspace(workspace.name);
+              $app.openOverview();
+            });
             return button;
           }),
         );
@@ -44,9 +49,7 @@
 <template component="app-main">
   <div class="bg-zinc-950 text-zinc-100 font-sans h-dvh flex flex-col md:flex-row">
     <template if="$p.profile">
-      <aside
-        class="w-full md:w-72 h-[calc(100dvh-4rem)] md:h-dvh shrink-0 border-r border-zinc-800 bg-zinc-900 flex flex-col"
-      >
+      <aside class="hidden md:flex md:w-72 h-dvh shrink-0 border-r border-zinc-200 bg-white flex-col">
         <header class="p-4 border-b border-zinc-800 flex justify-between items-center">
           <strong>Workspaces</strong>
           <div class="flex items-center gap-2">
@@ -159,7 +162,7 @@
       <section
         data-connectors-page
         hidden
-        class="flex-1 min-w-0 h-[calc(100dvh-4rem)] md:h-dvh overflow-y-auto bg-zinc-950 p-5 md:p-10"
+        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-950 p-5 md:p-10"
       >
         <div class="mx-auto max-w-4xl space-y-6">
           <header class="flex items-center justify-between">
@@ -315,62 +318,227 @@
           </div>
         </div>
       </section>
-      <main data-workspace-main hidden class="flex-1 min-w-0 h-dvh overflow-y-auto bg-zinc-950 p-6 md:p-10">
-        <article class="mx-auto max-w-4xl rounded-2xl border border-zinc-800 bg-zinc-900 p-6 md:p-8">
-          <template if="$ws.workspace">
-            <p class="text-xs font-semibold uppercase tracking-wide text-emerald-400">Workspace overview</p>
-            <h1 class="mt-2 text-2xl font-semibold" bind-inner-text="$ws.project?.name || $ws.workspace"></h1>
-            <p class="mt-4 text-zinc-300" bind-inner-text="$ws.project?.summary || 'No project summary yet.'"></p>
-            <div class="mt-6 grid gap-5 md:grid-cols-3">
-              <section>
-                <h2 class="text-sm font-medium">Goals</h2>
+      <main
+        data-workspaces-main
+        hidden
+        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 md:p-10"
+      >
+        <div class="mx-auto max-w-3xl">
+          <header class="mb-6 flex items-start justify-between gap-3">
+            <div>
+              <p class="text-sm font-medium text-emerald-700">Your projects</p>
+              <h1 class="mt-1 text-3xl font-semibold">Workspaces</h1>
+              <p class="mt-2 text-zinc-600">Each workspace keeps a project’s plan, tasks, and chats together.</p>
+            </div>
+            <button class="pt-1 text-sm text-zinc-500" on-click="signOut()">Sign out</button>
+          </header>
+          <button
+            class="mb-5 w-full rounded-xl bg-emerald-700 px-4 py-4 text-left font-semibold text-white shadow-sm"
+            on-click="onCreateWorkspace()"
+          >
+            ＋ Create a workspace
+          </button>
+          <h2 class="mb-2 text-sm font-semibold text-zinc-600">YOUR WORKSPACES</h2>
+          <div class="space-y-2">
+            <template for="workspace of $ws.workspaceList"
+              ><button
+                class="w-full rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-sm hover:border-emerald-500"
+                on-click="selectWorkspace(workspace.name)"
+              >
+                <span class="block font-semibold" bind-inner-text="workspace.name"></span
+                ><span class="mt-1 block text-sm text-zinc-500">Open project overview →</span>
+              </button></template
+            >
+            <p
+              class="rounded-xl border border-dashed border-zinc-300 bg-white p-5 text-sm text-zinc-500"
+              class-hidden="$ws.workspaceList.length > 0"
+            >
+              Your first workspace will appear here.
+            </p>
+          </div>
+        </div>
+      </main>
+      <main
+        data-overview-main
+        hidden
+        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 md:p-10"
+      >
+        <div class="mx-auto max-w-3xl space-y-5">
+          <header>
+            <button class="mb-4 text-sm font-medium text-emerald-700" on-click="openWorkspaces()">
+              ← All workspaces
+            </button>
+            <p class="text-sm font-medium text-emerald-700">PROJECT OVERVIEW</p>
+            <h1
+              class="mt-1 text-3xl font-semibold"
+              bind-inner-text="$ws.project?.name || $ws.workspace || 'Choose a workspace'"
+            ></h1>
+          </header>
+          <section class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+            <h2 class="text-lg font-semibold">Your next step</h2>
+            <template if="!$msg.modelList.length"
+              ><p class="mt-2 text-zinc-600">
+                First connect an AI provider so the Planner can help shape your project brief and suggest next steps.
+              </p>
+              <button
+                class="mt-4 w-full rounded-xl bg-emerald-700 px-4 py-3 text-left font-semibold text-white"
+                on-click="openIntegrations()"
+              >
+                Set up an AI provider →
+              </button></template
+            ><template if="$msg.modelList.length"
+              ><p class="mt-2 text-zinc-600">
+                Tell the Planner what you want to build or accomplish. It will help shape the project brief and suggest
+                next steps.
+              </p>
+              <button
+                class="mt-4 w-full rounded-xl bg-emerald-700 px-4 py-3 text-left font-semibold text-white"
+                on-click="createPlannerSession()"
+                bind-disabled="!$ws.workspace"
+              >
+                Start planning with AI →
+              </button></template
+            >
+          </section>
+          <section class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+            <h2 class="font-semibold">Project brief</h2>
+            <p
+              class="mt-2 text-zinc-600"
+              bind-inner-text="$ws.project?.summary || 'Your project summary will appear here after you plan it with AI.'"
+            ></p>
+            <div class="mt-4 grid gap-4 sm:grid-cols-3">
+              <div>
+                <h3 class="text-sm font-semibold">Goals</h3>
                 <p
-                  class="mt-2 text-sm text-zinc-400"
-                  bind-inner-text="($ws.project?.goals || []).join(' · ') || 'None yet'"
+                  class="mt-1 text-sm text-zinc-500"
+                  bind-inner-text="($ws.project?.goals || []).join(' · ') || 'Added during planning'"
                 ></p>
-              </section>
-              <section>
-                <h2 class="text-sm font-medium">Recent updates</h2>
+              </div>
+              <div>
+                <h3 class="text-sm font-semibold">Recent updates</h3>
                 <p
-                  class="mt-2 text-sm text-zinc-400"
-                  bind-inner-text="($ws.project?.recentUpdates || []).join(' · ') || 'None yet'"
+                  class="mt-1 text-sm text-zinc-500"
+                  bind-inner-text="($ws.project?.recentUpdates || []).join(' · ') || 'No updates yet'"
                 ></p>
-              </section>
-              <section>
-                <h2 class="text-sm font-medium">Next steps</h2>
+              </div>
+              <div>
+                <h3 class="text-sm font-semibold">Next steps</h3>
                 <p
-                  class="mt-2 text-sm text-zinc-400"
-                  bind-inner-text="($ws.project?.nextSteps || []).join(' · ') || 'None yet'"
+                  class="mt-1 text-sm text-zinc-500"
+                  bind-inner-text="($ws.project?.nextSteps || []).join(' · ') || 'Added during planning'"
                 ></p>
-              </section>
+              </div>
+            </div>
+          </section>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <button
+              class="rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-sm"
+              on-click="openSessions()"
+            >
+              <span class="block font-semibold">Sessions</span
+              ><span class="mt-1 block text-sm text-zinc-500">Continue or start a conversation</span></button
+            ><button class="rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-sm" on-click="openTasks()">
+              <span class="block font-semibold">Tasks</span
+              ><span class="mt-1 block text-sm text-zinc-500">See work delegated by the agent</span>
+            </button>
+          </div>
+        </div>
+      </main>
+      <main
+        data-sessions-main
+        hidden
+        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 md:p-10"
+      >
+        <div class="mx-auto max-w-3xl">
+          <button class="mb-4 text-sm font-medium text-emerald-700" on-click="openOverview()">
+            ← Project overview
+          </button>
+          <header class="mb-5 flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-emerald-700">PROJECT</p>
+              <h1 class="text-3xl font-semibold">Sessions</h1>
+              <p class="mt-1 text-zinc-600">
+                Chats and planning conversations for <span bind-inner-text="$ws.workspace || 'your workspace'"></span>.
+              </p>
             </div>
             <button
-              class="mt-6 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium"
-              on-click="createPlannerSession()"
+              class="rounded-lg bg-emerald-700 px-4 py-3 font-semibold text-white"
+              on-click="createSession()"
+              bind-disabled="!$ws.workspace"
             >
-              Open planner
+              ＋ New chat
             </button>
-          </template>
-          <template if="!$ws.workspace">
-            <p class="text-xs font-semibold uppercase tracking-wide text-emerald-400">Your workspace</p>
-            <h1 class="mt-2 text-2xl font-semibold">Choose a project to get started</h1>
-            <p class="mt-3 text-sm text-zinc-400">
-              Select a workspace from the sidebar, or create one for your next project.
+          </header>
+          <div class="mb-4 rounded-xl border border-zinc-200 bg-white p-4">
+            <h2 class="font-semibold">Start with a plan</h2>
+            <p class="mt-1 text-sm text-zinc-600">New to this workspace? Ask the Planner to help define the project.</p>
+            <button
+              class="mt-3 font-medium text-emerald-700"
+              on-click="createPlannerSession()"
+              bind-disabled="!$ws.workspace"
+            >
+              Start planning →
+            </button>
+          </div>
+          <div class="space-y-2">
+            <template for="s of $s.sessionList"
+              ><button
+                class="w-full rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-sm"
+                on-click="openSession(s.id)"
+              >
+                <span class="font-semibold" bind-inner-text="s.title || 'Untitled conversation'"></span
+                ><span class="mt-1 block text-sm text-zinc-500">Open conversation →</span>
+              </button></template
+            >
+            <p class="p-4 text-sm text-zinc-500" class-hidden="$s.sessionList.length > 0">
+              No conversations yet. Start planning or create a new chat.
             </p>
-            <button class="mt-6 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium" on-click="onCreateWorkspace()">
-              ＋ Create workspace
+            <button class="font-medium text-emerald-700" class-hidden="$ws.workspace" on-click="openWorkspaces()">
+              Choose a workspace first →
             </button>
-          </template>
-        </article>
+          </div>
+        </div>
       </main>
-      <main data-chat-main hidden class="flex-1 min-w-0 h-[calc(100dvh-4rem)] md:h-dvh">
+      <main
+        data-tasks-main
+        hidden
+        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 md:p-10"
+      >
+        <div class="mx-auto max-w-3xl">
+          <button class="mb-4 text-sm font-medium text-emerald-700" on-click="openOverview()">
+            ← Project overview
+          </button>
+          <p class="text-sm font-medium text-emerald-700">PROJECT</p>
+          <h1 class="text-3xl font-semibold">Tasks</h1>
+          <p class="mt-1 text-zinc-600">
+            Work the agent has delegated for <span bind-inner-text="$ws.workspace || 'your workspace'"></span>.
+          </p>
+          <div class="mt-5 space-y-2">
+            <template for="task of $ws.tasks"
+              ><article class="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+                <h2 class="font-semibold" bind-inner-text="task.task || task.title || task.id || 'Task'"></h2>
+                <p
+                  class="mt-1 text-sm text-zinc-600"
+                  bind-inner-text="(task.role || 'Task') + ' · ' + (task.status || 'unknown')"
+                ></p></article
+            ></template>
+            <p
+              class="rounded-xl border border-dashed border-zinc-300 bg-white p-5 text-sm text-zinc-500"
+              class-hidden="$ws.tasks.length > 0"
+            >
+              No tasks yet. Ask the Planner to break your project into steps.
+            </p>
+          </div>
+        </div>
+      </main>
+      <main data-chat-main hidden class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh">
         <app-chat class="h-full block"></app-chat>
       </main>
-      <nav aria-label="Primary navigation" class="h-16 shrink-0 border-t border-zinc-800 bg-zinc-900 md:hidden">
-        <div class="grid h-full grid-cols-3">
+      <nav aria-label="Primary navigation" class="h-20 shrink-0 border-t border-zinc-200 bg-white md:hidden">
+        <div class="grid h-full grid-cols-5">
           <button
             class="flex flex-col items-center justify-center gap-1 text-xs"
-            bind-class="{ 'text-emerald-300': $app.page === 'workspaces', 'text-zinc-400': $app.page !== 'workspaces' }"
+            bind-class="{ 'text-emerald-700': $app.page === 'workspaces' || $app.page === 'overview', 'text-zinc-500': $app.page !== 'workspaces' && $app.page !== 'overview' }"
             bind-aria-current="$app.page === 'workspaces' ? 'page' : null"
             on-click="openWorkspaces()"
           >
@@ -378,7 +546,15 @@
           </button>
           <button
             class="flex flex-col items-center justify-center gap-1 text-xs"
-            bind-class="{ 'text-emerald-300': $app.page === 'chat', 'text-zinc-400': $app.page !== 'chat' }"
+            bind-class="{ 'text-emerald-700': $app.page === 'sessions', 'text-zinc-500': $app.page !== 'sessions' }"
+            bind-aria-current="$app.page === 'sessions' ? 'page' : null"
+            on-click="openSessions()"
+          >
+            <span aria-hidden="true">☰</span><span>Sessions</span>
+          </button>
+          <button
+            class="flex flex-col items-center justify-center gap-1 text-xs"
+            bind-class="{ 'text-emerald-700': $app.page === 'chat', 'text-zinc-500': $app.page !== 'chat' }"
             bind-aria-current="$app.page === 'chat' ? 'page' : null"
             on-click="openChatPage()"
           >
@@ -386,7 +562,15 @@
           </button>
           <button
             class="flex flex-col items-center justify-center gap-1 text-xs"
-            bind-class="{ 'text-emerald-300': $app.page === 'integrations', 'text-zinc-400': $app.page !== 'integrations' }"
+            bind-class="{ 'text-emerald-700': $app.page === 'tasks', 'text-zinc-500': $app.page !== 'tasks' }"
+            bind-aria-current="$app.page === 'tasks' ? 'page' : null"
+            on-click="openTasks()"
+          >
+            <span aria-hidden="true">✓</span><span>Tasks</span>
+          </button>
+          <button
+            class="flex flex-col items-center justify-center gap-1 text-xs"
+            bind-class="{ 'text-emerald-700': $app.page === 'integrations', 'text-zinc-500': $app.page !== 'integrations' }"
             bind-aria-current="$app.page === 'integrations' ? 'page' : null"
             on-click="openConnectors()"
           >
@@ -422,11 +606,13 @@
         if (!sidebar) {
           return;
         }
-        const compact = $app.isCompact;
         const visibility = [
-          [sidebar, $app.page !== "integrations" && (!compact || $app.page === "workspaces")],
+          [sidebar, $app.page !== "integrations"],
           [element.querySelector("[data-connectors-page]"), $app.page === "integrations"],
-          [element.querySelector("[data-workspace-main]"), $app.page === "workspaces" && !compact],
+          [element.querySelector("[data-workspaces-main]"), $app.page === "workspaces"],
+          [element.querySelector("[data-overview-main]"), $app.page === "overview"],
+          [element.querySelector("[data-sessions-main]"), $app.page === "sessions"],
+          [element.querySelector("[data-tasks-main]"), $app.page === "tasks"],
           [element.querySelector("[data-chat-main]"), $app.page === "chat"],
         ];
         for (const [node, visible] of visibility) {
@@ -439,6 +625,9 @@
         await $p.reloadProfile();
         if ($p.profile) {
           await $ws.reloadWorkspaceList();
+          if (!$ws.workspace && $app.page === "overview") {
+            $app.openSidebar();
+          }
         }
         syncPages();
       });
@@ -447,20 +636,39 @@
         if (!name?.trim()) return;
         try {
           await $ws.createWorkspace(name.trim());
-          $app.openChat();
+          $app.openOverview();
         } catch (error) {
           alert(`Could not create the workspace: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
       }
 
       function showProjectOverview() {
-        $app.openSidebar();
-        $s.setSessionById("");
+        $app.openOverview();
       }
 
       function openWorkspaces() {
         $app.openSidebar();
-        $s.setSessionById("");
+      }
+
+      function selectWorkspace(name) {
+        $ws.setWorkspace(name);
+        $app.openOverview();
+      }
+
+      function openOverview() {
+        $app.openOverview();
+      }
+
+      function openSessions() {
+        $app.openSessions();
+      }
+
+      function openTasks() {
+        $app.openTasks();
+      }
+
+      function openIntegrations() {
+        openConnectors();
       }
 
       function openChatPage() {
@@ -702,6 +910,11 @@
         onDeleteSession,
         openConnectors,
         openWorkspaces,
+        selectWorkspace,
+        openOverview,
+        openSessions,
+        openTasks,
+        openIntegrations,
         openChatPage,
         saveConnector,
         testConnector,

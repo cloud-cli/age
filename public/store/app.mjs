@@ -11,7 +11,7 @@ export const useApp = defineStore("app", function () {
   const messages = useMessages();
   const profile = useProfile();
   const layout = ref({ left: true, center: true, right: true });
-  const pages = new Set(["workspaces", "chat", "integrations"]);
+  const pages = new Set(["workspaces", "overview", "sessions", "tasks", "chat", "integrations"]);
   const pageFromUrl = () => {
     const page = window.location.hash.slice(2);
     return pages.has(page) ? page : "workspaces";
@@ -39,6 +39,9 @@ export const useApp = defineStore("app", function () {
   const openChat = () => navigate("chat");
   const openSidebar = () => navigate("workspaces");
   const openIntegrations = () => navigate("integrations");
+  const openOverview = () => navigate("overview");
+  const openSessions = () => navigate("sessions");
+  const openTasks = () => navigate("tasks");
 
   effect(
     () => profile.profile,
@@ -73,5 +76,8 @@ export const useApp = defineStore("app", function () {
     openChat,
     openSidebar,
     openIntegrations,
+    openOverview,
+    openSessions,
+    openTasks,
   };
 });
