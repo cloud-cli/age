@@ -17,10 +17,40 @@ import {
   saveConnector,
   startChatgptLogin,
 } from "./connectors.mjs";
+import { addTeamMember, createTeam, readTeam, teamFor } from "./teams.mjs";
+
+async function connectorScope(subject) {
+  const teamId = await teamFor(subject);
+  if (!teamId) {
+    throw new Error("Create or join a team to use shared integrations");
+  }
+  return `team:${teamId}`;
+}
+
+async function onTeam(req, res) {
+  res.sendJson((await readTeam(req.authSubject)) || {});
+}
+async function onCreateTeam(req, res) {
+  try {
+    const body = JSON.parse(Buffer.concat(await req.toArray()).toString("utf8"));
+    res.sendJson(await createTeam(req.authSubject, body.name || ""), 201);
+  } catch (error) {
+    res.sendJson({ error: error instanceof Error ? error.message : "Could not create team" }, 400);
+  }
+}
+async function onAddTeamMember(req, res) {
+  try {
+    const body = JSON.parse(Buffer.concat(await req.toArray()).toString("utf8"));
+    res.sendJson(await addTeamMember(req.authSubject, body.subject), 201);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not add team member";
+    res.sendJson({ error: message }, /Team admin/.test(message) ? 403 : 400);
+  }
+}
 
 async function onListConnectors(req, res) {
   try {
-    res.sendJson(await listConnectors(req.authSubject));
+    res.sendJson(await listConnectors(await connectorScope(req.authSubject)));
   } catch (error) {
     res.sendJson({ error: error instanceof Error ? error.message : "Could not load connector settings" }, 500);
   }
@@ -29,7 +59,7 @@ async function onListConnectors(req, res) {
 async function onSaveConnector(req, res) {
   try {
     const body = Buffer.concat(await req.toArray()).toString("utf8");
-    res.sendJson(await saveConnector(req.authSubject, JSON.parse(body)));
+    res.sendJson(await saveConnector(await connectorScope(req.authSubject), JSON.parse(body)));
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not save connector settings";
     const status = /^(Unsupported|Invalid|Enter|Ollama)/.test(message) ? 400 : 500;
@@ -39,7 +69,7 @@ async function onSaveConnector(req, res) {
 
 async function onDeleteConnector(req, res, params) {
   try {
-    await deleteConnector(req.authSubject, params.provider, params.id);
+    await deleteConnector(await connectorScope(req.authSubject), params.provider, params.id);
     res.writeHead(204).end();
   } catch (error) {
     res.sendJson({ error: error instanceof Error ? error.message : "Could not disconnect provider" }, 400);
@@ -48,7 +78,7 @@ async function onDeleteConnector(req, res, params) {
 
 async function onTestConnector(req, res, params) {
   try {
-    const models = await getConfiguredModels(req.authSubject, params.provider, params.id);
+    const models = await getConfiguredModels(await connectorScope(req.authSubject), params.provider, params.id);
     if (!models.length) {
       res.sendJson({ error: "No models were returned by this connector" }, 502);
       return;
@@ -61,7 +91,7 @@ async function onTestConnector(req, res, params) {
 
 async function onStartChatgptLogin(req, res) {
   try {
-    res.sendJson(await startChatgptLogin(req.authSubject));
+    res.sendJson(await startChatgptLogin(await connectorScope(req.authSubject)));
   } catch (error) {
     res.sendJson({ error: error instanceof Error ? error.message : "Could not start ChatGPT sign-in" }, 502);
   }
@@ -69,7 +99,7 @@ async function onStartChatgptLogin(req, res) {
 
 async function onPollChatgptLogin(req, res, params) {
   try {
-    res.sendJson(await pollChatgptLogin(req.authSubject, params.id));
+    res.sendJson(await pollChatgptLogin(await connectorScope(req.authSubject), params.id));
   } catch (error) {
     res.sendJson({ error: error instanceof Error ? error.message : "Could not complete ChatGPT sign-in" }, 400);
   }
@@ -468,7 +498,7 @@ async function onDeleteMessage(_req, res, params) {
 
 async function onModelList(req, res) {
   try {
-    res.sendJson(await getModelList(req.authSubject));
+    res.sendJson(await getModelList(await connectorScope(req.authSubject)));
   } catch (error) {
     res.sendJson({ error: error instanceof Error ? error.message : "Could not load models" }, 502);
   }
@@ -481,6 +511,9 @@ async function onModelPull(_req, res, params) {
 }
 
 export default {
+  "GET /teams/current": onTeam,
+  "POST /teams": onCreateTeam,
+  "POST /teams/members": onAddTeamMember,
   "GET /connectors": onListConnectors,
   "PUT /connectors": onSaveConnector,
   "POST /connectors/chatgpt/login": onStartChatgptLogin,

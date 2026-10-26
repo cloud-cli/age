@@ -272,6 +272,38 @@ export const Connectors = {
   },
 };
 
+export const Teams = {
+  async current() {
+    const response = await fetch(new URL("/teams/current", baseUrl), authOptions());
+    if (!response.ok) {
+      throw new Error(`Could not load team: ${response.status}`);
+    }
+    return response.json();
+  },
+  async create(name) {
+    const response = await fetch(
+      new URL("/teams", baseUrl),
+      authOptions({ method: "POST", body: JSON.stringify({ name }) }),
+    );
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || "Could not create team");
+    }
+    return result;
+  },
+  async addMember(subject) {
+    const response = await fetch(
+      new URL("/teams/members", baseUrl),
+      authOptions({ method: "POST", body: JSON.stringify({ subject }) }),
+    );
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || "Could not add team member");
+    }
+    return result;
+  },
+};
+
 export const events = new EventTarget();
 
 async function init() {

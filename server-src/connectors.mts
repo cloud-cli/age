@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from "node:crypto";
 import { isIP } from "node:net";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { dataDir } from "./env.mjs";
 
@@ -163,6 +163,25 @@ function encryptionKey() {
 function connectorPath(subject: string) {
   const user = createHash("sha256").update(subject).digest("hex");
   return join(dataDir, "connectors", `${user}.json`);
+}
+
+export async function migrateConnectors(subject: string, teamId: string) {
+  const personal = await readConnectors(subject);
+  if (!Object.keys(personal).length) {
+    return;
+  }
+  const teamSubject = `team:${teamId}`;
+  const shared = await readConnectors(teamSubject);
+  let changed = false;
+  for (const [key, value] of Object.entries(personal)) {
+    if (shared[key] === undefined) {
+      shared[key] = value;
+      changed = true;
+    }
+  }
+  if (changed) {
+    await writeConnectors(teamSubject, shared);
+  }
 }
 
 async function readConnectors(subject: string) {
@@ -537,8 +556,9 @@ async function writeConnectors(subject: string, stored: any) {
   const encrypted = Buffer.concat([cipher.update(JSON.stringify(stored)), cipher.final()]);
   const path = connectorPath(subject);
   await mkdir(join(dataDir, "connectors"), { recursive: true, mode: 0o700 });
+  const temporaryPath = `${path}.${randomUUID()}.tmp`;
   await writeFile(
-    path,
+    temporaryPath,
     JSON.stringify({
       iv: iv.toString("base64"),
       tag: cipher.getAuthTag().toString("base64"),
@@ -546,4 +566,5 @@ async function writeConnectors(subject: string, stored: any) {
     }),
     { mode: 0o600 },
   );
+  await rename(temporaryPath, path);
 }

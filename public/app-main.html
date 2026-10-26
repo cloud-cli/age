@@ -188,6 +188,26 @@
             API keys are encrypted on the server and never returned to this browser. Leave an existing key blank to keep
             it unchanged.
           </p>
+          <section class="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900 p-5">
+            <h2 class="font-semibold">Team</h2>
+            <p class="text-sm text-zinc-400">
+              Integrations are shared with everyone in your team. Add members by their OIDC subject.
+            </p>
+            <p data-team-summary class="text-sm text-zinc-200">Loading team…</p>
+            <div class="flex flex-wrap gap-2">
+              <button class="rounded border border-zinc-700 px-3 py-2 text-sm" on-click="createTeam()">
+                Create team
+              </button>
+              <button
+                data-team-invite-button
+                class="rounded border border-zinc-700 px-3 py-2 text-sm"
+                on-click="addTeamMember()"
+              >
+                Invite by OIDC subject
+              </button>
+            </div>
+            <ul data-team-members class="text-sm text-zinc-400"></ul>
+          </section>
           <div class="grid gap-4 md:grid-cols-2">
             <form
               data-provider-form="gemini"
@@ -593,7 +613,7 @@
     import { signIn, signOut } from "@app/store/profile.mjs";
     import { useApp } from "@app/store/app.mjs";
     import { useMessages } from "@app/store/messages.mjs";
-    import { Connectors } from "@app/api.mjs";
+    import { Connectors, Teams } from "@app/api.mjs";
     export default function () {
       const element = getElement();
       const $ws = useWorkspaces(),
@@ -601,6 +621,42 @@
         $p = useProfile(),
         $app = useApp(),
         $msg = useMessages();
+      async function refreshTeam() {
+        const team = await Teams.current();
+        const summary = element.querySelector("[data-team-summary]");
+        const members = element.querySelector("[data-team-members]");
+        summary.textContent = team.id
+          ? `${team.name} · ${team.role}`
+          : "You are not in a team. Create a team to share integrations.";
+        element.querySelector("[data-team-invite-button]").hidden = !["owner", "admin"].includes(team.role);
+        members.replaceChildren(
+          ...(team.members || []).map((member) => {
+            const item = document.createElement("li");
+            item.textContent = `${member.sub} · ${member.role}`;
+            return item;
+          }),
+        );
+      }
+      async function createTeam() {
+        try {
+          await Teams.create(prompt("Team name") || "My team");
+          await refreshTeam();
+        } catch (error) {
+          alert(error.message);
+        }
+      }
+      async function addTeamMember() {
+        try {
+          const subject = prompt("Enter the invitee's OIDC subject");
+          if (!subject?.trim()) {
+            return;
+          }
+          await Teams.addMember(subject.trim());
+          await refreshTeam();
+        } catch (error) {
+          alert(error.message);
+        }
+      }
       function syncPages() {
         const sidebar = element.querySelector("aside");
         if (!sidebar) {
@@ -630,6 +686,7 @@
           }
         }
         syncPages();
+        if ($p.profile) refreshTeam().catch(console.error);
       });
       async function onCreateWorkspace() {
         const name = prompt("Workspace name");
@@ -896,6 +953,8 @@
         element.querySelector("[data-ollama-servers]").append(createOllamaForm());
       }
       return {
+        createTeam,
+        addTeamMember,
         $ws,
         $s,
         $p,

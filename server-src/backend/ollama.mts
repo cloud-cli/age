@@ -1,12 +1,14 @@
 import { request } from "https";
 import { callConfiguredModel, getConfiguredModels } from "../connectors.mjs";
+import { teamFor } from "../teams.mjs";
 
 const apiUrl = process.env.API_URL;
 const apiKey = process.env.API_KEY;
 
 export async function getModelList(subject?: string) {
   if (subject) {
-    const configured = await getConfiguredModels(subject);
+    const teamId = subject.startsWith("team:") ? subject.slice(5) : await teamFor(subject);
+    const configured = teamId ? await getConfiguredModels(`team:${teamId}`) : [];
     if (!apiUrl) {
       return configured;
     }
@@ -36,7 +38,8 @@ async function getLegacyModelList() {
 
 export async function callModel(requestBody, subject?: string) {
   if (subject) {
-    const configured = await callConfiguredModel(subject, requestBody);
+    const teamId = subject.startsWith("team:") ? subject.slice(5) : await teamFor(subject);
+    const configured = teamId ? await callConfiguredModel(`team:${teamId}`, requestBody) : undefined;
     if (configured) {
       return configured;
     }
