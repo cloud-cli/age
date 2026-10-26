@@ -246,7 +246,7 @@ export async function getConfiguredModels(subject: string, onlyProvider?: string
             const ollamaURL = provider === "ollama" ? validateOllamaUrl(connector.url) : undefined;
             const url =
               provider === "gemini"
-                ? "https://generativelanguage.googleapis.com/v1beta/openai/models"
+                ? "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000"
                 : provider === "openai"
                   ? "https://api.openai.com/v1/models"
                   : `${ollamaURL!.origin}/v1/models`;
@@ -264,16 +264,20 @@ export async function getConfiguredModels(subject: string, onlyProvider?: string
               throw new Error(`${provider} model lookup failed (${response.status})`);
             }
             const body: any = await response.json();
-            return (body.data || []).map((model, index) => {
-              const name = provider === "gemini" ? model.id.replace(/^models\//, "") : model.id;
-              return {
-                id: provider === "ollama" ? `ollama:${connector.id}/${name}` : `${provider}/${name}`,
-                name,
-                provider,
-                ...(provider === "ollama" ? { serverName: connector.name } : {}),
-                default: connector.model ? connector.model === name : index === 0,
-              };
-            });
+            const availableModels = provider === "gemini" ? body.models || [] : body.data || [];
+            return availableModels
+              .filter((model) => provider !== "gemini" || model.supportedGenerationMethods?.includes("generateContent"))
+              .map((model, index) => {
+                const modelId = provider === "gemini" ? model.name : model.id;
+                const name = modelId.replace(/^models\//, "");
+                return {
+                  id: provider === "ollama" ? `ollama:${connector.id}/${name}` : `${provider}/${name}`,
+                  name,
+                  provider,
+                  ...(provider === "ollama" ? { serverName: connector.name } : {}),
+                  default: connector.model ? connector.model === name : index === 0,
+                };
+              });
           } catch (error) {
             if (onlyProvider) {
               throw error;
