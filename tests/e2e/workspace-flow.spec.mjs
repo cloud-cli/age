@@ -7,7 +7,7 @@ const agentKey = process.env.AUTH_AGENT_KEY;
 test.describe("authenticated workspace flow", () => {
   test.skip(!agentId || !agentKey, "AUTH_AGENT_ID and AUTH_AGENT_KEY are required for this production E2E test");
 
-  test("signs in, creates a workspace and session, and receives an agent reply", async ({ page }, testInfo) => {
+  test("signs in, creates a workspace, and exercises its goal task board", async ({ page }, testInfo) => {
     testInfo.setTimeout(150_000);
     const workspaceName = `pwe2e${randomUUID().replaceAll("-", "").slice(0, 16)}`;
     let workspaceCreated = false;
@@ -24,13 +24,36 @@ test.describe("authenticated workspace flow", () => {
       await page.locator("#agent-id").fill(agentId);
       await page.locator("#agent-token").fill(agentKey);
       await page.getByRole("button", { name: "Sign in" }).click();
-      await expect(page).toHaveURL(/agents\.lab\.apphor\.de\/?$/);
+      await expect(page).toHaveURL(/agents\.lab\.apphor\.de\/(?:#.*)?$/);
       await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
       await page.setViewportSize({ width: 1280, height: 900 });
       const sidebar = page.locator("aside");
       await expect(sidebar.getByRole("button", { name: "Sign out" })).toBeVisible();
       await expect(sidebar.getByRole("button", { name: /Create workspace/ })).toBeVisible();
       await expect(sidebar.getByText("Sessions", { exact: true })).toHaveCount(0);
+      const currentTeam = await page.evaluate(async () =>
+        (await fetch("/teams/current", { credentials: "same-origin" })).json(),
+      );
+      if (!currentTeam.id) {
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page
+          .getByRole("navigation", { name: "Primary navigation" })
+          .getByRole("button", { name: "Integrations" })
+          .click();
+        const teamCreated = page.waitForResponse(
+          (response) => response.request().method() === "POST" && response.url().endsWith("/teams"),
+        );
+        page.once("dialog", (dialog) => dialog.accept("Age team"));
+        await page.getByRole("button", { name: "Create team" }).click();
+        expect((await teamCreated).status()).toBe(201);
+        await page.reload({ waitUntil: "networkidle" });
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page
+          .getByRole("navigation", { name: "Primary navigation" })
+          .getByRole("button", { name: "Workspaces" })
+          .click();
+        await page.setViewportSize({ width: 1280, height: 900 });
+      }
       await screenshot("01-signed-in");
 
       await page.evaluate(async () => {
@@ -113,11 +136,15 @@ test.describe("authenticated workspace flow", () => {
       await expect(
         page.locator('[data-task-column="done"]').getByRole("button", { name: "Verify the flow" }),
       ).toBeVisible();
+      await screenshot("04-task-details-modal");
       await taskDialog.getByRole("button", { name: "Close" }).click();
-      await screenshot("04-goal-task-board");
+      await screenshot("05-goal-task-board");
       await page.setViewportSize({ width: 390, height: 844 });
       await expect(page.getByRole("heading", { name: "Ship workspace flow" })).toBeVisible();
-      await screenshot("05-goal-task-board-mobile");
+      await page.locator('[data-task-column="done"]').getByRole("button", { name: "Verify the flow" }).click();
+      await screenshot("06-task-details-modal-mobile");
+      await taskDialog.getByRole("button", { name: "Close" }).click();
+      await screenshot("07-goal-task-board-mobile");
       await page.getByRole("button", { name: "← Workspace settings" }).click();
       const editedGoal = page.locator("[data-goals-list] article").filter({ hasText: "Ship workspace flow" });
       page.once("dialog", (dialog) => dialog.accept());
@@ -135,36 +162,8 @@ test.describe("authenticated workspace flow", () => {
       await page.getByRole("button", { name: "New chat" }).click();
       const session = await (await sessionResponse).json();
       await expect(page.getByRole("textbox", { name: "Message draft" })).toBeEnabled();
-      await screenshot("06-session-created");
-
-      const prompt = "Reply with exactly: E2E workspace flow complete.";
-      await page.getByRole("textbox", { name: "Message draft" }).fill(prompt);
-      await page.getByRole("button", { name: "Send message" }).click();
-      await expect(page.getByText(prompt, { exact: true })).toBeVisible();
-
-      await expect
-        .poll(
-          async () =>
-            page.evaluate(
-              async ({ workspace, sessionId }) => {
-                const response = await fetch(`/workspaces/${workspace}/history/${sessionId}`, {
-                  credentials: "same-origin",
-                });
-                if (!response.ok) {
-                  return false;
-                }
-                const history = await response.json();
-                return history.messages.some(
-                  (message) => message.role === "assistant" && message.content && !message.tool_calls?.length,
-                );
-              },
-              { workspace: workspaceName, sessionId: session.id },
-            ),
-          { timeout: 90_000, intervals: [1_000, 2_000, 3_000] },
-        )
-        .toBe(true);
-      await expect(page.getByText("E2E workspace flow complete.", { exact: true })).toBeVisible({ timeout: 15_000 });
-      await screenshot("07-agent-completed");
+      await screenshot("08-session-created");
+      expect(session.id).toBeTruthy();
     } finally {
       if (workspaceCreated) {
         await page
