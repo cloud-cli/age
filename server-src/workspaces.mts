@@ -779,7 +779,7 @@ export default {
   "GET /workspaces/:name/file": onReadFile,
   "POST /workspaces/:name/file": onWriteFile,
 
-  "GET /workspaces/:name": onReadWorkspace,
+  // Keep these specific routes above the generic workspace path; the router matches in declaration order.
   "GET /workspaces/:name/settings": onReadWorkspaceSettings,
   "PUT /workspaces/:name/settings": onUpdateWorkspaceSettings,
   "GET /workspaces/:name/tasks": onReadTasks,
@@ -787,5 +787,6 @@ export default {
   "GET /workspaces/:name/tasks/:id": onReadTask,
   "PATCH /workspaces/:name/tasks/:id": onUpdateTask,
   "POST /workspaces/:name/tasks/:id/comments": onAddTaskComment,
+  "GET /workspaces/:name": onReadWorkspace,
   "DELETE /workspaces/:name": onDeleteWorkspace,
 };

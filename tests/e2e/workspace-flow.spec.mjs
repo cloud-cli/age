@@ -57,6 +57,7 @@ test.describe("authenticated workspace flow", () => {
       expect(created.name).toBe(workspaceName);
 
       await page.reload({ waitUntil: "networkidle" });
+      await page.setViewportSize({ width: 390, height: 844 });
       await page
         .getByRole("navigation", { name: "Primary navigation" })
         .getByRole("button", { name: "Workspaces" })
@@ -68,6 +69,7 @@ test.describe("authenticated workspace flow", () => {
       await screenshot("03-workspace-refreshed-and-selected");
       await expect(page.getByRole("heading", { name: workspaceName })).toBeVisible();
       await expect(page).toHaveURL(new RegExp(`#/overview\\?workspace=${encodeURIComponent(workspaceName)}`));
+      await page.setViewportSize({ width: 1280, height: 900 });
       await page.reload({ waitUntil: "networkidle" });
       await expect(page.getByRole("heading", { name: workspaceName })).toBeVisible();
 
@@ -77,6 +79,7 @@ test.describe("authenticated workspace flow", () => {
       await goalDialog.getByLabel("Description").fill("Finish and verify the workspace features.");
       await goalDialog.getByRole("button", { name: "Save goal" }).click();
       const goalCard = page.locator("[data-goals-list] article").filter({ hasText: "Ship the workspace flow" });
+      await expect(goalCard).toBeVisible({ timeout: 5_000 });
       await goalCard.getByRole("button", { name: "Edit" }).click();
       await goalDialog.getByLabel("Title").fill("Ship workspace flow");
       await goalDialog.getByLabel("Description").fill("Finish, review, and verify the workspace features.");
