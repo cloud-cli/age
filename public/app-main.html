@@ -1,8 +1,7 @@
-<template component="project-list">
-  <nav aria-label="Projects" class="p-2 border-b border-zinc-800 space-y-1">
-    <div class="px-2 py-1 text-xs uppercase tracking-wide text-zinc-400">Projects</div>
-    <div data-project-items></div>
-    <p data-project-empty class="px-2 py-1 text-xs text-zinc-500">No projects yet</p>
+<template component="workspace-list">
+  <nav aria-label="Workspaces" class="p-2 space-y-1 flex-1 overflow-y-auto">
+    <div data-workspace-items></div>
+    <p data-workspace-empty class="px-2 py-1 text-xs text-zinc-500">No workspaces yet</p>
   </nav>
   <script setup>
     import { getElement, onInit } from "@li3/web";
@@ -17,18 +16,17 @@
 
       async function reload() {
         const workspaces = await Workspaces.list();
-        const items = element.querySelector("[data-project-items]");
-        const empty = element.querySelector("[data-project-empty]");
+        const items = element.querySelector("[data-workspace-items]");
+        const empty = element.querySelector("[data-workspace-empty]");
         items.replaceChildren(
           ...workspaces.map((workspace) => {
             const button = document.createElement("button");
             button.type = "button";
             button.className =
-              "w-full rounded px-3 py-2 text-left text-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2";
+              "w-full rounded px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2";
             button.textContent = workspace.name;
             button.addEventListener("click", () => {
-              $ws.setWorkspace(workspace.name);
-              $app.openOverview();
+              $app.openWorkspace(workspace.name);
             });
             return button;
           }),
@@ -50,119 +48,22 @@
   <div class="bg-zinc-950 text-zinc-100 font-sans h-dvh flex flex-col md:flex-row">
     <template if="$p.profile">
       <aside class="hidden md:flex md:w-72 h-dvh shrink-0 border-r border-zinc-200 bg-white flex-col">
-        <header class="p-4 border-b border-zinc-800 flex justify-between items-center">
-          <strong>Workspaces</strong>
-          <div class="flex items-center gap-2">
-            <button aria-label="Create workspace" title="Create workspace" on-click="onCreateWorkspace()">＋</button>
-            <button class="text-xs text-zinc-400 hover:text-zinc-100" on-click="signOut()">Sign out</button>
-          </div>
-        </header>
-        <nav aria-label="App pages" class="hidden grid-cols-3 gap-1 border-b border-zinc-800 p-2 md:grid">
+        <header class="p-4 border-b border-zinc-200"><strong class="text-zinc-900">Workspaces</strong></header>
+        <workspace-list></workspace-list>
+        <div class="mt-auto p-3 border-t border-zinc-200 flex flex-col gap-3">
+          <button class="text-left text-sm text-zinc-600" on-click="signOut()">Sign out</button>
           <button
-            class="rounded px-2 py-2 text-xs"
-            bind-class="{ 'bg-zinc-800': $app.page === 'workspaces', 'text-zinc-100': $app.page === 'workspaces', 'text-zinc-400': $app.page !== 'workspaces' }"
-            bind-aria-current="$app.page === 'workspaces' ? 'page' : null"
-            on-click="openWorkspaces()"
+            class="w-full rounded-lg bg-emerald-700 px-3 py-3 text-sm font-semibold text-white"
+            on-click="onCreateWorkspace()"
           >
-            Workspaces
+            ＋ Create workspace
           </button>
-          <button
-            class="rounded px-2 py-2 text-xs"
-            bind-aria-current="$app.page === 'chat' ? 'page' : null"
-            bind-class="{ 'bg-zinc-800': $app.page === 'chat', 'text-zinc-100': $app.page === 'chat', 'text-zinc-400': $app.page !== 'chat' }"
-            on-click="openChatPage()"
-          >
-            Chat
-          </button>
-          <button
-            class="rounded px-2 py-2 text-xs"
-            bind-aria-current="$app.page === 'integrations' ? 'page' : null"
-            bind-class="{ 'bg-zinc-800': $app.page === 'integrations', 'text-zinc-100': $app.page === 'integrations', 'text-zinc-400': $app.page !== 'integrations' }"
-            on-click="openConnectors()"
-          >
-            Integrations
-          </button>
-        </nav>
-        <project-list></project-list>
-        <section class="px-3 pt-3" class-hidden="!$ws.workspace">
-          <button class="w-full rounded px-3 py-2 text-left text-sm hover:bg-zinc-800" on-click="showProjectOverview()">
-            Project overview
-          </button>
-          <div class="mt-2 text-xs uppercase text-zinc-400">Project brief</div>
-          <p class="py-2 text-xs text-zinc-400" bind-inner-text="$ws.project?.summary || 'No project summary yet.'"></p>
-          <div
-            class="text-xs text-zinc-400"
-            bind-inner-text="'Goals: ' + (($ws.project?.goals || []).join(' · ') || 'None yet')"
-          ></div>
-          <div
-            class="mt-1 text-xs text-zinc-400"
-            bind-inner-text="'Recent updates: ' + (($ws.project?.recentUpdates || []).join(' · ') || 'None yet')"
-          ></div>
-          <div
-            class="mt-1 text-xs text-zinc-400"
-            bind-inner-text="'Next steps: ' + (($ws.project?.nextSteps || []).join(' · ') || 'None yet')"
-          ></div>
-        </section>
-        <div class="px-3 pt-3 flex justify-between items-center">
-          <span class="text-xs uppercase text-zinc-400">Sessions</span
-          ><button
-            aria-label="Create session"
-            title="Create session"
-            class="p-2 focus-visible:outline focus-visible:outline-2"
-            bind-disabled="!$ws.workspace"
-            on-click="createSession()"
-          >
-            ＋
-          </button>
-        </div>
-        <nav aria-label="Sessions" class="flex-1 overflow-y-auto p-2">
-          <button
-            class="w-full rounded px-3 py-2 text-left text-sm text-emerald-300 hover:bg-zinc-800"
-            on-click="createPlannerSession()"
-          >
-            Planner · New planning session
-          </button>
-          <div class="px-3 pt-3 text-xs uppercase text-zinc-400">Delegated tasks</div>
-          <template for="task of $ws.tasks"
-            ><div class="px-3 py-2 text-xs text-zinc-300">
-              <div>{{ task.task || task.title || task.id || 'Task' }}</div>
-              <div
-                class="text-zinc-500"
-                bind-inner-text="(task.role || 'task') + ' · ' + (task.status || 'unknown')"
-              ></div>
-              <div class="text-zinc-500" class-hidden="task.status !== 'queued'">Queued — not running</div>
-            </div></template
-          >
-          <div class="px-3 pt-3 text-xs uppercase text-zinc-400">Regular sessions</div>
-          <template for="s of $s.sessionList"
-            ><div
-              class="flex items-center rounded hover:bg-zinc-800"
-              bind-class="{ 'bg-zinc-800': $s.sessionId === s.id }"
-            >
-              <button
-                class="flex-1 text-left p-3 truncate focus-visible:outline focus-visible:outline-2"
-                on-click="openSession(s.id)"
-              >
-                {{ s.title || s.id }}</button
-              ><button
-                aria-label="Delete session"
-                title="Delete session"
-                class="p-2 text-zinc-400 hover:text-red-400"
-                on-click="onDeleteSession(s.id)"
-              >
-                ×
-              </button>
-            </div></template
-          >
-        </nav>
-        <div class="p-3 border-t border-zinc-800 flex gap-2">
-          <button class="text-sm" on-click="onCreateWorkspace()">＋ Workspace</button>
         </div>
       </aside>
       <section
         data-connectors-page
         hidden
-        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-950 p-5 md:p-10"
+        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-950 p-5 text-zinc-100 md:p-10"
       >
         <div class="mx-auto max-w-4xl space-y-6">
           <header class="flex items-center justify-between">
@@ -341,14 +242,14 @@
       <main
         data-workspaces-main
         hidden
-        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 md:p-10"
+        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
       >
         <div class="mx-auto max-w-3xl">
           <header class="mb-6 flex items-start justify-between gap-3">
             <div>
-              <p class="text-sm font-medium text-emerald-700">Your projects</p>
+              <p class="text-sm font-medium text-emerald-700">Your workspaces</p>
               <h1 class="mt-1 text-3xl font-semibold">Workspaces</h1>
-              <p class="mt-2 text-zinc-600">Each workspace keeps a project’s plan, tasks, and chats together.</p>
+              <p class="mt-2 text-zinc-600">Keep your plans, goals, tasks, and conversations together.</p>
             </div>
             <button class="pt-1 text-sm text-zinc-500" on-click="signOut()">Sign out</button>
           </header>
@@ -366,7 +267,7 @@
                 on-click="selectWorkspace(workspace.name)"
               >
                 <span class="block font-semibold" bind-inner-text="workspace.name"></span
-                ><span class="mt-1 block text-sm text-zinc-500">Open project overview →</span>
+                ><span class="mt-1 block text-sm text-zinc-500">Open workspace settings →</span>
               </button></template
             >
             <p
@@ -381,24 +282,21 @@
       <main
         data-overview-main
         hidden
-        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 md:p-10"
+        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
       >
         <div class="mx-auto max-w-3xl space-y-5">
           <header>
             <button class="mb-4 text-sm font-medium text-emerald-700" on-click="openWorkspaces()">
               ← All workspaces
             </button>
-            <p class="text-sm font-medium text-emerald-700">PROJECT OVERVIEW</p>
-            <h1
-              class="mt-1 text-3xl font-semibold"
-              bind-inner-text="$ws.project?.name || $ws.workspace || 'Choose a workspace'"
-            ></h1>
+            <p class="text-sm font-medium text-emerald-700">WORKSPACE SETTINGS</p>
+            <h1 class="mt-1 text-3xl font-semibold" bind-inner-text="$ws.workspace || 'Choose a workspace'"></h1>
           </header>
           <section class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
             <h2 class="text-lg font-semibold">Your next step</h2>
             <template if="!$msg.modelList.length"
               ><p class="mt-2 text-zinc-600">
-                First connect an AI provider so the Planner can help shape your project brief and suggest next steps.
+                First connect an AI provider so the Planner can help shape your workspace brief and suggest next steps.
               </p>
               <button
                 class="mt-4 w-full rounded-xl bg-emerald-700 px-4 py-3 text-left font-semibold text-white"
@@ -408,8 +306,8 @@
               </button></template
             ><template if="$msg.modelList.length"
               ><p class="mt-2 text-zinc-600">
-                Tell the Planner what you want to build or accomplish. It will help shape the project brief and suggest
-                next steps.
+                Tell the Planner what you want to build or accomplish. It will help shape the workspace brief and
+                suggest next steps.
               </p>
               <button
                 class="mt-4 w-full rounded-xl bg-emerald-700 px-4 py-3 text-left font-semibold text-white"
@@ -421,34 +319,31 @@
             >
           </section>
           <section class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-            <h2 class="font-semibold">Project brief</h2>
-            <p
-              class="mt-2 text-zinc-600"
-              bind-inner-text="$ws.project?.summary || 'Your project summary will appear here after you plan it with AI.'"
-            ></p>
-            <div class="mt-4 grid gap-4 sm:grid-cols-3">
-              <div>
-                <h3 class="text-sm font-semibold">Goals</h3>
-                <p
-                  class="mt-1 text-sm text-zinc-500"
-                  bind-inner-text="($ws.project?.goals || []).join(' · ') || 'Added during planning'"
-                ></p>
-              </div>
-              <div>
-                <h3 class="text-sm font-semibold">Recent updates</h3>
-                <p
-                  class="mt-1 text-sm text-zinc-500"
-                  bind-inner-text="($ws.project?.recentUpdates || []).join(' · ') || 'No updates yet'"
-                ></p>
-              </div>
-              <div>
-                <h3 class="text-sm font-semibold">Next steps</h3>
-                <p
-                  class="mt-1 text-sm text-zinc-500"
-                  bind-inner-text="($ws.project?.nextSteps || []).join(' · ') || 'Added during planning'"
-                ></p>
-              </div>
-            </div>
+            <h2 class="font-semibold">Workspace brief</h2>
+            <label class="mt-3 block text-sm font-medium"
+              >Description<textarea
+                data-workspace-description
+                rows="4"
+                class="mt-1 w-full rounded-lg border border-zinc-300 p-3"
+                placeholder="Describe this workspace"
+              ></textarea>
+            </label>
+            <button
+              class="mt-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white"
+              on-click="saveWorkspaceDescription()"
+            >
+              Save description
+            </button>
+            <section class="mt-6">
+              <header class="mb-3 flex items-center justify-between">
+                <h3 class="font-semibold">Goals</h3>
+                <button class="rounded-lg border border-zinc-300 px-3 py-2 text-sm" on-click="editGoal()">
+                  ＋ Add goal
+                </button>
+              </header>
+              <div data-goals-list class="space-y-2"></div>
+              <p data-goals-empty class="text-sm text-zinc-500">No goals yet. Add a goal to get started.</p>
+            </section>
           </section>
           <div class="grid gap-3 sm:grid-cols-2">
             <button
@@ -465,17 +360,108 @@
         </div>
       </main>
       <main
+        data-goal-main
+        hidden
+        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
+      >
+        <div class="mx-auto max-w-6xl">
+          <button class="mb-4 text-sm font-medium text-emerald-700" on-click="openOverview()">
+            ← Workspace settings
+          </button>
+          <header class="mb-6 flex items-start justify-between">
+            <div>
+              <p class="text-sm font-medium text-emerald-700">GOAL DETAILS</p>
+              <h1 data-goal-title class="mt-1 text-3xl font-semibold"></h1>
+              <p data-goal-description class="mt-2 text-zinc-600"></p>
+            </div>
+            <button class="rounded-lg border border-zinc-300 px-3 py-2 text-sm" on-click="editCurrentGoal()">
+              Edit goal
+            </button>
+          </header>
+          <div class="grid gap-4 md:grid-cols-3">
+            <section data-task-column="new" class="rounded-xl bg-zinc-100 p-4">
+              <h2 class="mb-3 font-semibold">New</h2>
+              <div class="space-y-2"></div>
+              <button class="mt-3 text-sm font-medium text-emerald-700" on-click="createGoalTask()">＋ Add task</button>
+            </section>
+            <section data-task-column="in-progress" class="rounded-xl bg-blue-50 p-4">
+              <h2 class="mb-3 font-semibold">In progress</h2>
+              <div class="space-y-2"></div>
+            </section>
+            <section data-task-column="done" class="rounded-xl bg-emerald-50 p-4">
+              <h2 class="mb-3 font-semibold">Done</h2>
+              <div class="space-y-2"></div>
+            </section>
+          </div>
+        </div>
+      </main>
+      <dialog
+        data-goal-dialog
+        class="max-h-[90dvh] w-[min(32rem,calc(100%-2rem))] overflow-y-auto rounded-2xl bg-white p-0 text-zinc-900 shadow-xl backdrop:bg-zinc-950/40"
+      >
+        <form method="dialog" data-goal-form class="space-y-4 p-6">
+          <h2 data-goal-dialog-heading class="text-xl font-semibold">Add goal</h2>
+          <label class="block text-sm font-medium"
+            >Title<input name="title" required class="mt-1 w-full rounded-lg border border-zinc-300 p-3" /></label
+          ><label class="block text-sm font-medium"
+            >Description<textarea
+              name="description"
+              rows="4"
+              class="mt-1 w-full rounded-lg border border-zinc-300 p-3"
+            ></textarea>
+          </label>
+          <div class="flex justify-end gap-2">
+            <button value="cancel" class="rounded-lg border px-4 py-2">Cancel</button
+            ><button type="button" class="rounded-lg bg-emerald-700 px-4 py-2 text-white" on-click="saveGoal()">
+              Save goal
+            </button>
+          </div>
+        </form>
+      </dialog>
+      <dialog
+        data-task-dialog
+        class="max-h-[90dvh] w-[min(36rem,calc(100%-2rem))] overflow-y-auto rounded-2xl bg-white p-0 text-zinc-900 shadow-xl backdrop:bg-zinc-950/40"
+      >
+        <div class="space-y-4 p-6">
+          <h2 data-task-title class="text-xl font-semibold"></h2>
+          <p data-task-description class="text-zinc-600"></p>
+          <label class="block text-sm font-medium"
+            >Status<select data-task-status class="mt-1 w-full rounded-lg border border-zinc-300 p-3">
+              <option value="new">New</option>
+              <option value="in-progress">In progress</option>
+              <option value="done">Done</option>
+            </select></label
+          >
+          <section>
+            <h3 class="font-semibold">Comments</h3>
+            <div data-task-comments class="my-2 space-y-2 text-sm"></div>
+            <form data-comment-form class="flex gap-2">
+              <input
+                name="content"
+                required
+                class="min-w-0 flex-1 rounded-lg border p-2"
+                aria-label="Add a comment"
+                placeholder="Write a comment"
+              /><button class="rounded-lg bg-emerald-700 px-3 py-2 text-white">Send</button>
+            </form>
+          </section>
+          <div class="flex justify-end">
+            <button class="rounded-lg border px-4 py-2" on-click="closeTaskDialog()">Close</button>
+          </div>
+        </div>
+      </dialog>
+      <main
         data-sessions-main
         hidden
-        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 md:p-10"
+        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
       >
         <div class="mx-auto max-w-3xl">
           <button class="mb-4 text-sm font-medium text-emerald-700" on-click="openOverview()">
-            ← Project overview
+            ← Workspace settings
           </button>
           <header class="mb-5 flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-emerald-700">PROJECT</p>
+              <p class="text-sm font-medium text-emerald-700">WORKSPACE</p>
               <h1 class="text-3xl font-semibold">Sessions</h1>
               <p class="mt-1 text-zinc-600">
                 Chats and planning conversations for <span bind-inner-text="$ws.workspace || 'your workspace'"></span>.
@@ -491,7 +477,7 @@
           </header>
           <div class="mb-4 rounded-xl border border-zinc-200 bg-white p-4">
             <h2 class="font-semibold">Start with a plan</h2>
-            <p class="mt-1 text-sm text-zinc-600">New to this workspace? Ask the Planner to help define the project.</p>
+            <p class="mt-1 text-sm text-zinc-600">New to this workspace? Ask the Planner to help define your goals.</p>
             <button
               class="mt-3 font-medium text-emerald-700"
               on-click="createPlannerSession()"
@@ -522,13 +508,13 @@
       <main
         data-tasks-main
         hidden
-        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 md:p-10"
+        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
       >
         <div class="mx-auto max-w-3xl">
           <button class="mb-4 text-sm font-medium text-emerald-700" on-click="openOverview()">
-            ← Project overview
+            ← Workspace settings
           </button>
-          <p class="text-sm font-medium text-emerald-700">PROJECT</p>
+          <p class="text-sm font-medium text-emerald-700">WORKSPACE</p>
           <h1 class="text-3xl font-semibold">Tasks</h1>
           <p class="mt-1 text-zinc-600">
             Work the agent has delegated for <span bind-inner-text="$ws.workspace || 'your workspace'"></span>.
@@ -546,7 +532,7 @@
               class="rounded-xl border border-dashed border-zinc-300 bg-white p-5 text-sm text-zinc-500"
               class-hidden="$ws.tasks.length > 0"
             >
-              No tasks yet. Ask the Planner to break your project into steps.
+              No tasks yet. Ask the Planner to break your goals into steps.
             </p>
           </div>
         </div>
@@ -613,7 +599,7 @@
     import { signIn, signOut } from "@app/store/profile.mjs";
     import { useApp } from "@app/store/app.mjs";
     import { useMessages } from "@app/store/messages.mjs";
-    import { Connectors, Teams } from "@app/api.mjs";
+    import { Connectors, Teams, Workspaces } from "@app/api.mjs";
     export default function () {
       const element = getElement();
       const $ws = useWorkspaces(),
@@ -621,6 +607,10 @@
         $p = useProfile(),
         $app = useApp(),
         $msg = useMessages();
+      let activeGoalId = "";
+      let activeTask = null;
+      let appReady = false;
+      let displayedWorkspace = "";
       async function refreshTeam() {
         const team = await Teams.current();
         const summary = element.querySelector("[data-team-summary]");
@@ -657,6 +647,169 @@
           alert(error.message);
         }
       }
+      function renderWorkspaceSettings() {
+        element.querySelector("[data-workspace-description]").value = $ws.settings.description || "";
+        const list = element.querySelector("[data-goals-list]");
+        const goals = $ws.settings.goals || [];
+        list.replaceChildren(
+          ...goals.map((goal) => {
+            const card = document.createElement("article");
+            card.className = "flex items-center gap-3 rounded-xl border border-zinc-200 bg-white p-4";
+            const open = document.createElement("button");
+            open.className = "min-w-0 flex-1 text-left";
+            const title = document.createElement("span");
+            title.className = "block font-semibold";
+            title.textContent = goal.title;
+            const desc = document.createElement("span");
+            desc.className = "mt-1 block truncate text-sm text-zinc-500";
+            desc.textContent = goal.description || "No description";
+            open.append(title, desc);
+            open.addEventListener("click", () => {
+              activeGoalId = goal.id;
+              $app.openGoal(goal.id);
+              renderGoal();
+            });
+            const edit = document.createElement("button");
+            edit.className = "rounded border px-3 py-2 text-sm";
+            edit.textContent = "Edit";
+            edit.addEventListener("click", () => editGoal(goal));
+            const remove = document.createElement("button");
+            remove.className = "rounded px-2 py-2 text-sm text-red-700";
+            remove.textContent = "Remove";
+            remove.addEventListener("click", () => removeGoal(goal.id));
+            card.append(open, edit, remove);
+            return card;
+          }),
+        );
+        element.querySelector("[data-goals-empty]").hidden = goals.length > 0;
+      }
+      async function renderGoal() {
+        const goal = ($ws.settings.goals || []).find((item) => item.id === activeGoalId);
+        if (!goal) {
+          $app.openOverview();
+          return;
+        }
+        element.querySelector("[data-goal-title]").textContent = goal.title;
+        element.querySelector("[data-goal-description]").textContent = goal.description;
+        const tasks = await Workspaces.tasks($ws.workspace, goal.id);
+        for (const status of ["new", "in-progress", "done"]) {
+          const target = element.querySelector(`[data-task-column="${status}"] > div`);
+          target.replaceChildren(
+            ...tasks
+              .filter((task) => (task.status || "new") === status)
+              .map((task) => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "w-full rounded-lg border border-zinc-200 bg-white p-3 text-left shadow-sm";
+                button.textContent = task.title || task.task;
+                button.addEventListener("click", () => showTask(task));
+                return button;
+              }),
+          );
+        }
+      }
+      async function saveWorkspaceDescription() {
+        try {
+          await $ws.saveSettings({ description: element.querySelector("[data-workspace-description]").value });
+          renderWorkspaceSettings();
+        } catch (error) {
+          alert(error.message);
+        }
+      }
+      function editGoal(goal = null) {
+        const form = element.querySelector("[data-goal-form]");
+        form.dataset.id = goal?.id || "";
+        form.elements.title.value = goal?.title || "";
+        form.elements.description.value = goal?.description || "";
+        element.querySelector("[data-goal-dialog-heading]").textContent = goal ? "Edit goal" : "Add goal";
+        element.querySelector("[data-goal-dialog]").showModal();
+        form.elements.title.focus();
+      }
+      async function saveGoal() {
+        const form = element.querySelector("[data-goal-form]");
+        if (!form.reportValidity()) return;
+        const goals = [...($ws.settings.goals || [])];
+        const goal = {
+          id: form.dataset.id || crypto.randomUUID(),
+          title: form.elements.title.value.trim(),
+          description: form.elements.description.value,
+        };
+        const index = goals.findIndex((item) => item.id === goal.id);
+        if (index < 0) goals.push(goal);
+        else goals[index] = goal;
+        try {
+          await $ws.saveSettings({ goals });
+          element.querySelector("[data-goal-dialog]").close();
+          renderWorkspaceSettings();
+          if (activeGoalId === goal.id) renderGoal();
+        } catch (error) {
+          if (error.message.includes("Goals changed elsewhere")) {
+            await $ws.reloadWorkspaceData();
+            renderWorkspaceSettings();
+          }
+          alert(error.message);
+        }
+      }
+      async function removeGoal(id) {
+        if (!confirm("Remove this goal?")) return;
+        try {
+          await $ws.saveSettings({ goals: $ws.settings.goals.filter((goal) => goal.id !== id) });
+          renderWorkspaceSettings();
+          if (activeGoalId === id) $app.openOverview();
+        } catch (error) {
+          if (error.message.includes("Goals changed elsewhere")) {
+            await $ws.reloadWorkspaceData();
+            renderWorkspaceSettings();
+          }
+          alert(error.message);
+        }
+      }
+      function editCurrentGoal() {
+        editGoal($ws.settings.goals.find((goal) => goal.id === activeGoalId));
+      }
+      async function createGoalTask() {
+        const title = prompt("Task title");
+        if (!title?.trim()) return;
+        const description = prompt("Task description") || "";
+        await Workspaces.createTask($ws.workspace, { title: title.trim(), description, goalId: activeGoalId });
+        await renderGoal();
+      }
+      function renderComments(task) {
+        element.querySelector("[data-task-comments]").replaceChildren(
+          ...(task.comments || []).map((comment) => {
+            const row = document.createElement("p");
+            row.className = "rounded bg-zinc-100 p-2";
+            row.textContent = `${comment.author === "agent" ? "Agent" : "Team member"}: ${comment.content}`;
+            return row;
+          }),
+        );
+      }
+      function showTask(task) {
+        activeTask = task;
+        element.querySelector("[data-task-title]").textContent = task.title || task.task;
+        element.querySelector("[data-task-description]").textContent =
+          task.description || task.context || "No description";
+        element.querySelector("[data-task-status]").value = task.status || "new";
+        renderComments(task);
+        element.querySelector("[data-task-dialog]").showModal();
+      }
+      async function changeTaskStatus(event) {
+        if (!activeTask) return;
+        activeTask = await Workspaces.updateTask($ws.workspace, activeTask.id, event.currentTarget.value);
+        await renderGoal();
+      }
+      async function addTaskComment(event) {
+        event.preventDefault();
+        if (!activeTask) return;
+        const form = event.currentTarget;
+        const result = await Workspaces.addTaskComment($ws.workspace, activeTask.id, form.elements.content.value);
+        activeTask = result.task;
+        form.reset();
+        renderComments(activeTask);
+      }
+      function closeTaskDialog() {
+        element.querySelector("[data-task-dialog]").close();
+      }
       function syncPages() {
         const sidebar = element.querySelector("aside");
         if (!sidebar) {
@@ -667,6 +820,7 @@
           [element.querySelector("[data-connectors-page]"), $app.page === "integrations"],
           [element.querySelector("[data-workspaces-main]"), $app.page === "workspaces"],
           [element.querySelector("[data-overview-main]"), $app.page === "overview"],
+          [element.querySelector("[data-goal-main]"), $app.page === "goal"],
           [element.querySelector("[data-sessions-main]"), $app.page === "sessions"],
           [element.querySelector("[data-tasks-main]"), $app.page === "tasks"],
           [element.querySelector("[data-chat-main]"), $app.page === "chat"],
@@ -676,17 +830,43 @@
           node.style.display = visible ? "" : "none";
         }
       }
-      effect(() => `${$app.page}:${$app.isCompact}`, syncPages);
+      effect(
+        () => `${$app.page}:${$app.isCompact}:${$app.goalId}:${$ws.workspace}`,
+        async () => {
+          syncPages();
+          if (appReady && displayedWorkspace !== $ws.workspace) {
+            displayedWorkspace = $ws.workspace;
+            await $ws.reloadWorkspaceData();
+            renderWorkspaceSettings();
+          }
+          if (appReady && $app.page === "goal") {
+            activeGoalId = $app.goalId;
+            await renderGoal();
+          }
+        },
+      );
       onInit(async () => {
         await $p.reloadProfile();
         if ($p.profile) {
           await $ws.reloadWorkspaceList();
+          if ($ws.workspace) {
+            await $ws.reloadWorkspaceData();
+          }
           if (!$ws.workspace && $app.page === "overview") {
             $app.openSidebar();
           }
         }
         syncPages();
+        activeGoalId = $app.goalId;
+        renderWorkspaceSettings();
+        if ($app.page === "goal") {
+          await renderGoal();
+        }
+        element.querySelector("[data-task-status]").addEventListener("change", changeTaskStatus);
+        element.querySelector("[data-comment-form]").addEventListener("submit", addTaskComment);
         if ($p.profile) refreshTeam().catch(console.error);
+        displayedWorkspace = $ws.workspace;
+        appReady = true;
       });
       async function onCreateWorkspace() {
         const name = prompt("Workspace name");
@@ -699,17 +879,12 @@
         }
       }
 
-      function showProjectOverview() {
-        $app.openOverview();
-      }
-
       function openWorkspaces() {
         $app.openSidebar();
       }
 
       function selectWorkspace(name) {
-        $ws.setWorkspace(name);
-        $app.openOverview();
+        $app.openWorkspace(name);
       }
 
       function openOverview() {
@@ -962,7 +1137,12 @@
         signIn,
         signOut,
         onCreateWorkspace,
-        showProjectOverview,
+        saveWorkspaceDescription,
+        editGoal,
+        saveGoal,
+        editCurrentGoal,
+        createGoalTask,
+        closeTaskDialog,
         createSession,
         createPlannerSession,
         openSession,

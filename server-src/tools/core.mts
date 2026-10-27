@@ -5,6 +5,7 @@ import { request as httpsRequest } from "node:https";
 import { randomUUID } from "node:crypto";
 import { readdir, readFile, mkdir, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
+import { mutateTaskFile } from "../task-store.mjs";
 
 const cap = (value: number, fallback: number, max: number) =>
   Math.max(1, Math.min(max, Number.isInteger(value) ? value : fallback));
@@ -282,4 +283,30 @@ export async function DelegateTask(this: any, /*string*/ specialist, /*string*/ 
   };
   await writeFile(join(directory, `${record.id}.json`), JSON.stringify(record, null, 2), { flag: "wx" });
   return record;
+}
+
+export async function CommentOnTask(this: any, /*string*/ taskId, /*string*/ comment) {
+  "##Adds an agent-authored comment to a workspace task.##";
+  if (!/^[a-zA-Z0-9_-]+$/.test(taskId) || !comment.trim() || comment.length > 5_000) {
+    throw new Error("Invalid task comment");
+  }
+  const file = join(this.workspacePath, "tasks", `${taskId}.json`);
+  return mutateTaskFile(file, (task) => {
+    task.comments = Array.isArray(task.comments) ? task.comments : [];
+    const entry = { id: randomUUID(), author: "agent", content: comment.trim(), createdAt: new Date().toISOString() };
+    task.comments.push(entry);
+    return entry;
+  });
+}
+
+export async function UpdateTaskStatus(this: any, /*string*/ taskId, /*string*/ status) {
+  "##Changes a workspace task's kanban status.##";
+  if (!/^[a-zA-Z0-9_-]+$/.test(taskId) || !["new", "in-progress", "done"].includes(status)) {
+    throw new Error("Invalid task status update");
+  }
+  const file = join(this.workspacePath, "tasks", `${taskId}.json`);
+  return mutateTaskFile(file, (task) => {
+    task.status = status;
+    return { id: task.id, status: task.status };
+  });
 }

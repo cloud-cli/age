@@ -52,17 +52,65 @@ export const Workspaces = {
     }
   },
 
-  async project(name) {
-    const res = await fetch(new URL(`/workspaces/${name}/project`, baseUrl), authOptions());
+  async settings(name) {
+    const res = await fetch(new URL(`/workspaces/${encodeURIComponent(name)}/settings`, baseUrl), authOptions());
     if (!res.ok) {
-      throw new Error(`Failed to load project: ${res.status} ${res.statusText}`);
+      throw new Error(`Failed to load workspace settings: ${res.status}`);
     }
-
     return res.json();
   },
 
-  async tasks(name) {
-    const res = await fetch(new URL(`/workspaces/${name}/tasks`, baseUrl), authOptions());
+  async updateSettings(name, values) {
+    const res = await fetch(
+      new URL(`/workspaces/${encodeURIComponent(name)}/settings`, baseUrl),
+      authOptions({ method: "PUT", body: JSON.stringify(values) }),
+    );
+    if (!res.ok) {
+      const result = await res.json().catch(() => ({}));
+      throw new Error(result.error || `Failed to save workspace settings: ${res.status}`);
+    }
+    return res.json();
+  },
+
+  async createTask(name, values) {
+    const res = await fetch(
+      new URL(`/workspaces/${encodeURIComponent(name)}/tasks`, baseUrl),
+      authOptions({ method: "POST", body: JSON.stringify(values) }),
+    );
+    if (!res.ok) {
+      throw new Error(`Failed to create task: ${res.status}`);
+    }
+    return res.json();
+  },
+
+  async updateTask(name, id, status) {
+    const res = await fetch(
+      new URL(`/workspaces/${encodeURIComponent(name)}/tasks/${encodeURIComponent(id)}`, baseUrl),
+      authOptions({ method: "PATCH", body: JSON.stringify({ status }) }),
+    );
+    if (!res.ok) {
+      throw new Error(`Failed to update task: ${res.status}`);
+    }
+    return res.json();
+  },
+
+  async addTaskComment(name, id, content) {
+    const res = await fetch(
+      new URL(`/workspaces/${encodeURIComponent(name)}/tasks/${encodeURIComponent(id)}/comments`, baseUrl),
+      authOptions({ method: "POST", body: JSON.stringify({ content }) }),
+    );
+    if (!res.ok) {
+      throw new Error(`Failed to add comment: ${res.status}`);
+    }
+    return res.json();
+  },
+
+  async tasks(name, goalId) {
+    const url = new URL(`/workspaces/${encodeURIComponent(name)}/tasks`, baseUrl);
+    if (goalId) {
+      url.searchParams.set("goalId", goalId);
+    }
+    const res = await fetch(url, authOptions());
     if (!res.ok) {
       throw new Error(`Failed to load tasks: ${res.status} ${res.statusText}`);
     }

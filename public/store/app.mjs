@@ -11,17 +11,42 @@ export const useApp = defineStore("app", function () {
   const messages = useMessages();
   const profile = useProfile();
   const layout = ref({ left: true, center: true, right: true });
-  const pages = new Set(["workspaces", "overview", "sessions", "tasks", "chat", "integrations"]);
-  const pageFromUrl = () => {
-    const page = window.location.hash.slice(2);
-    return pages.has(page) ? page : "workspaces";
+  const pages = new Set(["workspaces", "overview", "goal", "sessions", "tasks", "chat", "integrations"]);
+  const locationFromUrl = () => {
+    const [route, query = ""] = window.location.hash.slice(2).split("?", 2);
+    const params = new globalThis.URLSearchParams(query);
+    return {
+      page: pages.has(route) ? route : "workspaces",
+      workspace: params.get("workspace") || "",
+      goalId: params.get("goal") || "",
+    };
   };
-  const page = ref(pageFromUrl());
-  if (!pages.has(window.location.hash.slice(2))) {
+  const initialLocation = locationFromUrl();
+  const page = ref(initialLocation.page);
+  const goalId = ref(initialLocation.goalId);
+  if (initialLocation.workspace) {
+    workspaces.setWorkspace(initialLocation.workspace);
+  }
+  const locationIsValid = pages.has(window.location.hash.slice(2).split("?", 2)[0]);
+  if (!locationIsValid) {
     window.history.replaceState(null, "", "#/workspaces");
   }
+  function locationHash(nextPage, selectedWorkspace = workspaces.workspace, selectedGoal = goalId.value) {
+    const params = new globalThis.URLSearchParams();
+    if (selectedWorkspace) {
+      params.set("workspace", selectedWorkspace);
+    }
+    if (nextPage === "goal" && selectedGoal) {
+      params.set("goal", selectedGoal);
+    }
+    const query = params.toString();
+    return `#/${nextPage}${query ? `?${query}` : ""}`;
+  }
   window.addEventListener("popstate", () => {
-    page.value = pageFromUrl();
+    const location = locationFromUrl();
+    page.value = location.page;
+    goalId.value = location.goalId;
+    workspaces.setWorkspace(location.workspace);
   });
   const isCompact = ref(window.matchMedia("(max-width: 767px)").matches);
   const compactMediaQuery = window.matchMedia("(max-width: 767px)");
@@ -30,16 +55,40 @@ export const useApp = defineStore("app", function () {
   });
   const toggleLayout = (x) => (layout.value[x] = !layout.value[x]);
   function navigate(nextPage) {
-    if (!pages.has(nextPage) || page.value === nextPage) {
+    if (!pages.has(nextPage)) {
+      return;
+    }
+    if (nextPage === page.value) {
+      const hash = locationHash(nextPage);
+      if (window.location.hash !== hash) {
+        window.history.replaceState(null, "", hash);
+      }
       return;
     }
     page.value = nextPage;
-    window.history.pushState(null, "", `#/${nextPage}`);
+    if (nextPage !== "goal") {
+      goalId.value = "";
+    }
+    window.history.pushState(null, "", locationHash(nextPage));
+  }
+  function openWorkspace(name) {
+    workspaces.setWorkspace(name);
+    goalId.value = "";
+    page.value = "overview";
+    window.history.pushState(null, "", locationHash("overview", name, ""));
   }
   const openChat = () => navigate("chat");
   const openSidebar = () => navigate("workspaces");
   const openIntegrations = () => navigate("integrations");
   const openOverview = () => navigate("overview");
+  function openGoal(id) {
+    if (!id) {
+      return;
+    }
+    goalId.value = id;
+    page.value = "goal";
+    window.history.pushState(null, "", locationHash("goal", workspaces.workspace, id));
+  }
   const openSessions = () => navigate("sessions");
   const openTasks = () => navigate("tasks");
 
@@ -49,7 +98,7 @@ export const useApp = defineStore("app", function () {
       if (v) {
         await workspaces.reloadWorkspaceList();
         await messages.reloadModelList();
-        await workspaces.reloadProject();
+        await workspaces.reloadWorkspaceData();
         await sessions.reloadSessionList();
       }
     },
@@ -63,7 +112,7 @@ export const useApp = defineStore("app", function () {
       sessions.setSessionList([]);
       messages.setModel("");
       if (workspaces.workspace) {
-        await Promise.all([sessions.reloadSessionList(), messages.reloadModelList(), workspaces.reloadProject()]);
+        await Promise.all([sessions.reloadSessionList(), messages.reloadModelList()]);
       }
     },
   );
@@ -77,6 +126,9 @@ export const useApp = defineStore("app", function () {
     openSidebar,
     openIntegrations,
     openOverview,
+    openGoal,
+    openWorkspace,
+    goalId,
     openSessions,
     openTasks,
   };
