@@ -231,10 +231,11 @@
                 </div>
                 <button
                   type="button"
-                  class="inline-flex items-center gap-2 rounded border border-slate-300 px-3 py-2 text-sm"
+                  data-add-server-button
+                  class="rounded border border-slate-300 px-3 py-2 text-sm"
                   on-click="addOllamaServer()"
                 >
-                  <lucide-icon icon="plus" size="16" aria-hidden="true"></lucide-icon> Add server
+                  Add server
                 </button>
               </header>
               <div data-ollama-servers class="grid gap-4 md:grid-cols-2"></div>
@@ -1274,13 +1275,7 @@
         await $p.reloadProfile();
         if ($p.profile) {
           await new Promise((resolve) => requestAnimationFrame(resolve));
-          const integrationsPage = element.querySelector("[data-connectors-page]");
-          const providerHost = element.querySelector("[data-user-settings-providers]");
-          if (integrationsPage && providerHost) {
-            integrationsPage.hidden = false;
-            integrationsPage.classList.remove("hidden");
-            providerHost.append(integrationsPage);
-          }
+          mountConnectorPage();
           await $ws.reloadWorkspaceList();
           if ($ws.workspace) {
             await $ws.reloadWorkspaceData();
@@ -1406,10 +1401,34 @@
           await $s.deleteSessionById(id);
         }
       }
+      function mountConnectorPage() {
+        const integrationsPage = element.querySelector("[data-connectors-page]");
+        const providerHost = element.querySelector("[data-user-settings-providers]");
+        if (!integrationsPage || !providerHost) {
+          return false;
+        }
+        integrationsPage.hidden = false;
+        integrationsPage.classList.remove("hidden");
+        if (!providerHost.contains(integrationsPage)) {
+          providerHost.append(integrationsPage);
+        }
+        const addServerButton = integrationsPage.querySelector("[data-add-server-button]");
+        if (addServerButton && !addServerButton.querySelector("lucide-icon")) {
+          addServerButton.classList.add("inline-flex", "items-center", "gap-2");
+          addServerButton.prepend(createIcon("plus"));
+        }
+        return true;
+      }
       async function openConnectors() {
+        mountConnectorPage();
         await reloadUserModels();
+        mountConnectorPage();
         const page = element.querySelector("[data-user-settings-main]");
-        page.querySelector("[data-page-status]").textContent = "";
+        const status = page?.querySelector("[data-page-status]");
+        if (!status) {
+          return;
+        }
+        status.textContent = "";
         try {
           const connectors = await Connectors.list();
           const chatgpt = connectors.find((connector) => connector.provider === "chatgpt");
@@ -1430,7 +1449,7 @@
           }
           renderOllamaServers(connectors.filter((connector) => connector.provider === "ollama"));
         } catch (error) {
-          page.querySelector("[data-page-status]").textContent = error.message;
+          status.textContent = error.message;
         }
       }
       async function saveConnector(event) {
