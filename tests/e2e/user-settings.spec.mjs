@@ -58,6 +58,14 @@ test("user settings show account, provider management, and API models separately
   await expect(settings.locator("[data-user-model-groups]")).toContainText("gemini-2.5-flash");
   await expect(settings.locator("[data-user-model-groups]")).toContainText("qwen3:14b");
   await expect(settings.locator("[data-user-model-groups] input[type=checkbox]").first()).not.toBeChecked();
+  const geminiGroup = settings.locator("[data-user-model-groups] section").filter({ hasText: "gemini-2.5-flash" });
+  const geminiCheckboxes = geminiGroup.locator('input[type="checkbox"]');
+  await expect(geminiCheckboxes.nth(1)).not.toBeChecked();
+  await expect(geminiCheckboxes.nth(1)).toBeEnabled();
+  await geminiCheckboxes.nth(1).check();
+  await expect(geminiCheckboxes.first()).toBeChecked();
+  await geminiCheckboxes.nth(1).uncheck();
+  await expect(geminiCheckboxes.first()).not.toBeChecked();
   await settings.getByRole("button", { name: "Show all models" }).click();
   await expect(settings.locator("[data-user-model-groups] input[type=checkbox]").first()).toBeChecked();
   await expect(settings.locator('[data-provider-form="gemini"]')).toBeVisible();
