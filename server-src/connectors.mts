@@ -7,7 +7,6 @@ import { dataDir } from "./env.mjs";
 const providers = ["gemini", "openai", "ollama", "chatgpt"] as const;
 const CHATGPT_CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann";
 const CHATGPT_ISSUER = "https://auth.openai.com";
-const chatgptModels = ["gpt-5.3-codex", "gpt-5.2-codex", "gpt-5.1-codex", "gpt-5.1-codex-mini"];
 const pendingChatgptLogins = new Map<
   string,
   { subject: string; deviceAuthId: string; userCode: string; expires: number }
@@ -109,7 +108,7 @@ export async function pollChatgptLogin(subject: string, loginId: string) {
     refresh: tokens.refresh_token,
     expires: Date.now() + (Number(tokens.expires_in) || 3600) * 1000,
     accountId: accountIdFromTokens(tokens),
-    model: stored.chatgpt?.model || chatgptModels[0],
+    model: stored.chatgpt?.model || "",
   };
   await writeConnectors(subject, stored);
   return { pending: false, configured: true };
@@ -241,15 +240,60 @@ export async function deleteConnector(subject: string, provider: string, id?: st
 
 export async function getConfiguredModels(subject: string, onlyProvider?: string, onlyConnectionId?: string) {
   const stored = await readConnectors(subject);
-  const chatgptResult =
-    (!onlyProvider || onlyProvider === "chatgpt") && stored.chatgpt?.refresh
-      ? chatgptModels.map((name, index) => ({
-          id: `chatgpt/${name}`,
-          name,
-          provider: "chatgpt",
-          default: (stored.chatgpt.model || chatgptModels[0]) === name || (!stored.chatgpt.model && index === 0),
-        }))
-      : [];
+  let chatgptResult: any[] = [];
+  if ((!onlyProvider || onlyProvider === "chatgpt") && stored.chatgpt?.refresh) {
+    let credential = stored.chatgpt;
+    if (!credential.access || credential.expires <= Date.now()) {
+      const response = await fetch(`${CHATGPT_ISSUER}/oauth/token`, {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "refresh_token",
+          refresh_token: credential.refresh,
+          client_id: CHATGPT_CLIENT_ID,
+        }),
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!response.ok) {
+        throw new Error(`ChatGPT token refresh failed (${response.status}); reconnect in Integrations.`);
+      }
+      const tokens: any = await response.json();
+      credential = {
+        ...credential,
+        access: tokens.access_token,
+        refresh: tokens.refresh_token || credential.refresh,
+        expires: Date.now() + (Number(tokens.expires_in) || 3600) * 1000,
+        accountId: accountIdFromTokens(tokens) || credential.accountId,
+      };
+      stored.chatgpt = credential;
+      await writeConnectors(subject, stored);
+    }
+    const headers: Record<string, string> = { authorization: `Bearer ${credential.access}` };
+    if (credential.accountId) {
+      headers["chatgpt-account-id"] = credential.accountId;
+    }
+    const response = await fetch("https://api.openai.com/v1/models", {
+      headers,
+      signal: AbortSignal.timeout(15_000),
+      redirect: "error",
+    });
+    if (!response.ok) {
+      throw new Error(`ChatGPT model lookup failed (${response.status})`);
+    }
+    const body: any = await response.json();
+    chatgptResult = (body.data || [])
+      .map((model: any) => model.id)
+      .filter(Boolean)
+      .map((name: string) => ({
+        id: `chatgpt/${name}`,
+        name,
+        provider: "chatgpt",
+        default: stored.chatgpt.model === name,
+      }));
+    if (chatgptResult.length && !chatgptResult.some((model) => model.default)) {
+      chatgptResult[0].default = true;
+    }
+  }
   const results = await Promise.all(
     providers
       .filter((provider) => provider !== "chatgpt" && (!onlyProvider || onlyProvider === provider))
