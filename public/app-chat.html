@@ -139,9 +139,12 @@
                         ></button
                       ></template></section
                   ></template>
-                  <p class="px-2 py-2 text-sm text-zinc-500" class-hidden="modelGroups.length > 0">
-                    No matching models
-                  </p>
+                  <div class="px-2 py-2 text-sm text-zinc-500" class-hidden="modelGroups.length > 0">
+                    <p>No models match the current search or filters.</p>
+                    <button type="button" class="mt-2 text-emerald-400 underline" on-click="resetModelFilters()">
+                      Show all available models
+                    </button>
+                  </div>
                 </div>
                 <div class="mt-2 border-t border-zinc-700 pt-2">
                   <button
@@ -330,6 +333,10 @@
       function filterModels(value) {
         modelQuery.value = value;
       }
+      function resetModelFilters() {
+        modelQuery.value = "";
+        saveModelPreferences({ providers: {}, models: {} });
+      }
       function saveModelPreferences(preferences) {
         modelPreferences.value = preferences;
         try {
@@ -484,6 +491,7 @@
         closeModelPopover,
         dismissModelPopover,
         filterModels,
+        resetModelFilters,
         setProviderEnabled,
         setModelEnabled,
         openModelSettings,

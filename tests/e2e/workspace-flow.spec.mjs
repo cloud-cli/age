@@ -294,12 +294,9 @@ test.describe("authenticated workspace flow", () => {
       await modelTrigger.click();
       await modelPicker.getByRole("searchbox", { name: "Search models" }).fill("qwen3");
       await expect(modelPicker.getByRole("option", { name: "qwen3:14b" })).toHaveCount(0);
-      await modelPicker.getByRole("button", { name: "Manage models and providers" }).click();
-      await settingsDialog.getByRole("checkbox", { name: /ollama.*models/ }).check();
-      await settingsDialog.getByRole("checkbox", { name: /qwen3:14b/ }).check();
-      await settingsDialog.getByRole("button", { name: "Close model settings" }).click();
-      await modelTrigger.click();
+      await modelPicker.getByRole("button", { name: "Show all available models" }).click();
       const modelSearch = modelPicker.getByRole("searchbox", { name: "Search models" });
+      await expect(modelSearch).toHaveValue("");
       await modelSearch.fill("qwen3");
       await expect(modelPicker.getByRole("option", { name: "qwen3:14b" })).toBeVisible();
       await expect(modelPicker.getByRole("option", { name: "gemini-2.5-flash" })).toHaveCount(0);
