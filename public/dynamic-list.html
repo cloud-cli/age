@@ -11,43 +11,49 @@
       </template>
       <option disabled hidden value="">{{ placeholder }}</option>
     </select>
-    <button type="button" on-click="onAdd()" class="text-xs text-zinc-600">
-      <lucide-icon icon="plus" size="16" title="Add"></lucide-icon>
+    <button type="button" on-click="onAdd()" aria-label="Add" title="Add" class="text-xs text-zinc-600">
+      <lucide-icon icon="plus" size="16" aria-hidden="true"></lucide-icon>
     </button>
-    <button type="button" on-click="onReload()" class="text-xs text-zinc-600">
+    <button type="button" on-click="onReload()" aria-label="Reload" title="Reload" class="text-xs text-zinc-600">
       <lucide-icon
         class="block"
         class-animate-spin="!!spinning"
         icon="refresh-cw"
         size="16"
-        title="Reload"
+        aria-hidden="true"
       ></lucide-icon>
     </button>
     <template for="b of actions">
-      <button type="button" on-click="onDispatch(b.action, b.data)" class="text-xs text-zinc-600">
+      <button
+        type="button"
+        on-click="onDispatch(b.action, b.data)"
+        bind-aria-label="b.label"
+        bind-title="b.label"
+        class="text-xs text-zinc-600"
+      >
         <lucide-icon
           bind-icon="b.icon"
           size="16"
-          title="b.label"
+          aria-hidden="true"
           bind-class="b.color ? { [b.color]: true } : {}"
         ></lucide-icon>
       </button>
     </template>
   </div>
   <script setup>
-    import { defineProp, getElement, defineEvent, computed } from '@li3/web';
+    import { defineProp, getElement, defineEvent, computed } from "@li3/web";
 
     export default function () {
       const el = getElement();
-      const list = defineProp('list');
-      const label = defineProp('label');
-      const selected = defineProp('selected');
-      const placeholder = defineProp('placeholder');
-      const spinning = defineProp('spinning');
-      const onAdd = defineEvent('add');
-      const onReload = defineEvent('reload');
-      const onSelect = defineEvent('select');
-      const actions = defineProp('actions');
+      const list = defineProp("list");
+      const label = defineProp("label");
+      const selected = defineProp("selected");
+      const placeholder = defineProp("placeholder");
+      const spinning = defineProp("spinning");
+      const onAdd = defineEvent("add");
+      const onReload = defineEvent("reload");
+      const onSelect = defineEvent("select");
+      const actions = defineProp("actions");
       const selectedIndex = computed(() => {
         const options = list.value;
 

@@ -171,7 +171,7 @@ test.describe("authenticated workspace flow", () => {
       await expect(page.getByRole("heading", { name: workspaceName })).toBeVisible();
       await page.getByRole("button", { name: "Back to workspace" }).click();
       await page.getByRole("button", { name: "Workspace settings" }).click();
-      const descriptionCta = page.getByRole("button", { name: "+ Add a short description to this workspace." });
+      const descriptionCta = page.getByRole("button", { name: "Add a short description to this workspace." });
       await expect(descriptionCta).toBeVisible();
       await descriptionCta.click();
       const description = page.locator("[data-workspace-description]");
@@ -260,7 +260,7 @@ test.describe("authenticated workspace flow", () => {
       await taskDialog.getByRole("button", { name: "Close" }).click();
       await screenshot("07-goal-task-board-mobile");
       await page.setViewportSize({ width: 1280, height: 900 });
-      await page.getByRole("button", { name: "← Back to workspace" }).click();
+      await page.getByRole("button", { name: "Back to workspace" }).click();
       await expect(
         page
           .locator('[data-overview-main] [data-task-column="done"], [data-overview-main] [data-task-column="verified"]')

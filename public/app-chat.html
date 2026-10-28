@@ -1,7 +1,9 @@
 <template component="app-chat">
   <section class="flex flex-col bg-zinc-950 h-full" on-click="dismissModelPopover($event)">
     <header class="h-14 border-b border-zinc-800 flex items-center px-4 gap-3">
-      <button class="md:hidden" aria-label="Back to sessions" on-click="$app.openSessions()">←</button>
+      <button class="md:hidden" aria-label="Back to sessions" on-click="$app.openSessions()">
+        <lucide-icon icon="arrow-left" size="18" aria-hidden="true"></lucide-icon>
+      </button>
       <div
         class="font-medium"
         bind-inner-text="$s.session?.title || ($ws.workspace ? 'New conversation' : 'Select a workspace')"
@@ -21,10 +23,10 @@
           ></p>
           <template if="$ws.workspace">
             <button
-              class="mt-6 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium"
+              class="mt-6 inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium"
               on-click="createPlannerSession()"
             >
-              Start planning →
+              Start planning <lucide-icon icon="arrow-right" size="16" aria-hidden="true"></lucide-icon>
             </button>
             <button
               class="ml-3 mt-6 rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium"
@@ -35,10 +37,10 @@
           </template>
           <template if="!$ws.workspace">
             <button
-              class="mt-6 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white"
+              class="mt-6 inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white"
               on-click="$app.openSidebar()"
             >
-              Choose a workspace →
+              Choose a workspace <lucide-icon icon="arrow-right" size="16" aria-hidden="true"></lucide-icon>
             </button>
           </template>
         </div>
@@ -58,12 +60,12 @@
             ><div class="whitespace-pre-wrap" bind-inner-text="m.content || ''"></div>
             <div class="mt-2 flex justify-end gap-3" class-hidden="m.role !== 'assistant'">
               <button type="button" aria-label="Read reply aloud" title="Read reply aloud" on-click="speak(m.content)">
-                ▶</button
-              ><button type="button" aria-label="Stop speaking" title="Stop speaking" on-click="stopSpeech()">■</button>
-            </div></template
-          >
-        </article></template
-      >
+                <lucide-icon icon="volume-2" size="16" aria-hidden="true"></lucide-icon></button
+              ><button type="button" aria-label="Stop speaking" title="Stop speaking" on-click="stopSpeech()">
+                <lucide-icon icon="square" size="14" aria-hidden="true"></lucide-icon>
+              </button></div
+          ></template></article
+      ></template>
     </div>
     <div class="p-3 md:px-8 border-t border-zinc-800">
       <label class="flex items-center gap-2 text-xs text-zinc-400 mb-2"
@@ -164,7 +166,7 @@
               on-click="toggleDictation()"
               bind-disabled="!speechAvailable"
             >
-              🎙
+              <lucide-icon icon="mic" size="18" aria-hidden="true"></lucide-icon>
             </button>
           </div>
           <button

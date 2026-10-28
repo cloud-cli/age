@@ -82,10 +82,10 @@
         <workspace-list></workspace-list>
         <div class="mt-auto p-3 border-t border-[#dce3dc] flex flex-col gap-3">
           <button
-            class="w-full rounded-lg bg-[#547d42] px-3 py-3 text-sm font-semibold text-white hover:opacity-90"
+            class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#547d42] px-3 py-3 text-sm font-semibold text-white hover:opacity-90"
             on-click="onCreateWorkspace()"
           >
-            ＋ Create workspace
+            <lucide-icon icon="plus" size="16" aria-hidden="true"></lucide-icon> Create workspace
           </button>
           <button
             type="button"
@@ -101,7 +101,9 @@
               ><span class="block truncate font-semibold" bind-inner-text="profileName()"></span
               ><span class="block truncate text-sm text-slate-500" bind-inner-text="profileEmail()"></span
             ></span>
-            <span aria-hidden="true" class="mr-1 rounded-lg border border-amber-200 px-2 py-1 text-amber-500">♛</span>
+            <span aria-hidden="true" class="mr-1 rounded-lg border border-amber-200 px-2 py-1 text-amber-500">
+              <lucide-icon icon="crown" size="14" aria-hidden="true"></lucide-icon>
+            </span>
           </button>
         </div>
       </aside>
@@ -229,10 +231,10 @@
                 </div>
                 <button
                   type="button"
-                  class="rounded border border-slate-300 px-3 py-2 text-sm"
+                  class="inline-flex items-center gap-2 rounded border border-slate-300 px-3 py-2 text-sm"
                   on-click="addOllamaServer()"
                 >
-                  ＋ Add server
+                  <lucide-icon icon="plus" size="16" aria-hidden="true"></lucide-icon> Add server
                 </button>
               </header>
               <div data-ollama-servers class="grid gap-4 md:grid-cols-2"></div>
@@ -286,10 +288,10 @@
           <h1 class="text-xl font-semibold">No workspace selected</h1>
           <p class="mt-2 text-sm text-zinc-600">Choose a workspace from the sidebar or create one to get started.</p>
           <button
-            class="mt-4 rounded-lg bg-[#547d42] px-4 py-2 font-semibold text-white"
+            class="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#547d42] px-4 py-2 font-semibold text-white"
             on-click="onCreateWorkspace()"
           >
-            ＋ Create workspace
+            <lucide-icon icon="plus" size="16" aria-hidden="true"></lucide-icon> Create workspace
           </button>
         </div>
         <div data-overview-content>
@@ -308,7 +310,7 @@
                 class="rounded border px-3 py-2"
                 on-click="openWorkspaceSettings()"
               >
-                ⚙
+                <lucide-icon icon="settings" size="18" aria-hidden="true"></lucide-icon>
               </button>
             </header>
             <section class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
@@ -318,11 +320,11 @@
                 suggest next steps.
               </p>
               <button
-                class="mt-4 w-full rounded-xl bg-[#547d42] px-4 py-3 text-left font-semibold text-white"
+                class="mt-4 inline-flex w-full items-center gap-2 rounded-xl bg-[#547d42] px-4 py-3 text-left font-semibold text-white"
                 on-click="createPlannerSession()"
                 bind-disabled="!$ws.workspace"
               >
-                Start planning with AI →
+                Start planning with AI <lucide-icon icon="arrow-right" size="16" aria-hidden="true"></lucide-icon>
               </button>
             </section>
             <section class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
@@ -375,7 +377,7 @@
                 class="rounded border px-3 py-2"
                 on-click="openOverview()"
               >
-                ⌂
+                <lucide-icon icon="house" size="18" aria-hidden="true"></lucide-icon>
               </button>
             </header>
             <section data-workspace-settings class="space-y-5">
@@ -389,10 +391,11 @@
                 ></button>
                 <button
                   data-description-empty
-                  class="mt-3 w-full rounded-lg bg-zinc-50 p-8 text-center text-zinc-500"
+                  class="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-50 p-8 text-center text-zinc-500"
                   on-click="editWorkspaceDescription()"
                 >
-                  + Add a short description to this workspace.
+                  <lucide-icon icon="plus" size="16" aria-hidden="true"></lucide-icon>
+                  Add a short description to this workspace.
                 </button>
                 <div data-description-editor hidden class="mt-3">
                   <label class="block text-sm font-medium"
@@ -423,8 +426,11 @@
                 <section class="mt-6">
                   <header class="mb-3 flex items-center justify-between">
                     <h3 class="font-semibold">Goals</h3>
-                    <button class="rounded-lg border border-zinc-300 px-3 py-2 text-sm" on-click="editGoal()">
-                      ＋ Add goal
+                    <button
+                      class="inline-flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                      on-click="editGoal()"
+                    >
+                      <lucide-icon icon="plus" size="16" aria-hidden="true"></lucide-icon> Add goal
                     </button>
                   </header>
                   <div data-goals-list class="space-y-2"></div>
@@ -455,7 +461,7 @@
               <h1 class="mt-1 text-3xl font-semibold">Account and models</h1>
             </div>
             <button aria-label="Back to workspace" class="rounded border px-3 py-2" on-click="openWorkspaces()">
-              ⌂
+              <lucide-icon icon="house" size="18" aria-hidden="true"></lucide-icon>
             </button>
           </header>
           <section class="rounded-xl border border-slate-100 bg-[#f7f9f7] p-5">
@@ -515,7 +521,12 @@
             <section data-task-column="todo" class="rounded-xl bg-zinc-100 p-4">
               <h2 class="mb-3 font-semibold">To do</h2>
               <div class="space-y-2"></div>
-              <button class="mt-3 text-sm font-medium text-[#547d42]" on-click="createGoalTask()">＋ Add task</button>
+              <button
+                class="mt-3 inline-flex items-center gap-2 text-sm font-medium text-[#547d42]"
+                on-click="createGoalTask()"
+              >
+                <lucide-icon icon="plus" size="16" aria-hidden="true"></lucide-icon> Add task
+              </button>
             </section>
             <section data-task-column="in-progress" class="rounded-xl bg-blue-50 p-4">
               <h2 class="mb-3 font-semibold">In progress</h2>
@@ -613,11 +624,11 @@
               </p>
             </div>
             <button
-              class="rounded-lg bg-[#547d42] px-4 py-3 font-semibold text-white"
+              class="inline-flex items-center gap-2 rounded-lg bg-[#547d42] px-4 py-3 font-semibold text-white"
               on-click="createSession()"
               bind-disabled="!$ws.workspace"
             >
-              ＋ New chat
+              <lucide-icon icon="plus" size="16" aria-hidden="true"></lucide-icon> New chat
             </button>
           </header>
           <div class="mb-4 rounded-xl border border-zinc-200 bg-white p-4">
@@ -628,7 +639,7 @@
               on-click="createPlannerSession()"
               bind-disabled="!$ws.workspace"
             >
-              Start planning →
+              Start planning <lucide-icon icon="arrow-right" size="16" aria-hidden="true"></lucide-icon>
             </button>
           </div>
           <div class="space-y-2">
@@ -637,7 +648,7 @@
               No conversations yet. Start planning or create a new chat.
             </p>
             <button class="font-medium text-[#547d42]" class-hidden="$ws.workspace" on-click="openWorkspaces()">
-              Choose a workspace first →
+              Choose a workspace first <lucide-icon icon="arrow-right" size="16" aria-hidden="true"></lucide-icon>
             </button>
           </div>
         </div>
@@ -683,7 +694,7 @@
             bind-aria-current="$app.page === 'workspaces' ? 'page' : null"
             on-click="openWorkspaces()"
           >
-            <span aria-hidden="true">▦</span><span>Workspaces</span>
+            <lucide-icon icon="layout-grid" size="20" aria-hidden="true"></lucide-icon><span>Workspaces</span>
           </button>
           <button
             class="flex flex-col items-center justify-center gap-1 text-xs"
@@ -691,7 +702,7 @@
             bind-aria-current="$app.page === 'sessions' ? 'page' : null"
             on-click="openSessions()"
           >
-            <span aria-hidden="true">☰</span><span>Sessions</span>
+            <lucide-icon icon="messages-square" size="20" aria-hidden="true"></lucide-icon><span>Sessions</span>
           </button>
           <button
             class="flex flex-col items-center justify-center gap-1 text-xs"
@@ -699,7 +710,7 @@
             bind-aria-current="$app.page === 'chat' ? 'page' : null"
             on-click="openChatPage()"
           >
-            <span aria-hidden="true">◌</span><span>Chat</span>
+            <lucide-icon icon="message-circle" size="20" aria-hidden="true"></lucide-icon><span>Chat</span>
           </button>
           <button
             class="flex flex-col items-center justify-center gap-1 text-xs"
@@ -707,7 +718,7 @@
             bind-aria-current="$app.page === 'tasks' ? 'page' : null"
             on-click="openTasks()"
           >
-            <span aria-hidden="true">✓</span><span>Tasks</span>
+            <lucide-icon icon="list-checks" size="20" aria-hidden="true"></lucide-icon><span>Tasks</span>
           </button>
           <button
             class="flex flex-col items-center justify-center gap-1 text-xs"
@@ -715,7 +726,7 @@
             bind-aria-current="$app.page === 'integrations' ? 'page' : null"
             on-click="openConnectors()"
           >
-            <span aria-hidden="true">◇</span><span>Integrations</span>
+            <lucide-icon icon="plug" size="20" aria-hidden="true"></lucide-icon><span>Integrations</span>
           </button>
         </div>
       </nav>
@@ -961,8 +972,12 @@
         list.replaceChildren(
           ...sessions.map((session) => {
             const button = document.createElement("button");
-            button.className = "w-full rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-sm";
-            button.textContent = `${session.title || "Untitled conversation"} · Open conversation →`;
+            button.className =
+              "flex w-full items-center gap-2 rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-sm";
+            button.append(
+              document.createTextNode(`${session.title || "Untitled conversation"} · Open conversation`),
+              createIcon("arrow-right"),
+            );
             button.addEventListener("click", () => openSession(session.id));
             return button;
           }),
@@ -987,6 +1002,13 @@
                   ((task.status === "new" || task.status === "queued" ? "todo" : task.status) || "todo") === status,
               )
               .map((task) => {
+      function createIcon(name, size = 16) {
+        const icon = document.createElement("lucide-icon");
+        icon.setAttribute("icon", name);
+        icon.setAttribute("size", String(size));
+        icon.setAttribute("aria-hidden", "true");
+        return icon;
+      }
                 const button = document.createElement("button");
                 button.type = "button";
                 button.className = "w-full rounded-lg border border-zinc-200 bg-white p-3 text-left shadow-sm";

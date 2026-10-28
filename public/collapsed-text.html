@@ -2,8 +2,12 @@
   <div class="relative">
     <div class="whitespace-pre-wrap overflow-hidden" class-max-height="!expanded">{{ content }}</div>
     <div class="absolute bottom-0 flex text-xs items-center justify-end w-full">
-      <button on-click="onToggle(!expanded)" class="text-zinc-500">
-        <lucide-icon size="16" bind-icon="expanded ? 'chevron-up' : 'chevron-down'"></lucide-icon>
+      <button
+        on-click="onToggle(!expanded)"
+        bind-aria-label="expanded ? 'Collapse text' : 'Expand text'"
+        class="text-zinc-500"
+      >
+        <lucide-icon size="16" aria-hidden="true" bind-icon="expanded ? 'chevron-up' : 'chevron-down'"></lucide-icon>
       </button>
     </div>
   </div>
@@ -13,10 +17,10 @@
     }
   </style>
   <script setup>
-    import { defineProp, hook } from '@li3/web';
+    import { defineProp, hook } from "@li3/web";
 
     export default function () {
-      defineProp('content');
+      defineProp("content");
       const [expanded, onToggle] = hook(false);
       return { expanded, onToggle };
     }
