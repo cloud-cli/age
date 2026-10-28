@@ -100,7 +100,7 @@ test.describe("authenticated workspace flow", () => {
           return;
         }
         if (method === "POST" && new URL(request.url()).pathname.endsWith("/comments")) {
-          const body = request.postDataJSON();
+          const body = JSON.parse(request.postData() || "{}");
           const comment = {
             id: "test-comment",
             author: "user:alice",
@@ -115,7 +115,7 @@ test.describe("authenticated workspace flow", () => {
           return;
         }
         if (method === "POST") {
-          const body = request.postDataJSON();
+          const body = JSON.parse(request.postData() || "{}");
           taskFixture = {
             id: "e2e-task",
             title: body.title,
@@ -128,7 +128,7 @@ test.describe("authenticated workspace flow", () => {
           return;
         }
         if (method === "PATCH") {
-          const body = request.postDataJSON();
+          const body = JSON.parse(request.postData() || "{}");
           taskFixture.status = body.status;
           if (body.guidance) {
             taskFixture.comments.push({ id: "guidance", author: "user:alice", content: body.guidance });
@@ -182,25 +182,27 @@ test.describe("authenticated workspace flow", () => {
       await goalDialog.getByLabel("Title").fill("Ship workspace flow");
       await goalDialog.getByLabel("Description").fill("Finish, review, and verify the workspace features.");
       await goalDialog.getByRole("button", { name: "Save goal" }).click();
-      let plannerMessage;
-      const plannerMessageRoute = `**/workspaces/${workspaceName}/history/*/message`;
-      await page.route(plannerMessageRoute, async (route) => {
-        plannerMessage = JSON.parse(route.request().postData() || "{}");
-        await route.fulfill({
-          contentType: "application/json",
-          body: JSON.stringify({ role: "user", content: plannerMessage.message, meta: { uid: "planner-test" } }),
-        });
-      });
       await page.getByRole("button", { name: "Back to workspace" }).click();
       const plannerSession = page.waitForResponse(
         (response) =>
           response.request().method() === "POST" && response.url().endsWith(`/workspaces/${workspaceName}/history`),
       );
+      const plannerMessageRequest = page.waitForRequest(
+        (request) =>
+          request.method() === "POST" &&
+          request.url().includes(`/workspaces/${workspaceName}/history/`) &&
+          request.url().endsWith("/message"),
+      );
       await page.getByRole("button", { name: "Start planning with AI" }).click();
-      expect((await plannerSession).status()).toBe(201);
+      const plannerResponse = await plannerSession;
+      expect(plannerResponse.status()).toBe(201);
+      const plannerSessionData = await plannerResponse.json();
+      const plannerRequest = await plannerMessageRequest;
+      expect(plannerRequest.url()).toContain(`/history/${plannerSessionData.id}/message`);
+      const plannerMessage = plannerRequest.postDataJSON();
       expect(plannerMessage.message).toContain("Finish, review, and verify the workspace features.");
       await expect(page.getByText("Working on a response…", { exact: true })).toBeVisible();
-      await page.unroute(plannerMessageRoute);
+      await page.locator("aside").getByRole("button", { name: workspaceName }).click();
       await page.getByRole("button", { name: "Workspace settings" }).click();
       await page
         .locator("[data-goals-list] article")

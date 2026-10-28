@@ -6,6 +6,7 @@ export default defineConfig({
   use: {
     baseURL: process.env.E2E_BASE_URL || "https://agents.lab.apphor.de",
     viewport: { width: 390, height: 844 },
+    serviceWorkers: "block",
     trace: "retain-on-failure",
   },
 });

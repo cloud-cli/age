@@ -845,7 +845,7 @@
         element.querySelector("[data-goal-description]").textContent = goal.description;
         const tasks = await Workspaces.tasks($ws.workspace, goal.id);
         for (const status of ["todo", "in-progress", "done", "verified"]) {
-          const target = element.querySelector(`[data-task-column="${status}"] > div`);
+          const target = element.querySelector(`[data-goal-main] [data-task-column="${status}"] > div`);
           target.replaceChildren(
             ...tasks
               .filter(
