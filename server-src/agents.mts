@@ -1,7 +1,7 @@
 import { join, resolve, relative, sep } from "node:path";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { existsSync, realpathSync } from "node:fs";
+import { lstatSync, realpathSync } from "node:fs";
 import { tools, toolsByName } from "./tools.mjs";
 import { callModel } from "./backend/ollama.mjs";
 import { History } from "./history.mjs";
@@ -14,6 +14,8 @@ const agentSystemPrompt = await readFile(new URL("./../system.txt", import.meta.
 export class Context {
   workspace!: string;
   sessionId!: string;
+  taskId?: string;
+  plannerMode?: boolean;
 
   constructor(p: Partial<Context>) {
     Object.assign(this, p);
@@ -27,7 +29,7 @@ export class Context {
     return join(dataDir, this.workspace);
   }
 
-  getPath(s) {
+  getPath(s: string) {
     const root = resolve(this.workspacePath, "files");
     const realRoot = realpathSync(root);
     const input = String(s || ".").replace(/^[/\\]+/, "");
@@ -38,10 +40,31 @@ export class Context {
     }
     // Resolve the nearest existing target so symlinks cannot escape the workspace.
     let existing = target;
-    while (!existsSync(existing)) {
-      existing = resolve(existing, "..");
+    while (true) {
+      try {
+        lstatSync(existing);
+        break;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+          throw error;
+        }
+        const parent = resolve(existing, "..");
+        if (parent === existing) {
+          throw new Error("Path escapes workspace", { cause: error });
+        }
+        existing = parent;
+      }
     }
-    const realExisting = realpathSync(existing);
+    let realExisting: string;
+    try {
+      realExisting = realpathSync(existing);
+    } catch {
+      throw new Error("Path escapes workspace");
+    }
+    const resolvedInfo = lstatSync(realExisting);
+    if (resolvedInfo.isFile() && resolvedInfo.nlink > 1) {
+      throw new Error("Hard-linked files are not accessible through the workspace");
+    }
     if (realExisting !== realRoot && !realExisting.startsWith(realRoot + sep)) {
       throw new Error("Path escapes workspace");
     }
@@ -108,7 +131,7 @@ function convertValue(value, type) {
   }
 }
 
-export async function executeFunction(functionName: string, modelArgs: any[], context: Context) {
+export async function executeFunction(functionName: string, modelArgs: Record<string, unknown>, context: Context) {
   const specs = tools.find((next) => next.function.name === functionName);
 
   if (!specs) {
@@ -118,7 +141,15 @@ export async function executeFunction(functionName: string, modelArgs: any[], co
   if (!modelArgs || typeof modelArgs !== "object" || Array.isArray(modelArgs)) {
     throw new Error("Tool arguments must be an object");
   }
+  if (Buffer.byteLength(JSON.stringify(modelArgs), "utf8") > 1_000_000) {
+    throw new Error("Tool arguments exceed the 1 MB limit");
+  }
   const args: [string, any][] = Object.entries(specs.function.parameters.properties);
+  const allowedArguments = new Set(args.map(([argName]) => argName));
+  const unexpectedArguments = Object.keys(modelArgs).filter((argName) => !allowedArguments.has(argName));
+  if (unexpectedArguments.length) {
+    throw new Error(`Unexpected tool argument: ${unexpectedArguments[0]}`);
+  }
   const foundArgs: any[] = [];
 
   for (const [argName, x] of args) {
@@ -147,7 +178,7 @@ export async function executeFunction(functionName: string, modelArgs: any[], co
 
   const f = toolsByName[functionName];
 
-  console.log(`Call ${functionName}`, foundArgs);
+  console.log(`Call ${functionName}`);
   const required = specs.function.parameters.required || [];
   if (required.some((name) => modelArgs[name] === undefined)) {
     throw new Error("Missing required tool arguments");
@@ -156,23 +187,18 @@ export async function executeFunction(functionName: string, modelArgs: any[], co
   // The task board request explicitly authorizes only these bounded, non-destructive agent mutations.
   const taskBoardActions = ["CommentOnTask", "UpdateTaskStatus"];
   const safeTool = readOnly.includes(functionName) || taskBoardActions.includes(functionName);
-  const autonomousTaskTools = [
-    "WriteFile",
-    "DeleteFile",
-    "CreateFolder",
-    "DeleteFolder",
-    "RenameFile",
-    "RenameFolder",
-    "ShellExec",
-  ];
+  const autonomousTaskTools = ["WriteFile", "DeleteFile", "CreateFolder", "DeleteFolder", "RenameFile", "RenameFolder"];
   const taskAllowed = Boolean(
-    (context as any).taskId && [...readOnly, ...taskBoardActions, ...autonomousTaskTools].includes(functionName),
+    context.taskId && [...readOnly, ...taskBoardActions, ...autonomousTaskTools].includes(functionName),
   );
-  const plannerAllowed = Boolean((context as any).plannerMode && functionName === "DelegateTask");
-  if ((context as any).taskId && !taskAllowed) {
+  const explicitlyApprovedTaskShell = Boolean(
+    context.taskId && functionName === "ShellExec" && process.env.ALLOW_MUTATING_TOOLS === "true",
+  );
+  const plannerAllowed = Boolean(context.plannerMode && functionName === "DelegateTask");
+  if (context.taskId && !taskAllowed && !explicitlyApprovedTaskShell) {
     return { status: "approval_required", tool: functionName };
   }
-  if ((context as any).plannerMode && !plannerAllowed && !readOnlyToolNames.has(functionName)) {
+  if (context.plannerMode && !plannerAllowed && !readOnlyToolNames.has(functionName)) {
     return { status: "approval_required", tool: functionName };
   }
   if (!safeTool && !taskAllowed && !plannerAllowed && process.env.ALLOW_MUTATING_TOOLS !== "true") {
@@ -222,13 +248,19 @@ export async function runAgentLoop(workspace, sessionId, depth = 0, subject?: st
         typeof call.function.arguments === "string" ? JSON.parse(call.function.arguments) : call.function.arguments;
       const context = new Context({ sessionId, workspace });
       if (task) {
-        (context as any).taskId = task.taskId;
+        context.taskId = task.taskId;
       }
       if (plannerMode) {
-        (context as any).plannerMode = true;
+        context.plannerMode = true;
       }
       const functionResponse = await executeFunction(functionName, functionArgs, context);
-      if ((task || plannerMode) && functionResponse?.status === "approval_required") {
+      if (
+        (task || plannerMode) &&
+        typeof functionResponse === "object" &&
+        functionResponse !== null &&
+        "status" in functionResponse &&
+        functionResponse.status === "approval_required"
+      ) {
         throw new Error(`Restricted agent cannot perform out-of-scope action: ${functionName}`);
       }
 
@@ -239,10 +271,10 @@ export async function runAgentLoop(workspace, sessionId, depth = 0, subject?: st
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error(`Error executing function: ${functionName} with args: ${JSON.stringify(functionArgs)}:\n ${error}`);
+      console.error(`Error executing function: ${functionName}: ${errorMessage}`);
       await addMessage({
         role: "system",
-        content: `Error executing function ${functionName} with args ${JSON.stringify(functionArgs)}:\nError: ${errorMessage}`,
+        content: `Error executing function ${functionName}. Error: ${errorMessage}`,
       });
       break;
     }

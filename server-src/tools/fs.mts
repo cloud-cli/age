@@ -1,56 +1,84 @@
-import * as fs from 'node:fs';
+import * as fs from "node:fs";
+import { opendir } from "node:fs/promises";
+import { resolve } from "node:path";
+import type { Context } from "../agents.mjs";
+
+type WorkspaceContext = Pick<Context, "getPath">;
 
 // functions used by the workspace API via AI function calls to interact with the file system
 
-export function ReadFile(/*string*/ path) {
-  '## Reads the content of a file at the given path and returns it as a string. ##';
-  return fs.readFileSync(this.getPath(path), 'utf8');
-}
-
-export function WriteFile(/*string*/ path, /*string*/ content) {
-  '## Writes the given content to a file at the specified path. If the file does not exist, it will be created. ##';
-  fs.writeFileSync(this.getPath(path), content, 'utf8');
+export function WriteFile(this: WorkspaceContext, /*string*/ path: string, /*string*/ content: string) {
+  "## Writes the given content to a file at the specified path. If the file does not exist, it will be created. ##";
+  fs.writeFileSync(this.getPath(path), content, "utf8");
   return true;
 }
 
-export function ListFiles(/*string*/ path) {
-  '## Lists all files and directories at the given path and returns an array of their names. ##';
-  const files = fs.readdirSync(this.getPath(path));
+export async function ListFiles(
+  this: WorkspaceContext,
+  /*string*/ path: string,
+  /*number*/ offset = 0,
+  /*number*/ limit = 500,
+) {
+  "## Lists a bounded page of file and directory names at the given path.##";
+  if (!Number.isInteger(offset) || offset < 0 || offset > 10_000) {
+    throw new Error("offset must be an integer between 0 and 10000");
+  }
+  const boundedLimit = Math.max(1, Math.min(1000, Number.isInteger(limit) ? limit : 500));
+  const directory = await opendir(this.getPath(path));
+  const files: string[] = [];
+  let index = 0;
+  try {
+    for await (const entry of directory) {
+      if (index >= offset) {
+        files.push(entry.name);
+        if (files.length >= boundedLimit) {
+          break;
+        }
+      }
+      index += 1;
+    }
+  } finally {
+    await directory.close().catch(() => {});
+  }
   return files;
 }
 
-export function DeleteFile(/*string*/ path) {
-  '## Deletes the file at the specified path. ##';
+export function DeleteFile(this: WorkspaceContext, /*string*/ path: string) {
+  "## Deletes the file at the specified path. ##";
   fs.unlinkSync(this.getPath(path));
   return true;
 }
 
-export function CreateFolder(/*string*/ path) {
-  '## Creates a new folder at the specified path. If the folder already exists, no action is taken. ##';
+export function CreateFolder(this: WorkspaceContext, /*string*/ path: string) {
+  "## Creates a new folder at the specified path. If the folder already exists, no action is taken. ##";
   fs.mkdirSync(this.getPath(path), { recursive: true });
   return true;
 }
 
-export function DeleteFolder(/*string*/ path) {
-  '## Deletes the folder at the specified path and all its contents. ##';
-  fs.rmdirSync(this.getPath(path), { recursive: true });
+export function DeleteFolder(this: WorkspaceContext, /*string*/ path: string) {
+  "## Deletes the folder at the specified path and all its contents. ##";
+  const target = this.getPath(path);
+  if (resolve(target) === resolve(this.getPath("."))) {
+    throw new Error("Cannot delete the workspace files root");
+  }
+  fs.rmSync(target, { recursive: true });
   return true;
 }
 
-export function RenameFile(/*string*/ oldPath, /*string*/ newPath) {
-  '## Renames a file from oldPath to newPath. ##';
+export function RenameFile(this: WorkspaceContext, /*string*/ oldPath: string, /*string*/ newPath: string) {
+  "## Renames a file from oldPath to newPath. ##";
   fs.renameSync(this.getPath(oldPath), this.getPath(newPath));
   return true;
 }
 
-export function RenameFolder(/*string*/ oldPath, /*string*/ newPath) {
-  '## Renames a folder from oldPath to newPath. ##';
+export function RenameFolder(this: WorkspaceContext, /*string*/ oldPath: string, /*string*/ newPath: string) {
+  "## Renames a folder from oldPath to newPath. ##";
   fs.renameSync(this.getPath(oldPath), this.getPath(newPath));
   return true;
 }
 
-export function GetFileStats(/*string*/ path) {
-  '## Returns statistics about the file or folder at the specified path, including size, creation date, and modification date. ##';
+export function GetFileStats(this: WorkspaceContext, /*string*/ path: string) {
+  "## Returns statistics about the file or folder at the specified path, including size, creation date, and modification date. ##";
   const stats = fs.statSync(this.getPath(path));
   return {
     size: stats.size,

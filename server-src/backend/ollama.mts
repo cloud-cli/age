@@ -68,7 +68,7 @@ export async function callModel(requestBody, subject?: string) {
         const b = Buffer.concat(all).toString("utf8");
 
         try {
-          console.log("CallModel finished", b);
+          console.log("CallModel finished");
           resolve(JSON.parse(b));
         } catch (e) {
           reject(e);
