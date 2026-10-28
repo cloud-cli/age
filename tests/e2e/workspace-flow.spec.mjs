@@ -259,6 +259,7 @@ test.describe("authenticated workspace flow", () => {
       await screenshot("06-task-details-modal-mobile");
       await taskDialog.getByRole("button", { name: "Close" }).click();
       await screenshot("07-goal-task-board-mobile");
+      await page.setViewportSize({ width: 1280, height: 900 });
       await page.getByRole("button", { name: "← Back to workspace" }).click();
       await expect(
         page
@@ -272,6 +273,7 @@ test.describe("authenticated workspace flow", () => {
       await editedGoal.getByRole("button", { name: "Remove" }).click();
       await page.getByRole("button", { name: "Workspace settings" }).click();
       await expect(page.locator("[data-goals-empty]")).toBeVisible();
+      await page.getByRole("button", { name: "Back to workspace" }).click();
 
       const sessionResponse = page.waitForResponse(
         (response) =>
@@ -316,6 +318,7 @@ test.describe("authenticated workspace flow", () => {
       await expect(modelPicker).toBeHidden();
       await screenshot("08-session-created");
       expect(session.id).toBeTruthy();
+      await page.locator("aside").getByRole("button", { name: workspaceName }).click();
       await page.getByRole("button", { name: "Workspace settings" }).click();
       page.once("dialog", (dialog) => dialog.accept());
       await page.getByRole("button", { name: "Archive workspace" }).click();
