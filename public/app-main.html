@@ -45,7 +45,7 @@
             label.textContent = workspace.name;
             const restore = document.createElement("button");
             restore.type = "button";
-            restore.className = "rounded px-2 py-1 text-xs text-emerald-700";
+            restore.className = "rounded px-2 py-1 text-xs text-[#547d42]";
             restore.textContent = "Restore";
             restore.addEventListener("click", async () => {
               try {
@@ -73,14 +73,16 @@
 <template component="app-main">
   <div class="bg-[#eef2ec] text-slate-900 font-sans h-dvh flex flex-col md:flex-row">
     <template if="$p.profile">
-      <aside class="hidden md:flex md:w-72 h-dvh shrink-0 border-r border-[#dce3dc] bg-[#eef2ec] flex-col">
+      <aside class="hidden md:flex md:w-72 h-dvh shrink-0 bg-[#eef2ec] flex-col">
         <header class="p-5">
-          <strong class="text-xl text-[#203b31]">age<span class="text-emerald-500">.</span></strong>
+          <span class="text-2xl font-bold tracking-tight" aria-label="age.">
+            <span style="color: var(--age-wordmark)">age</span><span style="color: var(--age-period)">.</span>
+          </span>
         </header>
         <workspace-list></workspace-list>
         <div class="mt-auto p-3 border-t border-[#dce3dc] flex flex-col gap-3">
           <button
-            class="w-full rounded-lg bg-[#203b31] px-3 py-3 text-sm font-semibold text-white hover:bg-[#294b3d]"
+            class="w-full rounded-lg bg-[#547d42] px-3 py-3 text-sm font-semibold text-white hover:opacity-90"
             on-click="onCreateWorkspace()"
           >
             ＋ Create workspace
@@ -92,7 +94,7 @@
             class="flex w-full items-center gap-3 rounded-full border border-slate-200 bg-white p-2 text-left shadow-sm hover:shadow-md"
           >
             <span
-              class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#203b31] text-xl font-semibold text-white"
+              class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#547d42] text-xl font-semibold text-white"
               bind-inner-text="profileInitial()"
             ></span>
             <span class="min-w-0 flex-1"
@@ -103,90 +105,76 @@
           </button>
         </div>
       </aside>
-      <section
-        data-connectors-page
-        hidden
-        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-950 p-5 text-zinc-100 md:p-10"
-      >
+      <section data-connectors-page hidden class="hidden">
         <div class="mx-auto max-w-4xl space-y-6">
-          <header class="flex items-center justify-between">
+          <header>
             <div>
-              <h1 class="text-2xl font-semibold">Integrations</h1>
-              <p class="mt-1 text-sm text-zinc-400">Connect a model provider to use it in your conversations.</p>
+              <h2 class="text-lg font-semibold">Provider connections</h2>
+              <p class="mt-1 text-sm text-slate-600">
+                Connect providers to make their models available in your conversations.
+              </p>
             </div>
-            <button class="rounded border border-zinc-700 px-3 py-2 text-sm" on-click="openChatPage()">
-              Back to chat
-            </button>
           </header>
-          <nav aria-label="App pages" class="hidden gap-2 border-b border-zinc-800 pb-4 md:flex">
-            <button class="rounded px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-800" on-click="openWorkspaces()">
-              Workspaces
-            </button>
-            <button class="rounded px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-800" on-click="openChatPage()">
-              Chat
-            </button>
-            <span class="rounded bg-zinc-800 px-3 py-2 text-sm" aria-current="page">Integrations</span>
-          </nav>
           <p data-page-status class="text-sm text-amber-300" role="status"></p>
-          <p class="text-sm text-zinc-400">
+          <p class="text-sm text-slate-600">
             API keys are encrypted on the server and never returned to this browser. Leave an existing key blank to keep
             it unchanged.
           </p>
-          <section class="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900 p-5">
+          <section class="space-y-3 rounded-xl border border-slate-200 bg-white p-5">
             <h2 class="font-semibold">Team</h2>
-            <p class="text-sm text-zinc-400">
+            <p class="text-sm text-slate-600">
               Integrations are shared with everyone in your team. Add members by their OIDC subject.
             </p>
-            <p data-team-summary class="text-sm text-zinc-200">Loading team…</p>
+            <p data-team-summary class="text-sm text-slate-700">Loading team…</p>
             <div class="flex flex-wrap gap-2">
-              <button class="rounded border border-zinc-700 px-3 py-2 text-sm" on-click="createTeam()">
+              <button class="rounded border border-slate-300 px-3 py-2 text-sm" on-click="createTeam()">
                 Create team
               </button>
               <button
                 data-team-invite-button
-                class="rounded border border-zinc-700 px-3 py-2 text-sm"
+                class="rounded border border-slate-300 px-3 py-2 text-sm"
                 on-click="addTeamMember()"
               >
                 Invite by OIDC subject
               </button>
             </div>
-            <ul data-team-members class="text-sm text-zinc-400"></ul>
+            <ul data-team-members class="text-sm text-slate-600"></ul>
           </section>
           <div class="grid gap-4 md:grid-cols-2">
             <form
               data-provider-form="gemini"
-              class="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900 p-5"
+              class="space-y-4 rounded-xl border border-slate-200 bg-white p-5"
               on-submit.prevent="saveConnector($event)"
             >
               <div>
                 <h2 class="font-semibold">Google Gemini</h2>
-                <p data-provider-status="gemini" class="mt-1 text-xs text-zinc-400" role="status">Not connected</p>
+                <p data-provider-status="gemini" class="mt-1 text-xs text-slate-600" role="status">Not connected</p>
               </div>
               <label class="block text-sm"
                 >Gemini API key<input
                   name="credential"
                   type="password"
                   autocomplete="new-password"
-                  class="mt-1 w-full rounded bg-zinc-800 p-2"
+                  class="mt-1 w-full rounded border border-slate-300 bg-white p-2"
                   placeholder="Paste API key"
               /></label>
               <label class="block text-sm"
                 >Default model<input
                   name="model"
-                  class="mt-1 w-full rounded bg-zinc-800 p-2"
+                  class="mt-1 w-full rounded border border-slate-300 bg-white p-2"
                   placeholder="gemini-2.5-flash"
               /></label>
               <div class="flex flex-wrap gap-2">
-                <button class="rounded bg-emerald-700 px-3 py-2 text-sm" type="submit">Save</button
+                <button class="rounded bg-[#547d42] px-3 py-2 text-sm" type="submit">Save</button
                 ><button
                   type="button"
-                  class="rounded border border-zinc-700 px-3 py-2 text-sm"
+                  class="rounded border border-slate-300 px-3 py-2 text-sm"
                   on-click="testConnector('gemini')"
                 >
                   Test connection</button
                 ><button
                   type="button"
-                  class="rounded px-3 py-2 text-sm text-red-300"
+                  class="rounded px-3 py-2 text-sm text-red-700"
                   on-click="removeConnector('gemini')"
                 >
                   Disconnect
@@ -195,50 +183,53 @@
             </form>
             <form
               data-provider-form="openai"
-              class="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900 p-5"
+              class="space-y-4 rounded-xl border border-slate-200 bg-white p-5"
               on-submit.prevent="saveConnector($event)"
             >
               <div>
                 <h2 class="font-semibold">OpenAI API</h2>
-                <p data-provider-status="openai" class="mt-1 text-xs text-zinc-400" role="status">Not connected</p>
+                <p data-provider-status="openai" class="mt-1 text-xs text-slate-600" role="status">Not connected</p>
               </div>
               <label class="block text-sm"
                 >OpenAI API key<input
                   name="credential"
                   type="password"
                   autocomplete="new-password"
-                  class="mt-1 w-full rounded bg-zinc-800 p-2"
+                  class="mt-1 w-full rounded border border-slate-300 bg-white p-2"
                   placeholder="Paste API key"
               /></label>
               <label class="block text-sm"
-                >Default model<input name="model" class="mt-1 w-full rounded bg-zinc-800 p-2" placeholder="gpt-4o-mini"
+                >Default model<input
+                  name="model"
+                  class="mt-1 w-full rounded border border-slate-300 bg-white p-2"
+                  placeholder="gpt-4o-mini"
               /></label>
               <div class="flex flex-wrap gap-2">
-                <button class="rounded bg-emerald-700 px-3 py-2 text-sm" type="submit">Save</button
+                <button class="rounded bg-[#547d42] px-3 py-2 text-sm" type="submit">Save</button
                 ><button
                   type="button"
-                  class="rounded border border-zinc-700 px-3 py-2 text-sm"
+                  class="rounded border border-slate-300 px-3 py-2 text-sm"
                   on-click="testConnector('openai')"
                 >
                   Test connection</button
                 ><button
                   type="button"
-                  class="rounded px-3 py-2 text-sm text-red-300"
+                  class="rounded px-3 py-2 text-sm text-red-700"
                   on-click="removeConnector('openai')"
                 >
                   Disconnect
                 </button>
               </div>
             </form>
-            <section class="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900 p-5 md:col-span-2">
+            <section class="space-y-4 rounded-xl border border-slate-200 bg-white p-5 md:col-span-2">
               <header class="flex items-center justify-between gap-3">
                 <div>
                   <h2 class="font-semibold">Ollama servers</h2>
-                  <p class="mt-1 text-xs text-zinc-400">Connect and manage multiple servers independently.</p>
+                  <p class="mt-1 text-xs text-slate-600">Connect and manage multiple servers independently.</p>
                 </div>
                 <button
                   type="button"
-                  class="rounded border border-zinc-700 px-3 py-2 text-sm"
+                  class="rounded border border-slate-300 px-3 py-2 text-sm"
                   on-click="addOllamaServer()"
                 >
                   ＋ Add server
@@ -247,17 +238,17 @@
               <div data-ollama-servers class="grid gap-4 md:grid-cols-2"></div>
               <p class="text-xs text-zinc-500">Each server must be reachable from this app server.</p>
             </section>
-            <section class="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900 p-5 md:col-span-2">
+            <section class="space-y-3 rounded-xl border border-slate-200 bg-white p-5 md:col-span-2">
               <h2 class="font-semibold">ChatGPT Plus / Pro</h2>
-              <p data-chatgpt-status class="text-sm text-zinc-400" role="status">Not connected</p>
-              <p class="text-sm text-zinc-400">
+              <p data-chatgpt-status class="text-sm text-slate-600" role="status">Not connected</p>
+              <p class="text-sm text-slate-600">
                 Sign in with OpenAI’s device authorization. Your ChatGPT password is never shared with this app.
               </p>
               <div class="flex flex-wrap gap-2">
                 <button
                   type="button"
                   data-chatgpt-connect
-                  class="rounded bg-emerald-700 px-3 py-2 text-sm"
+                  class="rounded bg-[#547d42] px-3 py-2 text-sm"
                   on-click="connectChatgpt()"
                 >
                   Connect ChatGPT
@@ -265,7 +256,7 @@
                 <button
                   type="button"
                   data-chatgpt-disconnect
-                  class="rounded border border-zinc-700 px-3 py-2 text-sm text-red-300"
+                  class="rounded border border-slate-300 px-3 py-2 text-sm text-red-700"
                   on-click="removeConnector('chatgpt')"
                 >
                   Disconnect
@@ -273,7 +264,7 @@
               </div>
               <a
                 data-chatgpt-link
-                class="text-sm text-emerald-300 underline"
+                class="text-sm text-[#547d42] underline"
                 target="_blank"
                 rel="noopener noreferrer"
                 hidden
@@ -295,7 +286,7 @@
           <h1 class="text-xl font-semibold">No workspace selected</h1>
           <p class="mt-2 text-sm text-zinc-600">Choose a workspace from the sidebar or create one to get started.</p>
           <button
-            class="mt-4 rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white"
+            class="mt-4 rounded-lg bg-[#547d42] px-4 py-2 font-semibold text-white"
             on-click="onCreateWorkspace()"
           >
             ＋ Create workspace
@@ -305,7 +296,7 @@
           <div class="mx-auto max-w-3xl space-y-5">
             <header class="flex items-start justify-between">
               <div>
-                <p class="text-sm font-medium text-emerald-700">WORKSPACE HOME</p>
+                <p class="text-sm font-medium text-[#547d42]">WORKSPACE HOME</p>
                 <h1
                   class="mt-1 break-all text-3xl font-semibold"
                   bind-inner-text="$ws.workspace || 'Choose a workspace'"
@@ -327,7 +318,7 @@
                 suggest next steps.
               </p>
               <button
-                class="mt-4 w-full rounded-xl bg-emerald-700 px-4 py-3 text-left font-semibold text-white"
+                class="mt-4 w-full rounded-xl bg-[#547d42] px-4 py-3 text-left font-semibold text-white"
                 on-click="createPlannerSession()"
                 bind-disabled="!$ws.workspace"
               >
@@ -370,20 +361,12 @@
       >
         <div class="min-h-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-10">
           <div class="max-w-3xl space-y-5">
-            <section class="rounded-xl border border-slate-100 bg-[#f7f9f7] p-5">
-              <h2 class="font-semibold">Your account</h2>
-              <p class="mt-1 text-sm text-slate-500" bind-inner-text="profileName()"></p>
-              <p class="text-sm text-slate-500" bind-inner-text="profileEmail()"></p>
-              <button class="mt-4 rounded-lg border border-red-200 px-3 py-2 text-sm text-red-700" on-click="signOut()">
-                Sign out
-              </button>
-            </section>
             <header class="flex items-start justify-between">
               <div>
-                <button class="mb-4 text-sm font-medium text-emerald-700" on-click="openOverview()">
+                <button class="mb-4 text-sm font-medium text-[#547d42]" on-click="openOverview()">
                   ← Back to workspace
                 </button>
-                <p class="text-sm font-medium text-emerald-700">WORKSPACE SETTINGS</p>
+                <p class="text-sm font-medium text-[#547d42]">WORKSPACE SETTINGS</p>
                 <h1 class="mt-1 break-all text-3xl font-semibold" bind-inner-text="$ws.workspace"></h1>
               </div>
               <button
@@ -421,7 +404,7 @@
                   </label>
                   <div class="mt-2 flex gap-2">
                     <button
-                      class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white"
+                      class="rounded-lg bg-[#547d42] px-4 py-2 text-sm font-semibold text-white"
                       on-click="saveWorkspaceDescription()"
                     >
                       Save</button
@@ -461,17 +444,63 @@
         </div>
       </main>
       <main
+        data-user-settings-main
+        hidden
+        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] overflow-y-auto bg-[#eef2ec] p-5 text-zinc-900 md:h-dvh md:p-10"
+      >
+        <div class="mx-auto max-w-3xl space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-10">
+          <header class="flex items-start justify-between">
+            <div>
+              <p class="text-sm font-medium text-[#547d42]">USER SETTINGS</p>
+              <h1 class="mt-1 text-3xl font-semibold">Account and models</h1>
+            </div>
+            <button aria-label="Back to workspace" class="rounded border px-3 py-2" on-click="openWorkspaces()">
+              ⌂
+            </button>
+          </header>
+          <section class="rounded-xl border border-slate-100 bg-[#f7f9f7] p-5">
+            <h2 class="font-semibold">Your account</h2>
+            <p class="mt-1 text-sm text-slate-500" bind-inner-text="profileName()"></p>
+            <p class="text-sm text-slate-500" bind-inner-text="profileEmail()"></p>
+            <button class="mt-4 rounded-lg border border-red-200 px-3 py-2 text-sm text-red-700" on-click="signOut()">
+              Sign out
+            </button>
+          </section>
+          <section class="rounded-xl border border-slate-100 bg-[#f7f9f7] p-5">
+            <h2 class="font-semibold">Providers and model filters</h2>
+            <p class="mt-1 text-sm text-slate-500">
+              Choose which available providers and models appear in the chat picker.
+            </p>
+            <div data-user-model-groups class="mt-4 space-y-3"></div>
+            <p data-user-model-empty class="mt-3 text-sm text-slate-500" hidden>
+              No models are available yet. Connect a provider below, then reload models.
+            </p>
+            <button class="mt-4 rounded-lg border px-3 py-2 text-sm" on-click="reloadUserModels()">
+              Reload models
+            </button>
+            <button
+              class="ml-2 mt-4 rounded-lg border px-3 py-2 text-sm text-[#547d42]"
+              on-click="resetUserModelFilters()"
+            >
+              Show all models
+            </button>
+          </section>
+          <section class="rounded-xl border border-slate-100 bg-[#f7f9f7] p-5">
+            <h2 class="font-semibold">Providers</h2>
+            <div data-user-settings-providers class="mt-4 space-y-4"></div>
+          </section>
+        </div>
+      </main>
+      <main
         data-goal-main
         hidden
         class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
       >
         <div class="mx-auto max-w-6xl">
-          <button class="mb-4 text-sm font-medium text-emerald-700" on-click="openOverview()">
-            ← Back to workspace
-          </button>
+          <button class="mb-4 text-sm font-medium text-[#547d42]" on-click="openOverview()">← Back to workspace</button>
           <header class="mb-6 flex items-start justify-between">
             <div>
-              <p class="text-sm font-medium text-emerald-700">GOAL DETAILS</p>
+              <p class="text-sm font-medium text-[#547d42]">GOAL DETAILS</p>
               <h1 data-goal-title class="mt-1 break-words text-3xl font-semibold"></h1>
               <p data-goal-description class="mt-2 text-zinc-600"></p>
             </div>
@@ -486,7 +515,7 @@
             <section data-task-column="todo" class="rounded-xl bg-zinc-100 p-4">
               <h2 class="mb-3 font-semibold">To do</h2>
               <div class="space-y-2"></div>
-              <button class="mt-3 text-sm font-medium text-emerald-700" on-click="createGoalTask()">＋ Add task</button>
+              <button class="mt-3 text-sm font-medium text-[#547d42]" on-click="createGoalTask()">＋ Add task</button>
             </section>
             <section data-task-column="in-progress" class="rounded-xl bg-blue-50 p-4">
               <h2 class="mb-3 font-semibold">In progress</h2>
@@ -520,7 +549,7 @@
           </label>
           <div class="flex justify-end gap-2">
             <button value="cancel" class="rounded-lg border px-4 py-2">Cancel</button
-            ><button type="button" class="rounded-lg bg-emerald-700 px-4 py-2 text-white" on-click="saveGoal()">
+            ><button type="button" class="rounded-lg bg-[#547d42] px-4 py-2 text-white" on-click="saveGoal()">
               Save goal
             </button>
           </div>
@@ -560,7 +589,7 @@
                 class="min-w-0 flex-1 rounded-lg border p-2"
                 aria-label="Add a comment"
                 placeholder="Write a comment"
-              /><button class="rounded-lg bg-emerald-700 px-3 py-2 text-white">Send</button>
+              /><button class="rounded-lg bg-[#547d42] px-3 py-2 text-white">Send</button>
             </form>
           </section>
           <div class="flex justify-end">
@@ -574,19 +603,17 @@
         class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
       >
         <div class="mx-auto max-w-3xl">
-          <button class="mb-4 text-sm font-medium text-emerald-700" on-click="openOverview()">
-            ← Back to workspace
-          </button>
+          <button class="mb-4 text-sm font-medium text-[#547d42]" on-click="openOverview()">← Back to workspace</button>
           <header class="mb-5 flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-emerald-700">WORKSPACE</p>
+              <p class="text-sm font-medium text-[#547d42]">WORKSPACE</p>
               <h1 class="text-3xl font-semibold">Sessions</h1>
               <p class="mt-1 text-zinc-600">
                 Chats and planning conversations for <span bind-inner-text="$ws.workspace || 'your workspace'"></span>.
               </p>
             </div>
             <button
-              class="rounded-lg bg-emerald-700 px-4 py-3 font-semibold text-white"
+              class="rounded-lg bg-[#547d42] px-4 py-3 font-semibold text-white"
               on-click="createSession()"
               bind-disabled="!$ws.workspace"
             >
@@ -597,7 +624,7 @@
             <h2 class="font-semibold">Start with a plan</h2>
             <p class="mt-1 text-sm text-zinc-600">New to this workspace? Ask the Planner to help define your goals.</p>
             <button
-              class="mt-3 font-medium text-emerald-700"
+              class="mt-3 font-medium text-[#547d42]"
               on-click="createPlannerSession()"
               bind-disabled="!$ws.workspace"
             >
@@ -609,7 +636,7 @@
             <p data-session-empty class="p-4 text-sm text-zinc-500">
               No conversations yet. Start planning or create a new chat.
             </p>
-            <button class="font-medium text-emerald-700" class-hidden="$ws.workspace" on-click="openWorkspaces()">
+            <button class="font-medium text-[#547d42]" class-hidden="$ws.workspace" on-click="openWorkspaces()">
               Choose a workspace first →
             </button>
           </div>
@@ -621,10 +648,8 @@
         class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
       >
         <div class="mx-auto max-w-3xl">
-          <button class="mb-4 text-sm font-medium text-emerald-700" on-click="openOverview()">
-            ← Back to workspace
-          </button>
-          <p class="text-sm font-medium text-emerald-700">WORKSPACE</p>
+          <button class="mb-4 text-sm font-medium text-[#547d42]" on-click="openOverview()">← Back to workspace</button>
+          <p class="text-sm font-medium text-[#547d42]">WORKSPACE</p>
           <h1 class="text-3xl font-semibold">Tasks</h1>
           <p class="mt-1 text-zinc-600">
             Work the agent has delegated for <span bind-inner-text="$ws.workspace || 'your workspace'"></span>.
@@ -654,7 +679,7 @@
         <div class="grid h-full grid-cols-5">
           <button
             class="flex flex-col items-center justify-center gap-1 text-xs"
-            bind-class="{ 'text-emerald-700': $app.page === 'workspaces' || $app.page === 'overview', 'text-zinc-500': $app.page !== 'workspaces' && $app.page !== 'overview' }"
+            bind-class="{ 'text-[#547d42]': $app.page === 'workspaces' || $app.page === 'overview', 'text-zinc-500': $app.page !== 'workspaces' && $app.page !== 'overview' }"
             bind-aria-current="$app.page === 'workspaces' ? 'page' : null"
             on-click="openWorkspaces()"
           >
@@ -662,7 +687,7 @@
           </button>
           <button
             class="flex flex-col items-center justify-center gap-1 text-xs"
-            bind-class="{ 'text-emerald-700': $app.page === 'sessions', 'text-zinc-500': $app.page !== 'sessions' }"
+            bind-class="{ 'text-[#547d42]': $app.page === 'sessions', 'text-zinc-500': $app.page !== 'sessions' }"
             bind-aria-current="$app.page === 'sessions' ? 'page' : null"
             on-click="openSessions()"
           >
@@ -670,7 +695,7 @@
           </button>
           <button
             class="flex flex-col items-center justify-center gap-1 text-xs"
-            bind-class="{ 'text-emerald-700': $app.page === 'chat', 'text-zinc-500': $app.page !== 'chat' }"
+            bind-class="{ 'text-[#547d42]': $app.page === 'chat', 'text-zinc-500': $app.page !== 'chat' }"
             bind-aria-current="$app.page === 'chat' ? 'page' : null"
             on-click="openChatPage()"
           >
@@ -678,7 +703,7 @@
           </button>
           <button
             class="flex flex-col items-center justify-center gap-1 text-xs"
-            bind-class="{ 'text-emerald-700': $app.page === 'tasks', 'text-zinc-500': $app.page !== 'tasks' }"
+            bind-class="{ 'text-[#547d42]': $app.page === 'tasks', 'text-zinc-500': $app.page !== 'tasks' }"
             bind-aria-current="$app.page === 'tasks' ? 'page' : null"
             on-click="openTasks()"
           >
@@ -686,7 +711,7 @@
           </button>
           <button
             class="flex flex-col items-center justify-center gap-1 text-xs"
-            bind-class="{ 'text-emerald-700': $app.page === 'integrations', 'text-zinc-500': $app.page !== 'integrations' }"
+            bind-class="{ 'text-[#547d42]': $app.page === 'integrations', 'text-zinc-500': $app.page !== 'integrations' }"
             bind-aria-current="$app.page === 'integrations' ? 'page' : null"
             on-click="openConnectors()"
           >
@@ -697,7 +722,7 @@
     </template>
     <template if="!$p.profile"
       ><div class="m-auto">
-        <button on-click="signIn(true)" class="rounded border border-zinc-700 p-3">Sign in</button>
+        <button on-click="signIn(true)" class="rounded border border-slate-300 p-3">Sign in</button>
       </div></template
     >
   </div>
@@ -721,6 +746,7 @@
       let activeTask = null;
       let appReady = false;
       let displayedWorkspace = "";
+
       async function refreshTeam() {
         const team = await Teams.current();
         const summary = element.querySelector("[data-team-summary]");
@@ -798,6 +824,87 @@
           }),
         );
         element.querySelector("[data-goals-empty]").hidden = goals.length > 0;
+      }
+      function renderUserModels() {
+        const host = element.querySelector("[data-user-model-groups]");
+        if (!host) return;
+        const models = Array.isArray($msg.modelList)
+          ? $msg.modelList
+          : Array.isArray($msg.modelList?.models)
+            ? $msg.modelList.models
+            : Array.isArray($msg.modelList?.data)
+              ? $msg.modelList.data
+              : [];
+        const groups = new Map();
+        let preferences = { providers: {}, models: {} };
+        try {
+          const stored = JSON.parse(localStorage.getItem("age-model-picker-preferences") || "{}");
+          if (stored && typeof stored === "object" && !Array.isArray(stored)) {
+            preferences.providers =
+              stored.providers && typeof stored.providers === "object" && !Array.isArray(stored.providers)
+                ? stored.providers
+                : {};
+            preferences.models =
+              stored.models && typeof stored.models === "object" && !Array.isArray(stored.models) ? stored.models : {};
+          }
+        } catch {}
+        for (const model of models) {
+          if (!model?.id) continue;
+          const provider = model.provider || model.serverName || "Other";
+          if (!groups.has(provider)) groups.set(provider, []);
+          groups.get(provider).push(model);
+        }
+        host.replaceChildren(
+          ...[...groups].map(([provider, items]) => {
+            const section = document.createElement("section");
+            section.className = "rounded-lg border border-slate-200 p-3";
+            const title = document.createElement("label");
+            title.className = "flex items-center gap-2 font-medium";
+            const providerToggle = document.createElement("input");
+            providerToggle.type = "checkbox";
+            providerToggle.checked = preferences.providers?.[provider] !== false;
+            providerToggle.addEventListener("change", () => {
+              preferences.providers = { ...preferences.providers, [provider]: providerToggle.checked };
+              localStorage.setItem("age-model-picker-preferences", JSON.stringify(preferences));
+              renderUserModels();
+            });
+            const providerName = document.createElement("span");
+            providerName.textContent = provider;
+            title.append(providerToggle, providerName);
+            section.append(title);
+            for (const model of items) {
+              const label = document.createElement("label");
+              label.className = "mt-2 flex items-center gap-2 text-sm";
+              const checkbox = document.createElement("input");
+              checkbox.type = "checkbox";
+              checkbox.checked = preferences.models?.[model.id] !== false;
+              checkbox.disabled = preferences.providers?.[provider] === false;
+              checkbox.addEventListener("change", () => {
+                preferences.models = { ...preferences.models, [model.id]: checkbox.checked };
+                localStorage.setItem("age-model-picker-preferences", JSON.stringify(preferences));
+                renderUserModels();
+              });
+              const text = document.createElement("span");
+              text.textContent = model.name || model.id;
+              label.append(checkbox, text);
+              section.append(label);
+            }
+            return section;
+          }),
+        );
+        element.querySelector("[data-user-model-empty]").hidden = models.length > 0;
+      }
+      async function reloadUserModels() {
+        try {
+          await $msg.reloadModelList();
+          renderUserModels();
+        } catch (error) {
+          console.error(error);
+        }
+      }
+      function resetUserModelFilters() {
+        localStorage.setItem("age-model-picker-preferences", JSON.stringify({ providers: {}, models: {} }));
+        renderUserModels();
       }
       async function renderWorkspaceHome() {
         if (!$ws.workspace) return;
@@ -1083,10 +1190,13 @@
           return;
         }
         const visibility = [
-          [sidebar, $app.page !== "integrations"],
-          [element.querySelector("[data-connectors-page]"), $app.page === "integrations"],
+          [sidebar, true],
           [element.querySelector("[data-overview-main]"), $app.page === "overview" || $app.page === "workspaces"],
           [element.querySelector("[data-settings-main]"), $app.page === "settings"],
+          [
+            element.querySelector("[data-user-settings-main]"),
+            $app.page === "user-settings" || $app.page === "integrations",
+          ],
           [element.querySelector("[data-goal-main]"), $app.page === "goal"],
           [element.querySelector("[data-sessions-main]"), $app.page === "sessions"],
           [element.querySelector("[data-tasks-main]"), $app.page === "tasks"],
@@ -1114,11 +1224,22 @@
           }
           if (appReady && ($app.page === "overview" || $app.page === "workspaces")) await renderWorkspaceHome();
           if (appReady && $app.page === "sessions") await renderSessionList();
+          if (appReady && ($app.page === "user-settings" || $app.page === "integrations")) {
+            openConnectors().catch(console.error);
+          }
         },
       );
+      effect(() => $msg.modelList, renderUserModels);
       onInit(async () => {
         await $p.reloadProfile();
         if ($p.profile) {
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+          const integrationsPage = element.querySelector("[data-connectors-page]");
+          const providerHost = element.querySelector("[data-user-settings-providers]");
+          if (integrationsPage && providerHost) {
+            providerHost.append(...integrationsPage.childNodes);
+            integrationsPage.remove();
+          }
           await $ws.reloadWorkspaceList();
           if ($ws.workspace) {
             await $ws.reloadWorkspaceData();
@@ -1134,9 +1255,16 @@
         }
         element.querySelector("[data-task-status]").addEventListener("change", changeTaskStatus);
         element.querySelector("[data-comment-form]").addEventListener("submit", addTaskComment);
-        if ($p.profile) refreshTeam().catch(console.error);
+        if ($p.profile) {
+          refreshTeam().catch(console.error);
+          $msg.reloadModelList().catch(console.error);
+        }
         displayedWorkspace = $ws.workspace;
         appReady = true;
+        if ($app.page === "user-settings" || $app.page === "integrations") {
+          openConnectors().catch(console.error);
+          reloadUserModels().catch(console.error);
+        }
         events.addEventListener("message", () => {
           if ($app.page === "overview" && $ws.workspace) renderWorkspaceHome().catch(console.error);
         });
@@ -1180,6 +1308,11 @@
       function profileInitial() {
         return profileName().trim().charAt(0).toUpperCase() || "A";
       }
+      function openProfileSettings() {
+        const alreadyInSettings = $app.page === "user-settings";
+        $app.openUserSettings();
+        if (alreadyInSettings) openConnectors().catch(console.error);
+      }
 
       function openSessions() {
         $app.openSessions();
@@ -1190,7 +1323,9 @@
       }
 
       function openIntegrations() {
-        openConnectors();
+        const alreadyInSettings = $app.page === "user-settings";
+        $app.openUserSettings();
+        if (alreadyInSettings) openConnectors().catch(console.error);
       }
 
       function openChatPage() {
@@ -1231,8 +1366,8 @@
         }
       }
       async function openConnectors() {
-        $app.openIntegrations();
-        const page = element.querySelector("[data-connectors-page]");
+        await reloadUserModels();
+        const page = element.querySelector("[data-user-settings-main]");
         page.querySelector("[data-page-status]").textContent = "";
         try {
           const connectors = await Connectors.list();
@@ -1373,7 +1508,7 @@
         form.append(heading);
 
         const status = document.createElement("p");
-        status.className = "text-xs text-zinc-400";
+        status.className = "text-xs text-slate-600";
         status.dataset.providerStatus = "ollama";
         status.setAttribute("role", "status");
         status.textContent = connector.id ? "Configured" : "Not saved";
@@ -1389,7 +1524,7 @@
           input.value = value || "";
           input.placeholder = placeholder;
           input.required = required;
-          input.className = "mt-1 w-full rounded bg-zinc-800 p-2";
+          input.className = "mt-1 w-full rounded border border-slate-300 bg-white p-2";
           label.append(input);
           form.append(label);
         };
@@ -1409,12 +1544,12 @@
           }
           actions.append(button);
         };
-        addButton("Save server", "rounded bg-emerald-700 px-3 py-2 text-sm", null, true);
-        addButton("Test connection", "rounded border border-zinc-700 px-3 py-2 text-sm", () =>
+        addButton("Save server", "rounded bg-[#547d42] px-3 py-2 text-sm", null, true);
+        addButton("Test connection", "rounded border border-slate-300 px-3 py-2 text-sm", () =>
           testConnector("ollama", form),
         );
         if (connector.id) {
-          addButton("Disconnect", "rounded px-3 py-2 text-sm text-red-300", () => removeConnector("ollama", form));
+          addButton("Disconnect", "rounded px-3 py-2 text-sm text-red-700", () => removeConnector("ollama", form));
         }
         form.append(actions);
         form.addEventListener("submit", (event) => {
@@ -1459,7 +1594,7 @@
         openWorkspaces,
         selectWorkspace,
         openOverview,
-        openProfileSettings: () => $app.openWorkspaceSettings(),
+        openProfileSettings,
         profileName,
         profileEmail,
         profileInitial,
@@ -1473,6 +1608,8 @@
         removeConnector,
         connectChatgpt,
         addOllamaServer,
+        reloadUserModels,
+        resetUserModelFilters,
       };
     }
   </script>

@@ -11,7 +11,17 @@ export const useApp = defineStore("app", function () {
   const messages = useMessages();
   const profile = useProfile();
   const layout = ref({ left: true, center: true, right: true });
-  const pages = new Set(["workspaces", "overview", "settings", "goal", "sessions", "tasks", "chat", "integrations"]);
+  const pages = new Set([
+    "workspaces",
+    "overview",
+    "settings",
+    "user-settings",
+    "goal",
+    "sessions",
+    "tasks",
+    "chat",
+    "integrations",
+  ]);
   const locationFromUrl = () => {
     const [route, query = ""] = window.location.hash.slice(2).split("?", 2);
     const params = new globalThis.URLSearchParams(query);
@@ -79,9 +89,10 @@ export const useApp = defineStore("app", function () {
   }
   const openChat = () => navigate("chat");
   const openSidebar = () => navigate("workspaces");
-  const openIntegrations = () => navigate("integrations");
+  const openIntegrations = () => navigate("user-settings");
   const openOverview = () => navigate("overview");
   const openWorkspaceSettings = () => navigate("settings");
+  const openUserSettings = () => navigate("user-settings");
   function openGoal(id) {
     if (!id) {
       return;
@@ -128,6 +139,7 @@ export const useApp = defineStore("app", function () {
     openIntegrations,
     openOverview,
     openWorkspaceSettings,
+    openUserSettings,
     openGoal,
     openWorkspace,
     goalId,

@@ -9,7 +9,7 @@ export const useMessages = defineStore("messages", function () {
   const $session = useSessions();
   const [messages, setMessages] = hook([]);
   const [model, setModel] = hook("");
-  const [modelList, setModelList] = hook("");
+  const [modelList, setModelList] = hook([]);
   const [sending, setSending] = hook(false);
   const agentStatus = ref({ sessionId: "", status: "idle", error: "" });
   const agentStatusLabel = computed(() => {
@@ -110,7 +110,14 @@ export const useMessages = defineStore("messages", function () {
   }
 
   async function reloadModelList() {
-    modelList.value = await Models.list();
+    const response = await Models.list();
+    modelList.value = Array.isArray(response)
+      ? response
+      : Array.isArray(response?.models)
+        ? response.models
+        : Array.isArray(response?.data)
+          ? response.data
+          : [];
     if (!modelList.value.some((item) => item.id === model.value)) {
       model.value = modelList.value.find((item) => item.default)?.id || "";
     }

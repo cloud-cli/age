@@ -23,7 +23,8 @@ agent workspace with a messaging-first interface.
 ## Current implementation status
 
 - OIDC Authorization Code + PKCE sign-in, logout, and same-origin sessions are available.
-- The sidebar contains the workspace list, sign-out action, and workspace creation button.
+- The sidebar contains the workspace list, account-settings card, and workspace creation button. Account settings include
+  sign-out, provider connections, and model-picker filters; workspace settings remain a separate page.
 - Workspace settings provide an editable brief and goals; workspace home shows recent sessions and the four-state task board.
 - Workspace archive state and descriptions are stored in a `workspaces` table in `DATABASE_URL`; workspace files,
   histories, goals, and task records remain under `DATA_PATH`.
@@ -66,9 +67,9 @@ Each workspace is stored below `DATA_PATH`:
 Optional runtime configuration includes `MODEL`, `TASK_REVIEW_MODEL`, `TASK_QUEUE_ENABLED`, `TASK_QUEUE_POLL_MS`, `TASK_QUEUE_LEASE_MS`, `TASK_QUEUE_MAX_ROUNDS`,
 `APP_MESSAGE_HUB_URL`, `WEB_SEARCH_URL`, and
 `WEB_SEARCH_API_KEY`. Mutating agent tools remain disabled unless `ALLOW_MUTATING_TOOLS=true` is deliberately set.
-The Integrations page supports team-shared Gemini/OpenAI API keys, multiple named Ollama servers, and ChatGPT Plus/Pro
-device authorization using the OpenCode-style device-code flow. ChatGPT credentials and provider keys are encrypted at
-rest with `CONNECTOR_ENCRYPTION_KEY`.
+Account settings support team-shared Gemini/OpenAI API keys, multiple named Ollama servers, ChatGPT Plus/Pro device
+authorization using the OpenCode-style device-code flow, and model-picker filters. ChatGPT credentials and provider keys
+are encrypted at rest with `CONNECTOR_ENCRYPTION_KEY`.
 The PWA supports pull-down-to-refresh and revalidates app assets on reload.
 
 ## Key routes

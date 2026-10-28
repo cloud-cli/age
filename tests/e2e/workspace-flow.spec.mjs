@@ -3,9 +3,13 @@ import { randomUUID } from "node:crypto";
 
 const agentId = process.env.AUTH_AGENT_ID;
 const agentKey = process.env.AUTH_AGENT_KEY;
+const remoteE2E = process.env.E2E_BASE_URL;
 
 test.describe("authenticated workspace flow", () => {
-  test.skip(!agentId || !agentKey, "AUTH_AGENT_ID and AUTH_AGENT_KEY are required for this production E2E test");
+  test.skip(
+    !remoteE2E || !agentId || !agentKey,
+    "Set E2E_BASE_URL, AUTH_AGENT_ID, and AUTH_AGENT_KEY to run the deployed OIDC E2E test",
+  );
 
   test("signs in, creates a workspace, and exercises its goal task board", async ({ page }, testInfo) => {
     testInfo.setTimeout(150_000);
@@ -37,9 +41,15 @@ test.describe("authenticated workspace flow", () => {
       await page.getByRole("button", { name: "Sign in" }).click();
       await expect(page).toHaveURL(/agents\.lab\.apphor\.de\/(?:#.*)?$/);
       await page.setViewportSize({ width: 1280, height: 900 });
-      await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
       const sidebar = page.locator("aside");
-      await expect(sidebar.getByRole("button", { name: "Sign out" })).toBeVisible();
+      await expect(sidebar.getByRole("button", { name: "Open Settings" })).toBeVisible();
+      await sidebar.getByRole("button", { name: "Open Settings" }).click();
+      await expect(page.getByRole("heading", { name: "Account and models" })).toBeVisible();
+      await expect(page.locator("[data-user-model-groups]")).toContainText("gemini-2.5-flash");
+      await expect(page.locator("[data-user-model-groups]")).toContainText("qwen3:14b");
+      await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+      await page.getByRole("button", { name: "Back to workspace" }).click();
+      await expect(page.locator("[data-overview-main]")).toBeVisible();
       await expect(sidebar.getByRole("button", { name: /Create workspace/ })).toBeVisible();
       await expect(sidebar.getByText("Sessions", { exact: true })).toHaveCount(0);
       const currentTeam = await page.evaluate(async () =>
@@ -283,14 +293,15 @@ test.describe("authenticated workspace flow", () => {
       await expect(modelPicker.getByRole("group", { name: "LG" })).toBeVisible();
       await expect(modelPicker.getByText("undefined", { exact: true })).toHaveCount(0);
       await modelPicker.getByRole("button", { name: "Manage models and providers" }).click();
-      const settingsDialog = page.locator("dialog[data-model-settings]");
-      await expect(settingsDialog.getByRole("heading", { name: "Models and providers" })).toBeVisible();
-      await settingsDialog.getByRole("checkbox", { name: /ollama.*models/ }).uncheck();
-      await settingsDialog.getByRole("checkbox", { name: /qwen3:14b/ }).uncheck();
+      const settingsPage = page.locator("[data-user-settings-main]");
+      await expect(settingsPage.getByRole("heading", { name: "Account and models" })).toBeVisible();
+      const ollamaModels = settingsPage.locator("[data-user-model-groups] section").filter({ hasText: "qwen3:14b" });
+      await ollamaModels.locator("input[type=checkbox]").nth(1).uncheck();
+      await ollamaModels.locator("input[type=checkbox]").first().uncheck();
       await expect
         .poll(() => page.evaluate(() => JSON.parse(window.localStorage.getItem("age-model-picker-preferences"))))
         .toMatchObject({ providers: { ollama: false }, models: { "ollama:lg/qwen3:14b": false } });
-      await settingsDialog.getByRole("button", { name: "Close model settings" }).click();
+      await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("button", { name: "Chat" }).click();
       await modelTrigger.click();
       await modelPicker.getByRole("searchbox", { name: "Search models" }).fill("qwen3");
       await expect(modelPicker.getByRole("option", { name: "qwen3:14b" })).toHaveCount(0);

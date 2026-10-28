@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f8fafc" />
+    <meta name="theme-color" content="#eef2ec" />
     <link rel="manifest" href="/public/manifest.json" />
 
     <link rel="component" href="/public/app-main.html" />
@@ -16,9 +16,23 @@
     <style>
       :root {
         color-scheme: light;
+        --age-wordmark: #203b31;
+        --age-period: #547d42;
+      }
+      body {
+        background-color: #eef2ec;
+      }
+      .bg-zinc-50 {
+        background-color: #eef2ec !important;
+      }
+      .bg-emerald-700 {
+        background-color: #547d42 !important;
+      }
+      .focus-within\:border-emerald-600:focus-within {
+        border-color: #547d42 !important;
       }
       .bg-zinc-950 {
-        background-color: #f8fafc !important;
+        background-color: #eef2ec !important;
       }
       .bg-zinc-900 {
         background-color: #fff !important;
@@ -39,13 +53,13 @@
         color: #52525b !important;
       }
       .text-emerald-50 {
-        color: #064e3b !important;
+        color: #547d42 !important;
       }
       .text-emerald-300 {
-        color: #047857 !important;
+        color: #547d42 !important;
       }
       .text-emerald-400 {
-        color: #047857 !important;
+        color: #547d42 !important;
       }
       .border-zinc-800,
       .border-zinc-700 {
