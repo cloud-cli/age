@@ -1237,8 +1237,9 @@
           const integrationsPage = element.querySelector("[data-connectors-page]");
           const providerHost = element.querySelector("[data-user-settings-providers]");
           if (integrationsPage && providerHost) {
-            providerHost.append(...integrationsPage.childNodes);
-            integrationsPage.remove();
+            integrationsPage.hidden = false;
+            integrationsPage.classList.remove("hidden");
+            providerHost.append(integrationsPage);
           }
           await $ws.reloadWorkspaceList();
           if ($ws.workspace) {
