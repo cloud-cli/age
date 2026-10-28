@@ -171,13 +171,7 @@
               </button>
             </div>
           </section>
-          <button
-            type="button"
-            tabindex="-1"
-            aria-label="Close workspace menu"
-            class="min-w-0 flex-1 cursor-default"
-            on-click="closeMobileDrawer()"
-          ></button>
+          <div aria-hidden="true" class="min-w-0 flex-1 cursor-default" on-click="closeMobileDrawer()"></div>
         </div>
       </dialog>
       <aside class="hidden md:flex md:w-72 h-dvh shrink-0 bg-[#eef2ec] flex-col">
@@ -1424,11 +1418,6 @@
             mobileMenuButton = element.querySelector("[data-mobile-menu]");
           }
           mobileDrawer.addEventListener("close", () => mobileMenuButton.setAttribute("aria-expanded", "false"));
-          mobileDrawer.addEventListener("click", (event) => {
-            if (event.target === mobileDrawer) {
-              closeMobileDrawer();
-            }
-          });
           mobileDrawer.addEventListener("cancel", () => mobileMenuButton.setAttribute("aria-expanded", "false"));
           document.addEventListener("keydown", (event) => {
             if (!mobileDrawer.open || event.key !== "Tab") {
