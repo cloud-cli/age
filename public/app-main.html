@@ -808,7 +808,7 @@
         recent.replaceChildren(
           ...sessions.map((session) => {
             const button = document.createElement("button");
-            button.className = "block w-full rounded-lg border bg-white p-3 text-left";
+            button.className = "block w-full rounded-lg border bg-white p-1 px-2 text-left text-sm";
             button.textContent = `${session.title || "Untitled conversation"} · ${new Date(Number(session.updatedAt || session.createdAt || 0)).toLocaleString()}`;
             button.addEventListener("click", () => openSession(session.id));
             return button;
