@@ -11,7 +11,7 @@
     </header>
     <template if="!$s.sessionId">
       <section class="flex-1 overflow-y-auto p-6 md:p-10">
-        <div class="mx-auto max-w-3xl rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+        <div class="w-full rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
           <p class="text-xs font-semibold uppercase tracking-wide text-emerald-400">No conversation open</p>
           <h1
             class="mt-2 text-2xl font-semibold"
@@ -49,7 +49,7 @@
     <div class="flex-1 overflow-y-auto p-4 md:px-8 space-y-3" aria-live="polite" class-hidden="!$s.sessionId">
       <template for="m of $msg.messages"
         ><article
-          class="max-w-3xl rounded-2xl px-4 py-3 text-sm"
+          class="w-fit rounded-2xl px-4 py-3 text-sm"
           bind-class="m.role === 'user' ? 'ml-auto bg-emerald-950 text-emerald-50' : m.role === 'tool' ? 'mx-auto bg-zinc-900 text-zinc-400' : 'mr-auto bg-zinc-800 text-zinc-100'"
         >
           <template if="m.role === 'tool'"
@@ -73,7 +73,7 @@
         replies aloud</label
       >
       <form
-        class="max-w-3xl mx-auto rounded-2xl bg-zinc-900 border border-zinc-700 p-2 focus-within:border-emerald-600"
+        class="w-full rounded-2xl bg-zinc-900 border border-zinc-700 p-2 focus-within:border-emerald-600"
         on-submit.prevent="$msg.sendMessage()"
       >
         <textarea
@@ -180,7 +180,7 @@
         </div>
       </form>
       <p
-        class="mx-auto mt-2 max-w-3xl text-xs text-zinc-400"
+        class="mt-2 text-xs text-zinc-400"
         role="status"
         aria-live="polite"
         bind-inner-text="$msg.agentStatusLabel"

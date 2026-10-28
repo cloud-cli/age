@@ -108,7 +108,7 @@
         </div>
       </aside>
       <section data-connectors-page hidden class="hidden">
-        <div class="mx-auto max-w-4xl space-y-6">
+        <div class="w-full space-y-6">
           <header>
             <div>
               <h2 class="text-lg font-semibold">Provider connections</h2>
@@ -282,7 +282,7 @@
       >
         <div
           data-empty-workspace
-          class="m-auto max-w-md rounded-xl border border-dashed border-zinc-300 bg-white p-8 text-center"
+          class="m-auto w-full rounded-xl border border-dashed border-zinc-300 bg-white p-8 text-center"
           hidden
         >
           <h1 class="text-xl font-semibold">No workspace selected</h1>
@@ -295,7 +295,7 @@
           </button>
         </div>
         <div data-overview-content>
-          <div class="mx-auto max-w-3xl space-y-5">
+          <div class="w-full space-y-5">
             <header class="flex items-start justify-between">
               <div>
                 <p class="text-sm font-medium text-[#547d42]">WORKSPACE HOME</p>
@@ -362,11 +362,14 @@
         class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-[#eef2ec] p-3 text-zinc-900 md:p-5"
       >
         <div class="min-h-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-10">
-          <div class="max-w-3xl space-y-5">
+          <div class="w-full space-y-5">
             <header class="flex items-start justify-between">
               <div>
-                <button class="mb-4 text-sm font-medium text-[#547d42]" on-click="openOverview()">
-                  ← Back to workspace
+                <button
+                  class="mb-4 inline-flex items-center gap-2 text-sm font-medium text-[#547d42]"
+                  on-click="openOverview()"
+                >
+                  <lucide-icon icon="arrow-left" size="16" aria-hidden="true"></lucide-icon> Back to workspace
                 </button>
                 <p class="text-sm font-medium text-[#547d42]">WORKSPACE SETTINGS</p>
                 <h1 class="mt-1 break-all text-3xl font-semibold" bind-inner-text="$ws.workspace"></h1>
@@ -454,7 +457,7 @@
         hidden
         class="flex-1 min-w-0 h-[calc(100dvh-5rem)] overflow-y-auto bg-[#eef2ec] p-5 text-zinc-900 md:h-dvh md:p-10"
       >
-        <div class="mx-auto max-w-3xl space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-10">
+        <div class="w-full space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-10">
           <header class="flex items-start justify-between">
             <div>
               <p class="text-sm font-medium text-[#547d42]">USER SETTINGS</p>
@@ -502,8 +505,13 @@
         hidden
         class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
       >
-        <div class="mx-auto max-w-6xl">
-          <button class="mb-4 text-sm font-medium text-[#547d42]" on-click="openOverview()">← Back to workspace</button>
+        <div class="w-full">
+          <button
+            class="mb-4 inline-flex items-center gap-2 text-sm font-medium text-[#547d42]"
+            on-click="openOverview()"
+          >
+            <lucide-icon icon="arrow-left" size="16" aria-hidden="true"></lucide-icon> Back to workspace
+          </button>
           <header class="mb-6 flex items-start justify-between">
             <div>
               <p class="text-sm font-medium text-[#547d42]">GOAL DETAILS</p>
@@ -613,8 +621,13 @@
         hidden
         class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
       >
-        <div class="mx-auto max-w-3xl">
-          <button class="mb-4 text-sm font-medium text-[#547d42]" on-click="openOverview()">← Back to workspace</button>
+        <div class="w-full">
+          <button
+            class="mb-4 inline-flex items-center gap-2 text-sm font-medium text-[#547d42]"
+            on-click="openOverview()"
+          >
+            <lucide-icon icon="arrow-left" size="16" aria-hidden="true"></lucide-icon> Back to workspace
+          </button>
           <header class="mb-5 flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-[#547d42]">WORKSPACE</p>
@@ -658,8 +671,13 @@
         hidden
         class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
       >
-        <div class="mx-auto max-w-3xl">
-          <button class="mb-4 text-sm font-medium text-[#547d42]" on-click="openOverview()">← Back to workspace</button>
+        <div class="w-full">
+          <button
+            class="mb-4 inline-flex items-center gap-2 text-sm font-medium text-[#547d42]"
+            on-click="openOverview()"
+          >
+            <lucide-icon icon="arrow-left" size="16" aria-hidden="true"></lucide-icon> Back to workspace
+          </button>
           <p class="text-sm font-medium text-[#547d42]">WORKSPACE</p>
           <h1 class="text-3xl font-semibold">Tasks</h1>
           <p class="mt-1 text-zinc-600">
@@ -984,6 +1002,13 @@
         );
         element.querySelector("[data-session-empty]").hidden = sessions.length > 0;
       }
+      function createIcon(name, size = 16) {
+        const icon = document.createElement("lucide-icon");
+        icon.setAttribute("icon", name);
+        icon.setAttribute("size", String(size));
+        icon.setAttribute("aria-hidden", "true");
+        return icon;
+      }
       async function renderGoal() {
         const goal = ($ws.settings.goals || []).find((item) => item.id === activeGoalId);
         if (!goal) {
@@ -1002,13 +1027,6 @@
                   ((task.status === "new" || task.status === "queued" ? "todo" : task.status) || "todo") === status,
               )
               .map((task) => {
-      function createIcon(name, size = 16) {
-        const icon = document.createElement("lucide-icon");
-        icon.setAttribute("icon", name);
-        icon.setAttribute("size", String(size));
-        icon.setAttribute("aria-hidden", "true");
-        return icon;
-      }
                 const button = document.createElement("button");
                 button.type = "button";
                 button.className = "w-full rounded-lg border border-zinc-200 bg-white p-3 text-left shadow-sm";
