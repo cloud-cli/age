@@ -986,6 +986,7 @@
         element.querySelector("[data-task-description]").textContent =
           task.description || task.context || "No description";
         const execution = task.execution || {};
+        const statusSelect = element.querySelector("[data-task-status]");
         statusSelect.disabled = ["working", "reviewing"].includes(execution.phase);
         element.querySelector("[data-task-execution]").textContent = execution.percent
           ? `Overseer review: ${execution.percent}% · ${execution.summary || execution.phase || "Reviewing"}`
@@ -993,7 +994,6 @@
             ? `Agent activity: ${execution.phase}`
             : "";
         element.querySelector("[data-retry-review]").hidden = task.status !== "done" || execution.phase !== "error";
-        const statusSelect = element.querySelector("[data-task-status]");
         statusSelect.value = ["new", "queued"].includes(task.status) ? "todo" : task.status || "todo";
         statusSelect.querySelector('option[value="verified"]').disabled = !["done", "verified"].includes(task.status);
         renderComments(task);
