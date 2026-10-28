@@ -250,7 +250,6 @@ test.describe("authenticated workspace flow", () => {
       await taskDialog.getByRole("button", { name: "Close" }).click();
       await screenshot("07-goal-task-board-mobile");
       await page.getByRole("button", { name: "← Back to workspace" }).click();
-      await page.getByRole("button", { name: "Back to workspace" }).click();
       await expect(
         page
           .locator('[data-overview-main] [data-task-column="done"], [data-overview-main] [data-task-column="verified"]')
@@ -261,6 +260,7 @@ test.describe("authenticated workspace flow", () => {
       const editedGoal = page.locator("[data-goals-list] article").filter({ hasText: "Ship workspace flow" });
       page.once("dialog", (dialog) => dialog.accept());
       await editedGoal.getByRole("button", { name: "Remove" }).click();
+      await page.getByRole("button", { name: "Workspace settings" }).click();
       await expect(page.locator("[data-goals-empty]")).toBeVisible();
 
       const sessionResponse = page.waitForResponse(
@@ -273,6 +273,8 @@ test.describe("authenticated workspace flow", () => {
         .click();
       await page.getByRole("button", { name: "New chat" }).click();
       const session = await (await sessionResponse).json();
+      await expect(page.getByRole("textbox", { name: "Message draft" })).toBeEnabled();
+      await page.reload({ waitUntil: "networkidle" });
       await expect(page.getByRole("textbox", { name: "Message draft" })).toBeEnabled();
       const modelPicker = page.getByRole("dialog", { name: "Choose a model" });
       const modelTrigger = page.getByRole("button", { name: "Model" });
