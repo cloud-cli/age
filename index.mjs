@@ -5,6 +5,7 @@ import { randomBytes } from "node:crypto";
 import { resolve, parse, join } from "node:path";
 import * as oidc from "openid-client";
 import workspaces from "./server/workspaces.mjs";
+import { startTaskQueue } from "./server/task-queue.mjs";
 
 const client = readFileSync("./public/api.mjs", "utf8");
 const indexPage = readFileSync("./public/index.html", "utf8");
@@ -230,7 +231,12 @@ async function start() {
     { client_secret: process.env.OIDC_CLIENT_SECRET },
     oidc.ClientSecretPost(process.env.OIDC_CLIENT_SECRET),
   );
-  server.listen(Number(process.env.PORT), () => console.log(`Server started on port ${process.env.PORT}`));
+  server.listen(Number(process.env.PORT), () => {
+    console.log(`Server started on port ${process.env.PORT}`);
+    if (process.env.DATABASE_URL && process.env.TASK_QUEUE_ENABLED !== "false") {
+      startTaskQueue();
+    }
+  });
 }
 
 let oidcConfig;

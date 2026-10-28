@@ -267,16 +267,29 @@ export async function ApplyPatch(/*string*/ patch) {
   return { status: "approval_required", tool: "ApplyPatch", patch };
 }
 
-export async function DelegateTask(this: any, /*string*/ specialist, /*string*/ task, /*string*/ context = "") {
-  "##Records queued specialist task metadata without launching an agent.##";
+export async function DelegateTask(
+  this: any,
+  /*string*/ specialist,
+  /*string*/ task,
+  /*string*/ context = "",
+  /*string*/ goalId = "",
+) {
+  "##Creates a workspace task for the durable queue, optionally linked to a goal.##";
   const directory = join(this.workspacePath, "tasks");
   await mkdir(directory, { recursive: true });
+  if (goalId) {
+    const metadata = JSON.parse(await readFile(join(this.workspacePath, "config", "workspace.json"), "utf8"));
+    if (!metadata.goals?.some((goal) => goal.id === goalId)) {
+      throw new Error("Goal not found");
+    }
+  }
   const record = {
     id: randomUUID(),
     parentSessionId: this.sessionId,
     role: specialist,
     task,
     context,
+    ...(goalId ? { goalId } : {}),
     status: "queued",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -290,6 +303,9 @@ export async function CommentOnTask(this: any, /*string*/ taskId, /*string*/ com
   if (!/^[a-zA-Z0-9_-]+$/.test(taskId) || !comment.trim() || comment.length > 5_000) {
     throw new Error("Invalid task comment");
   }
+  if (this.taskId && this.taskId !== taskId) {
+    throw new Error("Task agents may only comment on their assigned task");
+  }
   const file = join(this.workspacePath, "tasks", `${taskId}.json`);
   return mutateTaskFile(file, (task) => {
     task.comments = Array.isArray(task.comments) ? task.comments : [];
@@ -301,12 +317,15 @@ export async function CommentOnTask(this: any, /*string*/ taskId, /*string*/ com
 
 export async function UpdateTaskStatus(this: any, /*string*/ taskId, /*string*/ status) {
   "##Changes a workspace task's kanban status.##";
-  if (!/^[a-zA-Z0-9_-]+$/.test(taskId) || !["new", "in-progress", "done"].includes(status)) {
+  if (!/^[a-zA-Z0-9_-]+$/.test(taskId) || !["todo", "new", "in-progress", "done"].includes(status)) {
     throw new Error("Invalid task status update");
+  }
+  if (this.taskId && (this.taskId !== taskId || status !== "done")) {
+    throw new Error("Task agents may only mark their assigned task done");
   }
   const file = join(this.workspacePath, "tasks", `${taskId}.json`);
   return mutateTaskFile(file, (task) => {
-    task.status = status;
+    task.status = status === "new" ? "todo" : status;
     return { id: task.id, status: task.status };
   });
 }

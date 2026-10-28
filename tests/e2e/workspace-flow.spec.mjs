@@ -11,6 +11,7 @@ test.describe("authenticated workspace flow", () => {
     testInfo.setTimeout(150_000);
     const workspaceName = `pwe2e${randomUUID().replaceAll("-", "").slice(0, 16)}`;
     let workspaceCreated = false;
+    let taskFixture = null;
 
     async function screenshot(name) {
       await page.screenshot({ path: testInfo.outputPath(`${name}.png`) });
@@ -88,6 +89,55 @@ test.describe("authenticated workspace flow", () => {
       workspaceCreated = true;
       const created = await (await workspaceResponse).json();
       expect(created.name).toBe(workspaceName);
+      await page.route(`**/workspaces/${workspaceName}/tasks**`, async (route) => {
+        const request = route.request();
+        const method = request.method();
+        if (method === "GET") {
+          await route.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify(taskFixture ? [taskFixture] : []),
+          });
+          return;
+        }
+        if (method === "POST" && new URL(request.url()).pathname.endsWith("/comments")) {
+          const body = request.postDataJSON();
+          const comment = {
+            id: "test-comment",
+            author: "user:alice",
+            content: body.content,
+            createdAt: new Date().toISOString(),
+          };
+          taskFixture.comments.push(comment);
+          await route.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({ task: taskFixture, comment }),
+          });
+          return;
+        }
+        if (method === "POST") {
+          const body = request.postDataJSON();
+          taskFixture = {
+            id: "e2e-task",
+            title: body.title,
+            description: body.description || "",
+            goalId: body.goalId,
+            status: "todo",
+            comments: [],
+          };
+          await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify(taskFixture) });
+          return;
+        }
+        if (method === "PATCH") {
+          const body = request.postDataJSON();
+          taskFixture.status = body.status;
+          if (body.guidance) {
+            taskFixture.comments.push({ id: "guidance", author: "user:alice", content: body.guidance });
+          }
+          await route.fulfill({ contentType: "application/json", body: JSON.stringify(taskFixture) });
+          return;
+        }
+        await route.continue();
+      });
 
       await page.reload({ waitUntil: "networkidle" });
       await page.setViewportSize({ width: 390, height: 844 });
@@ -95,7 +145,8 @@ test.describe("authenticated workspace flow", () => {
         .getByRole("navigation", { name: "Primary navigation" })
         .getByRole("button", { name: "Workspaces" })
         .click();
-      const workspace = page.locator("[data-workspaces-main]").getByRole("button", { name: new RegExp(workspaceName) });
+      await page.setViewportSize({ width: 1280, height: 900 });
+      const workspace = page.locator("aside").getByRole("button", { name: workspaceName });
       await expect(workspace).toBeVisible();
       await screenshot("02-workspace-created-and-refreshed");
       await workspace.click();
@@ -106,6 +157,20 @@ test.describe("authenticated workspace flow", () => {
       await page.reload({ waitUntil: "networkidle" });
       await expect(page.getByRole("heading", { name: workspaceName })).toBeVisible();
 
+      await page.getByRole("button", { name: "Workspace settings" }).click();
+      await expect(page.getByRole("heading", { name: workspaceName })).toBeVisible();
+      await page.getByRole("button", { name: "Back to workspace" }).click();
+      await page.getByRole("button", { name: "Workspace settings" }).click();
+      const descriptionCta = page.getByRole("button", { name: "+ Add a short description to this workspace." });
+      await expect(descriptionCta).toBeVisible();
+      await descriptionCta.click();
+      const description = page.locator("[data-workspace-description]");
+      await description.fill("A test workspace description");
+      await page.getByRole("button", { name: "Cancel" }).click();
+      await descriptionCta.click();
+      await description.fill("A test workspace description");
+      await page.getByRole("button", { name: "Save", exact: true }).click();
+      await expect(page.getByText("A test workspace description", { exact: true })).toBeVisible();
       await page.getByRole("button", { name: /Add goal/ }).click();
       const goalDialog = page.locator("dialog[data-goal-dialog]");
       await goalDialog.getByLabel("Title").fill("Ship the workspace flow");
@@ -126,6 +191,7 @@ test.describe("authenticated workspace flow", () => {
           body: JSON.stringify({ role: "user", content: plannerMessage.message, meta: { uid: "planner-test" } }),
         });
       });
+      await page.getByRole("button", { name: "Back to workspace" }).click();
       const plannerSession = page.waitForResponse(
         (response) =>
           response.request().method() === "POST" && response.url().endsWith(`/workspaces/${workspaceName}/history`),
@@ -135,7 +201,7 @@ test.describe("authenticated workspace flow", () => {
       expect(plannerMessage.message).toContain("Finish, review, and verify the workspace features.");
       await expect(page.getByText("Working on a response…", { exact: true })).toBeVisible();
       await page.unroute(plannerMessageRoute);
-      await page.locator("aside").getByRole("button", { name: workspaceName }).click();
+      await page.getByRole("button", { name: "Workspace settings" }).click();
       await page
         .locator("[data-goals-list] article")
         .filter({ hasText: "Ship workspace flow" })
@@ -162,6 +228,10 @@ test.describe("authenticated workspace flow", () => {
       await taskDialog.getByRole("textbox", { name: "Add a comment" }).fill("Looks good.");
       await taskDialog.getByRole("button", { name: "Send" }).click();
       await expect(taskDialog.getByText("Looks good.")).toBeVisible();
+      page.once("dialog", (dialog) => dialog.accept("Add a regression test"));
+      await taskDialog.locator("[data-task-status]").selectOption("in-progress");
+      await expect(taskDialog.getByText("Add a regression test")).toBeVisible();
+      await taskDialog.locator("[data-task-status]").selectOption("done");
       await expect(
         page.locator('[data-task-column="done"]').getByRole("button", { name: "Verify the flow" }),
       ).toBeVisible();
@@ -170,11 +240,22 @@ test.describe("authenticated workspace flow", () => {
       await screenshot("05-goal-task-board");
       await page.setViewportSize({ width: 390, height: 844 });
       await expect(page.getByRole("heading", { name: "Ship workspace flow" })).toBeVisible();
-      await page.locator('[data-task-column="done"]').getByRole("button", { name: "Verify the flow" }).click();
+      await page
+        .locator('[data-task-column="done"], [data-task-column="verified"]')
+        .getByRole("button", { name: /Verify the flow/ })
+        .click();
       await screenshot("06-task-details-modal-mobile");
       await taskDialog.getByRole("button", { name: "Close" }).click();
       await screenshot("07-goal-task-board-mobile");
-      await page.getByRole("button", { name: "← Workspace settings" }).click();
+      await page.getByRole("button", { name: "← Back to workspace" }).click();
+      await page.getByRole("button", { name: "Back to workspace" }).click();
+      await expect(
+        page
+          .locator('[data-overview-main] [data-task-column="done"], [data-overview-main] [data-task-column="verified"]')
+          .getByRole("button", { name: /Verify the flow/ }),
+      ).toBeVisible();
+      await expect(page.locator("[data-recent-sessions]").getByRole("button", { name: /Planner/ })).toBeVisible();
+      await page.getByRole("button", { name: "Workspace settings" }).click();
       const editedGoal = page.locator("[data-goals-list] article").filter({ hasText: "Ship workspace flow" });
       page.once("dialog", (dialog) => dialog.accept());
       await editedGoal.getByRole("button", { name: "Remove" }).click();
@@ -223,6 +304,18 @@ test.describe("authenticated workspace flow", () => {
       await expect(modelPicker).toBeHidden();
       await screenshot("08-session-created");
       expect(session.id).toBeTruthy();
+      await page.getByRole("button", { name: "Workspace settings" }).click();
+      page.once("dialog", (dialog) => dialog.accept());
+      await page.getByRole("button", { name: "Archive workspace" }).click();
+      const archivedRow = page.locator("aside").getByText(workspaceName, { exact: true });
+      await expect(archivedRow).toBeVisible();
+      await page.locator("aside").getByRole("button", { name: "Restore" }).click();
+      await expect(page.locator("aside").getByRole("button", { name: workspaceName })).toBeVisible();
+      await page.getByRole("button", { name: workspaceName }).click();
+      await page.getByRole("button", { name: "Workspace settings" }).click();
+      page.once("dialog", (dialog) => dialog.accept());
+      await page.getByRole("button", { name: "Permanently delete workspace" }).click();
+      await expect(page.locator("aside").getByRole("button", { name: workspaceName })).toHaveCount(0);
     } finally {
       if (workspaceCreated) {
         await page

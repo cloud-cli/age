@@ -11,8 +11,12 @@ function authOptions(options = {}) {
 }
 
 export const Workspaces = {
-  async list() {
-    const res = await fetch(new URL(`/workspaces`, baseUrl), authOptions());
+  async list(includeArchived = false) {
+    const url = new URL(`/workspaces`, baseUrl);
+    if (includeArchived) {
+      url.searchParams.set("includeArchived", "true");
+    }
+    const res = await fetch(url, authOptions());
     if (!res.ok) {
       throw new Error(`Failed to list workspaces: ${res.status} ${res.statusText}`);
     }
@@ -52,6 +56,16 @@ export const Workspaces = {
     }
   },
 
+  async archive(name, archived = true) {
+    const res = await fetch(
+      new URL(`/workspaces/${encodeURIComponent(name)}/${archived ? "archive" : "restore"}`, baseUrl),
+      authOptions({ method: "POST" }),
+    );
+    if (!res.ok) {
+      throw new Error(`Failed to ${archived ? "archive" : "restore"} workspace: ${res.status}`);
+    }
+  },
+
   async settings(name) {
     const res = await fetch(new URL(`/workspaces/${encodeURIComponent(name)}/settings`, baseUrl), authOptions());
     if (!res.ok) {
@@ -83,13 +97,14 @@ export const Workspaces = {
     return res.json();
   },
 
-  async updateTask(name, id, status) {
+  async updateTask(name, id, status, guidance) {
     const res = await fetch(
       new URL(`/workspaces/${encodeURIComponent(name)}/tasks/${encodeURIComponent(id)}`, baseUrl),
-      authOptions({ method: "PATCH", body: JSON.stringify({ status }) }),
+      authOptions({ method: "PATCH", body: JSON.stringify({ status, guidance }) }),
     );
     if (!res.ok) {
-      throw new Error(`Failed to update task: ${res.status}`);
+      const result = await res.json().catch(() => ({}));
+      throw new Error(result.error || `Failed to update task: ${res.status}`);
     }
     return res.json();
   },

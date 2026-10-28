@@ -11,7 +11,7 @@ export const useApp = defineStore("app", function () {
   const messages = useMessages();
   const profile = useProfile();
   const layout = ref({ left: true, center: true, right: true });
-  const pages = new Set(["workspaces", "overview", "goal", "sessions", "tasks", "chat", "integrations"]);
+  const pages = new Set(["workspaces", "overview", "settings", "goal", "sessions", "tasks", "chat", "integrations"]);
   const locationFromUrl = () => {
     const [route, query = ""] = window.location.hash.slice(2).split("?", 2);
     const params = new globalThis.URLSearchParams(query);
@@ -81,6 +81,7 @@ export const useApp = defineStore("app", function () {
   const openSidebar = () => navigate("workspaces");
   const openIntegrations = () => navigate("integrations");
   const openOverview = () => navigate("overview");
+  const openWorkspaceSettings = () => navigate("settings");
   function openGoal(id) {
     if (!id) {
       return;
@@ -126,6 +127,7 @@ export const useApp = defineStore("app", function () {
     openSidebar,
     openIntegrations,
     openOverview,
+    openWorkspaceSettings,
     openGoal,
     openWorkspace,
     goalId,

@@ -1,8 +1,8 @@
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
-import { dataDir } from './env.mjs';
-import { readFile, writeFile } from 'node:fs/promises';
-import { randomUUID } from 'node:crypto';
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { dataDir } from "./env.mjs";
+import { readFile, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 
 export interface Message {
   role: string;
@@ -12,8 +12,8 @@ export interface Message {
 export class History {
   #cache;
 
-  private workspaceName: string;
-  private sessionId: string;
+  private workspaceName!: string;
+  private sessionId!: string;
 
   constructor(workspaceName: string, sessionId: string) {
     Object.assign(this, { workspaceName, sessionId });
@@ -21,7 +21,7 @@ export class History {
   }
 
   get file() {
-    return join(dataDir, this.workspaceName, 'history', `${this.sessionId}.json`);
+    return join(dataDir, this.workspaceName, "history", `${this.sessionId}.json`);
   }
 
   async getModel() {
@@ -40,10 +40,9 @@ export class History {
 
   async getMessagesForModel(): Promise<Array<Message>> {
     const history = await this.read();
-    return history.messages.map((x) => {
-      const { meta = null, ...rest } = x;
-      return rest;
-    });
+    return history.messages.map((message) =>
+      Object.fromEntries(Object.entries(message).filter(([key]) => key !== "meta")),
+    );
   }
 
   exists() {
@@ -51,7 +50,7 @@ export class History {
   }
 
   async read() {
-    const f = await readFile(this.file, 'utf8');
+    const f = await readFile(this.file, "utf8");
     const json = JSON.parse(f);
     this.#cache = json;
 
@@ -66,6 +65,7 @@ export class History {
   }
 
   async write(content) {
+    content.updatedAt = Date.now();
     await writeFile(this.file, JSON.stringify(content));
     this.#cache = null;
   }

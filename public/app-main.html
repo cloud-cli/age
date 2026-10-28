@@ -2,6 +2,8 @@
   <nav aria-label="Workspaces" class="p-2 space-y-1 flex-1 overflow-y-auto">
     <div data-workspace-items></div>
     <p data-workspace-empty class="px-2 py-1 text-xs text-zinc-500">No workspaces yet</p>
+    <h2 data-archived-heading class="mt-4 px-2 py-1 text-xs font-semibold text-zinc-500">Archived</h2>
+    <div data-archived-items></div>
   </nav>
   <script setup>
     import { getElement, onInit } from "@li3/web";
@@ -15,7 +17,7 @@
       const $app = useApp();
 
       async function reload() {
-        const workspaces = await Workspaces.list();
+        const [workspaces, allWorkspaces] = await Promise.all([Workspaces.list(), Workspaces.list(true)]);
         const items = element.querySelector("[data-workspace-items]");
         const empty = element.querySelector("[data-workspace-empty]");
         items.replaceChildren(
@@ -32,6 +34,30 @@
           }),
         );
         empty.hidden = workspaces.length > 0;
+        const archived = allWorkspaces.filter((workspace) => workspace.archived);
+        element.querySelector("[data-archived-heading]").hidden = archived.length === 0;
+        element.querySelector("[data-archived-items]").replaceChildren(
+          ...archived.map((workspace) => {
+            const row = document.createElement("div");
+            row.className = "flex items-center gap-1 px-2 py-1";
+            const label = document.createElement("span");
+            label.className = "min-w-0 flex-1 break-all text-xs text-zinc-500";
+            label.textContent = workspace.name;
+            const restore = document.createElement("button");
+            restore.type = "button";
+            restore.className = "rounded px-2 py-1 text-xs text-emerald-700";
+            restore.textContent = "Restore";
+            restore.addEventListener("click", async () => {
+              try {
+                await $ws.restoreWorkspace(workspace.name);
+              } catch (error) {
+                alert(error.message);
+              }
+            });
+            row.append(label, restore);
+            return row;
+          }),
+        );
       }
 
       onInit(() => {
@@ -240,75 +266,46 @@
         </div>
       </section>
       <main
-        data-workspaces-main
-        hidden
-        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
-      >
-        <div class="mx-auto max-w-3xl">
-          <header class="mb-6 flex items-start justify-between gap-3">
-            <div>
-              <p class="text-sm font-medium text-emerald-700">Your workspaces</p>
-              <h1 class="mt-1 text-3xl font-semibold">Workspaces</h1>
-              <p class="mt-2 text-zinc-600">Keep your plans, goals, tasks, and conversations together.</p>
-            </div>
-            <button class="pt-1 text-sm text-zinc-500" on-click="signOut()">Sign out</button>
-          </header>
-          <button
-            class="mb-5 w-full rounded-xl bg-emerald-700 px-4 py-4 text-left font-semibold text-white shadow-sm"
-            on-click="onCreateWorkspace()"
-          >
-            ＋ Create a workspace
-          </button>
-          <h2 class="mb-2 text-sm font-semibold text-zinc-600">YOUR WORKSPACES</h2>
-          <div class="space-y-2">
-            <template for="workspace of $ws.workspaceList"
-              ><button
-                class="w-full rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-sm hover:border-emerald-500"
-                on-click="selectWorkspace(workspace.name)"
-              >
-                <span class="block break-all font-semibold" bind-inner-text="workspace.name"></span
-                ><span class="mt-1 block text-sm text-zinc-500">Open workspace settings →</span>
-              </button></template
-            >
-            <p
-              class="rounded-xl border border-dashed border-zinc-300 bg-white p-5 text-sm text-zinc-500"
-              class-hidden="$ws.workspaceList.length > 0"
-            >
-              Your first workspace will appear here.
-            </p>
-          </div>
-        </div>
-      </main>
-      <main
         data-overview-main
         hidden
         class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
       >
-        <div class="mx-auto max-w-3xl space-y-5">
-          <header>
-            <button class="mb-4 text-sm font-medium text-emerald-700" on-click="openWorkspaces()">
-              ← All workspaces
-            </button>
-            <p class="text-sm font-medium text-emerald-700">WORKSPACE SETTINGS</p>
-            <h1
-              class="mt-1 break-all text-3xl font-semibold"
-              bind-inner-text="$ws.workspace || 'Choose a workspace'"
-            ></h1>
-          </header>
-          <section class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-            <h2 class="text-lg font-semibold">Your next step</h2>
-            <template if="!$msg.modelList.length"
-              ><p class="mt-2 text-zinc-600">
-                First connect an AI provider so the Planner can help shape your workspace brief and suggest next steps.
-              </p>
+        <div
+          data-empty-workspace
+          class="m-auto max-w-md rounded-xl border border-dashed border-zinc-300 bg-white p-8 text-center"
+          hidden
+        >
+          <h1 class="text-xl font-semibold">No workspace selected</h1>
+          <p class="mt-2 text-sm text-zinc-600">Choose a workspace from the sidebar or create one to get started.</p>
+          <button
+            class="mt-4 rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white"
+            on-click="onCreateWorkspace()"
+          >
+            ＋ Create workspace
+          </button>
+        </div>
+        <div data-overview-content>
+          <div class="mx-auto max-w-3xl space-y-5">
+            <header class="flex items-start justify-between">
+              <div>
+                <p class="text-sm font-medium text-emerald-700">WORKSPACE HOME</p>
+                <h1
+                  class="mt-1 break-all text-3xl font-semibold"
+                  bind-inner-text="$ws.workspace || 'Choose a workspace'"
+                ></h1>
+              </div>
               <button
-                class="mt-4 w-full rounded-xl bg-emerald-700 px-4 py-3 text-left font-semibold text-white"
-                on-click="openIntegrations()"
+                aria-label="Workspace settings"
+                title="Workspace settings"
+                class="rounded border px-3 py-2"
+                on-click="openWorkspaceSettings()"
               >
-                Set up an AI provider →
-              </button></template
-            ><template if="$msg.modelList.length"
-              ><p class="mt-2 text-zinc-600">
+                ⚙
+              </button>
+            </header>
+            <section class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+              <h2 class="text-lg font-semibold">Your next step</h2>
+              <p class="mt-2 text-zinc-600">
                 Tell the Planner what you want to build or accomplish. It will help shape the workspace brief and
                 suggest next steps.
               </p>
@@ -318,48 +315,122 @@
                 bind-disabled="!$ws.workspace"
               >
                 Start planning with AI →
-              </button></template
-            >
-          </section>
-          <section class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-            <h2 class="font-semibold">Workspace brief</h2>
-            <label class="mt-3 block text-sm font-medium"
-              >Description<textarea
-                data-workspace-description
-                rows="4"
-                class="mt-1 w-full rounded-lg border border-zinc-300 p-3"
-                placeholder="Describe this workspace"
-              ></textarea>
-            </label>
-            <button
-              class="mt-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white"
-              on-click="saveWorkspaceDescription()"
-            >
-              Save description
-            </button>
-            <section class="mt-6">
-              <header class="mb-3 flex items-center justify-between">
-                <h3 class="font-semibold">Goals</h3>
-                <button class="rounded-lg border border-zinc-300 px-3 py-2 text-sm" on-click="editGoal()">
-                  ＋ Add goal
-                </button>
-              </header>
-              <div data-goals-list class="space-y-2"></div>
-              <p data-goals-empty class="text-sm text-zinc-500">No goals yet. Add a goal to get started.</p>
+              </button>
             </section>
-          </section>
-          <div class="grid gap-3 sm:grid-cols-2">
-            <button
-              class="rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-sm"
-              on-click="openSessions()"
-            >
-              <span class="block font-semibold">Sessions</span
-              ><span class="mt-1 block text-sm text-zinc-500">Continue or start a conversation</span></button
-            ><button class="rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-sm" on-click="openTasks()">
-              <span class="block font-semibold">Tasks</span
-              ><span class="mt-1 block text-sm text-zinc-500">See work delegated by the agent</span>
-            </button>
+            <section class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+              <h2 class="font-semibold">Recent sessions</h2>
+              <div data-recent-sessions class="mt-3 space-y-2"></div>
+              <p data-recent-empty class="mt-3 text-sm text-zinc-500">No recent sessions yet.</p>
+            </section>
+            <section>
+              <h2 class="mb-3 text-lg font-semibold">Tasks</h2>
+              <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <section data-task-column="todo" class="rounded-xl bg-zinc-100 p-4">
+                  <h3 class="mb-3 font-semibold">To do</h3>
+                  <div class="space-y-2"></div>
+                </section>
+                <section data-task-column="in-progress" class="rounded-xl bg-blue-50 p-4">
+                  <h3 class="mb-3 font-semibold">In progress</h3>
+                  <div class="space-y-2"></div>
+                </section>
+                <section data-task-column="done" class="rounded-xl bg-emerald-50 p-4">
+                  <h3 class="mb-3 font-semibold">Done</h3>
+                  <div class="space-y-2"></div>
+                </section>
+                <section data-task-column="verified" class="rounded-xl bg-violet-50 p-4">
+                  <h3 class="mb-3 font-semibold">Verified</h3>
+                  <div class="space-y-2"></div>
+                </section>
+              </div>
+            </section>
           </div>
+        </div>
+      </main>
+      <main
+        data-settings-main
+        hidden
+        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
+      >
+        <div class="mx-auto max-w-3xl space-y-5">
+          <header class="flex items-start justify-between">
+            <div>
+              <button class="mb-4 text-sm font-medium text-emerald-700" on-click="openOverview()">
+                ← Back to workspace
+              </button>
+              <p class="text-sm font-medium text-emerald-700">WORKSPACE SETTINGS</p>
+              <h1 class="mt-1 break-all text-3xl font-semibold" bind-inner-text="$ws.workspace"></h1>
+            </div>
+            <button
+              aria-label="Workspace home"
+              title="Workspace home"
+              class="rounded border px-3 py-2"
+              on-click="openOverview()"
+            >
+              ⌂
+            </button>
+          </header>
+          <section data-workspace-settings class="space-y-5">
+            <section class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+              <h2 class="font-semibold">Workspace brief</h2>
+              <button
+                type="button"
+                data-description-text
+                class="mt-3 block w-full whitespace-pre-wrap text-left text-zinc-600"
+                on-click="editWorkspaceDescription()"
+              ></button>
+              <button
+                data-description-empty
+                class="mt-3 w-full rounded-lg bg-zinc-50 p-8 text-center text-zinc-500"
+                on-click="editWorkspaceDescription()"
+              >
+                + Add a short description to this workspace.
+              </button>
+              <div data-description-editor hidden class="mt-3">
+                <label class="block text-sm font-medium"
+                  >Description<textarea
+                    data-workspace-description
+                    rows="4"
+                    class="mt-1 w-full rounded-lg border border-zinc-300 p-3"
+                  ></textarea>
+                </label>
+                <div class="mt-2 flex gap-2">
+                  <button
+                    class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white"
+                    on-click="saveWorkspaceDescription()"
+                  >
+                    Save</button
+                  ><button class="rounded-lg border px-4 py-2 text-sm" on-click="cancelWorkspaceDescription()">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+              <button
+                data-description-edit
+                class="mt-3 rounded-lg border px-3 py-2 text-sm"
+                on-click="editWorkspaceDescription()"
+              >
+                Edit description
+              </button>
+              <section class="mt-6">
+                <header class="mb-3 flex items-center justify-between">
+                  <h3 class="font-semibold">Goals</h3>
+                  <button class="rounded-lg border border-zinc-300 px-3 py-2 text-sm" on-click="editGoal()">
+                    ＋ Add goal
+                  </button>
+                </header>
+                <div data-goals-list class="space-y-2"></div>
+                <p data-goals-empty class="text-sm text-zinc-500">No goals yet. Add a goal to get started.</p>
+              </section>
+            </section>
+            <div class="flex flex-wrap gap-2">
+              <button class="rounded-lg border px-3 py-2 text-sm" on-click="archiveWorkspace()">
+                Archive workspace
+              </button>
+              <button class="rounded-lg border px-3 py-2 text-sm text-red-700" on-click="deleteWorkspace()">
+                Permanently delete workspace
+              </button>
+            </div>
+          </section>
         </div>
       </main>
       <main
@@ -369,7 +440,7 @@
       >
         <div class="mx-auto max-w-6xl">
           <button class="mb-4 text-sm font-medium text-emerald-700" on-click="openOverview()">
-            ← Workspace settings
+            ← Back to workspace
           </button>
           <header class="mb-6 flex items-start justify-between">
             <div>
@@ -384,9 +455,9 @@
               Edit goal
             </button>
           </header>
-          <div class="grid gap-4 md:grid-cols-3">
-            <section data-task-column="new" class="rounded-xl bg-zinc-100 p-4">
-              <h2 class="mb-3 font-semibold">New</h2>
+          <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <section data-task-column="todo" class="rounded-xl bg-zinc-100 p-4">
+              <h2 class="mb-3 font-semibold">To do</h2>
               <div class="space-y-2"></div>
               <button class="mt-3 text-sm font-medium text-emerald-700" on-click="createGoalTask()">＋ Add task</button>
             </section>
@@ -396,6 +467,10 @@
             </section>
             <section data-task-column="done" class="rounded-xl bg-emerald-50 p-4">
               <h2 class="mb-3 font-semibold">Done</h2>
+              <div class="space-y-2"></div>
+            </section>
+            <section data-task-column="verified" class="rounded-xl bg-violet-50 p-4">
+              <h2 class="mb-3 font-semibold">Verified</h2>
               <div class="space-y-2"></div>
             </section>
           </div>
@@ -431,11 +506,21 @@
         <div class="space-y-4 p-6">
           <h2 data-task-title class="text-xl font-semibold"></h2>
           <p data-task-description class="text-zinc-600"></p>
+          <p data-task-execution class="text-sm text-violet-800" role="status"></p>
+          <button
+            data-retry-review
+            class="rounded-lg border border-violet-300 px-3 py-2 text-sm text-violet-800"
+            hidden
+            on-click="retryTaskReview()"
+          >
+            Retry review
+          </button>
           <label class="block text-sm font-medium"
             >Status<select data-task-status class="mt-1 w-full rounded-lg border border-zinc-300 p-3">
-              <option value="new">New</option>
+              <option value="todo">To do</option>
               <option value="in-progress">In progress</option>
               <option value="done">Done</option>
+              <option value="verified">Verified</option>
             </select></label
           >
           <section>
@@ -463,7 +548,7 @@
       >
         <div class="mx-auto max-w-3xl">
           <button class="mb-4 text-sm font-medium text-emerald-700" on-click="openOverview()">
-            ← Workspace settings
+            ← Back to workspace
           </button>
           <header class="mb-5 flex items-center justify-between">
             <div>
@@ -493,16 +578,8 @@
             </button>
           </div>
           <div class="space-y-2">
-            <template for="s of $s.sessionList"
-              ><button
-                class="w-full rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-sm"
-                on-click="openSession(s.id)"
-              >
-                <span class="font-semibold" bind-inner-text="s.title || 'Untitled conversation'"></span
-                ><span class="mt-1 block text-sm text-zinc-500">Open conversation →</span>
-              </button></template
-            >
-            <p class="p-4 text-sm text-zinc-500" class-hidden="$s.sessionList.length > 0">
+            <div data-session-list class="space-y-2"></div>
+            <p data-session-empty class="p-4 text-sm text-zinc-500">
               No conversations yet. Start planning or create a new chat.
             </p>
             <button class="font-medium text-emerald-700" class-hidden="$ws.workspace" on-click="openWorkspaces()">
@@ -518,7 +595,7 @@
       >
         <div class="mx-auto max-w-3xl">
           <button class="mb-4 text-sm font-medium text-emerald-700" on-click="openOverview()">
-            ← Workspace settings
+            ← Back to workspace
           </button>
           <p class="text-sm font-medium text-emerald-700">WORKSPACE</p>
           <h1 class="text-3xl font-semibold">Tasks</h1>
@@ -605,7 +682,7 @@
     import { signIn, signOut } from "@app/store/profile.mjs";
     import { useApp } from "@app/store/app.mjs";
     import { useMessages } from "@app/store/messages.mjs";
-    import { Connectors, Teams, Workspaces } from "@app/api.mjs";
+    import { Connectors, Sessions, Teams, Workspaces, events } from "@app/api.mjs";
     export default function () {
       const element = getElement();
       const $ws = useWorkspaces(),
@@ -654,7 +731,13 @@
         }
       }
       function renderWorkspaceSettings() {
-        element.querySelector("[data-workspace-description]").value = $ws.settings.description || "";
+        const description = $ws.settings.description || "";
+        element.querySelector("[data-workspace-description]").value = description;
+        element.querySelector("[data-description-text]").textContent = description;
+        element.querySelector("[data-description-text]").hidden = !description;
+        element.querySelector("[data-description-empty]").hidden = !!description;
+        element.querySelector("[data-description-editor]").hidden = true;
+        element.querySelector("[data-description-edit]").hidden = !description;
         const list = element.querySelector("[data-goals-list]");
         const goals = $ws.settings.goals || [];
         list.replaceChildren(
@@ -689,6 +772,69 @@
         );
         element.querySelector("[data-goals-empty]").hidden = goals.length > 0;
       }
+      async function renderWorkspaceHome() {
+        if (!$ws.workspace) return;
+        const sessions = [...(await Sessions.list($ws.workspace))].sort(
+          (a, b) => Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0),
+        );
+        const recent = element.querySelector("[data-recent-sessions]");
+        recent.replaceChildren(
+          ...sessions.map((session) => {
+            const button = document.createElement("button");
+            button.className = "block w-full rounded-lg border bg-white p-3 text-left";
+            button.textContent = `${session.title || "Untitled conversation"} · ${new Date(Number(session.updatedAt || session.createdAt || 0)).toLocaleString()}`;
+            button.addEventListener("click", () => openSession(session.id));
+            return button;
+          }),
+        );
+        element.querySelector("[data-recent-empty]").hidden = sessions.length > 0;
+        const tasks = await Workspaces.tasks($ws.workspace);
+        for (const status of ["todo", "in-progress", "done", "verified"]) {
+          const target = element.querySelector(`[data-overview-main] [data-task-column="${status}"] > div`);
+          target.replaceChildren(
+            ...tasks
+              .filter((task) => (task.status === "new" ? "todo" : task.status || "todo") === status)
+              .map((task) => {
+                const button = document.createElement("button");
+                button.className = "w-full rounded-lg border bg-white p-3 text-left";
+                button.textContent = `${task.title || task.task || "Task"}${task.execution?.phase ? ` · ${task.execution.phase}` : ""}`;
+                button.draggable = true;
+                button.dataset.taskId = task.id;
+                button.addEventListener("dragstart", (event) => {
+                  event.dataTransfer.setData("text/plain", task.id);
+                  event.dataTransfer.effectAllowed = "move";
+                });
+                button.addEventListener("click", () => showTask(task));
+                return button;
+              }),
+          );
+          const column = element.querySelector(`[data-overview-main] [data-task-column="${status}"]`);
+          column.ondragover = (event) => event.preventDefault();
+          column.ondrop = (event) => {
+            event.preventDefault();
+            const id = event.dataTransfer.getData("text/plain");
+            const task = tasks.find((item) => item.id === id);
+            if (task && task.status !== status) {
+              moveTask(task, status).catch((error) => alert(error.message));
+            }
+          };
+        }
+      }
+      async function renderSessionList() {
+        if (!$ws.workspace) return;
+        const sessions = await Sessions.list($ws.workspace);
+        const list = element.querySelector("[data-session-list]");
+        list.replaceChildren(
+          ...sessions.map((session) => {
+            const button = document.createElement("button");
+            button.className = "w-full rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-sm";
+            button.textContent = `${session.title || "Untitled conversation"} · Open conversation →`;
+            button.addEventListener("click", () => openSession(session.id));
+            return button;
+          }),
+        );
+        element.querySelector("[data-session-empty]").hidden = sessions.length > 0;
+      }
       async function renderGoal() {
         const goal = ($ws.settings.goals || []).find((item) => item.id === activeGoalId);
         if (!goal) {
@@ -698,11 +844,14 @@
         element.querySelector("[data-goal-title]").textContent = goal.title;
         element.querySelector("[data-goal-description]").textContent = goal.description;
         const tasks = await Workspaces.tasks($ws.workspace, goal.id);
-        for (const status of ["new", "in-progress", "done"]) {
+        for (const status of ["todo", "in-progress", "done", "verified"]) {
           const target = element.querySelector(`[data-task-column="${status}"] > div`);
           target.replaceChildren(
             ...tasks
-              .filter((task) => (task.status || "new") === status)
+              .filter(
+                (task) =>
+                  ((task.status === "new" || task.status === "queued" ? "todo" : task.status) || "todo") === status,
+              )
               .map((task) => {
                 const button = document.createElement("button");
                 button.type = "button";
@@ -714,10 +863,48 @@
           );
         }
       }
+      function editWorkspaceDescription() {
+        const editor = element.querySelector("[data-description-editor]");
+        editor.hidden = false;
+        element.querySelector("[data-description-edit]").hidden = true;
+        element.querySelector("[data-workspace-description]").focus();
+      }
+      function cancelWorkspaceDescription() {
+        const description = $ws.settings.description || "";
+        element.querySelector("[data-workspace-description]").value = description;
+        element.querySelector("[data-description-text]").textContent = description;
+        element.querySelector("[data-description-text]").hidden = !description;
+        element.querySelector("[data-description-empty]").hidden = !!description;
+        element.querySelector("[data-description-editor]").hidden = true;
+        element.querySelector("[data-description-edit]").hidden = !description;
+      }
+      async function archiveWorkspace() {
+        if (!confirm(`Archive ${$ws.workspace}?`)) return;
+        try {
+          await Workspaces.archive($ws.workspace);
+          $ws.setWorkspace("");
+          await $ws.reloadWorkspaceList();
+          window.dispatchEvent(new Event("age:workspaces-changed"));
+          $app.openSidebar();
+        } catch (error) {
+          alert(error.message);
+        }
+      }
+      async function deleteWorkspace() {
+        const name = $ws.workspace;
+        if (!confirm(`Permanently delete ${name}? This cannot be undone.`)) return;
+        try {
+          await $ws.removeWorkspace();
+          $app.openSidebar();
+        } catch (error) {
+          alert(error.message);
+        }
+      }
       async function saveWorkspaceDescription() {
         try {
           await $ws.saveSettings({ description: element.querySelector("[data-workspace-description]").value });
           renderWorkspaceSettings();
+          cancelWorkspaceDescription();
         } catch (error) {
           alert(error.message);
         }
@@ -752,6 +939,7 @@
           if (error.message.includes("Goals changed elsewhere")) {
             await $ws.reloadWorkspaceData();
             renderWorkspaceSettings();
+            await renderWorkspaceHome();
           }
           alert(error.message);
         }
@@ -785,7 +973,9 @@
           ...(task.comments || []).map((comment) => {
             const row = document.createElement("p");
             row.className = "rounded bg-zinc-100 p-2";
-            row.textContent = `${comment.author === "agent" ? "Agent" : "Team member"}: ${comment.content}`;
+            const author =
+              comment.author === "agent" ? "Agent" : comment.author === "overseer" ? "Overseer" : "Team member";
+            row.textContent = `${author}: ${comment.content}`;
             return row;
           }),
         );
@@ -795,14 +985,58 @@
         element.querySelector("[data-task-title]").textContent = task.title || task.task;
         element.querySelector("[data-task-description]").textContent =
           task.description || task.context || "No description";
-        element.querySelector("[data-task-status]").value = task.status || "new";
+        const execution = task.execution || {};
+        statusSelect.disabled = ["working", "reviewing"].includes(execution.phase);
+        element.querySelector("[data-task-execution]").textContent = execution.percent
+          ? `Overseer review: ${execution.percent}% · ${execution.summary || execution.phase || "Reviewing"}`
+          : execution.phase
+            ? `Agent activity: ${execution.phase}`
+            : "";
+        element.querySelector("[data-retry-review]").hidden = task.status !== "done" || execution.phase !== "error";
+        const statusSelect = element.querySelector("[data-task-status]");
+        statusSelect.value = ["new", "queued"].includes(task.status) ? "todo" : task.status || "todo";
+        statusSelect.querySelector('option[value="verified"]').disabled = !["done", "verified"].includes(task.status);
         renderComments(task);
         element.querySelector("[data-task-dialog]").showModal();
       }
+      async function moveTask(task, status) {
+        let guidance;
+        if (task.status === "done" && status === "in-progress") {
+          guidance = prompt("What is missing from this task? Add guidance before reopening it.");
+          if (!guidance?.trim()) {
+            return;
+          }
+        }
+        const updated = await Workspaces.updateTask($ws.workspace, task.id, status, guidance);
+        if (activeTask?.id === task.id) {
+          activeTask = updated;
+          element.querySelector("[data-task-status]").value = updated.status;
+          renderComments(updated);
+        }
+        await renderGoal();
+        await renderWorkspaceHome();
+      }
       async function changeTaskStatus(event) {
         if (!activeTask) return;
-        activeTask = await Workspaces.updateTask($ws.workspace, activeTask.id, event.currentTarget.value);
-        await renderGoal();
+        const selector = event.currentTarget;
+        const previousStatus = activeTask.status || "todo";
+        try {
+          const updated = await moveTask(activeTask, selector.value);
+          if (!updated) selector.value = previousStatus;
+        } catch (error) {
+          selector.value = previousStatus;
+          alert(error.message);
+        }
+      }
+      async function retryTaskReview() {
+        if (!activeTask) return;
+        try {
+          activeTask = await Workspaces.updateTask($ws.workspace, activeTask.id, "done");
+          showTask(activeTask);
+          await renderWorkspaceHome();
+        } catch (error) {
+          alert(error.message);
+        }
       }
       async function addTaskComment(event) {
         event.preventDefault();
@@ -824,8 +1058,8 @@
         const visibility = [
           [sidebar, $app.page !== "integrations"],
           [element.querySelector("[data-connectors-page]"), $app.page === "integrations"],
-          [element.querySelector("[data-workspaces-main]"), $app.page === "workspaces"],
-          [element.querySelector("[data-overview-main]"), $app.page === "overview"],
+          [element.querySelector("[data-overview-main]"), $app.page === "overview" || $app.page === "workspaces"],
+          [element.querySelector("[data-settings-main]"), $app.page === "settings"],
           [element.querySelector("[data-goal-main]"), $app.page === "goal"],
           [element.querySelector("[data-sessions-main]"), $app.page === "sessions"],
           [element.querySelector("[data-tasks-main]"), $app.page === "tasks"],
@@ -835,6 +1069,8 @@
           node.hidden = !visible;
           node.style.display = visible ? "" : "none";
         }
+        element.querySelector("[data-empty-workspace]").hidden = !!$ws.workspace;
+        element.querySelector("[data-overview-content]").hidden = !$ws.workspace;
       }
       effect(
         () => `${$app.page}:${$app.isCompact}:${$app.goalId}:${$ws.workspace}`,
@@ -849,6 +1085,8 @@
             activeGoalId = $app.goalId;
             await renderGoal();
           }
+          if (appReady && ($app.page === "overview" || $app.page === "workspaces")) await renderWorkspaceHome();
+          if (appReady && $app.page === "sessions") await renderSessionList();
         },
       );
       onInit(async () => {
@@ -858,13 +1096,12 @@
           if ($ws.workspace) {
             await $ws.reloadWorkspaceData();
           }
-          if (!$ws.workspace && $app.page === "overview") {
-            $app.openSidebar();
-          }
+          if (!$ws.workspace) $app.openSidebar();
         }
         syncPages();
         activeGoalId = $app.goalId;
         renderWorkspaceSettings();
+        await renderWorkspaceHome();
         if ($app.page === "goal") {
           await renderGoal();
         }
@@ -873,6 +1110,17 @@
         if ($p.profile) refreshTeam().catch(console.error);
         displayedWorkspace = $ws.workspace;
         appReady = true;
+        events.addEventListener("message", () => {
+          if ($app.page === "overview" && $ws.workspace) renderWorkspaceHome().catch(console.error);
+        });
+        events.addEventListener("agent-status", () => {
+          if ($app.page === "overview" && $ws.workspace) renderWorkspaceHome().catch(console.error);
+        });
+        events.addEventListener("task-status", (event) => {
+          if ($app.page === "overview" && event.detail?.workspace === $ws.workspace) {
+            renderWorkspaceHome().catch(console.error);
+          }
+        });
       });
       async function onCreateWorkspace() {
         const name = prompt("Workspace name");
@@ -1149,14 +1397,20 @@
         editCurrentGoal,
         createGoalTask,
         closeTaskDialog,
+        retryTaskReview,
         createSession,
         createPlannerSession,
+        editWorkspaceDescription,
+        cancelWorkspaceDescription,
+        archiveWorkspace,
+        deleteWorkspace,
         openSession,
         onDeleteSession,
         openConnectors,
         openWorkspaces,
         selectWorkspace,
         openOverview,
+        openWorkspaceSettings: () => $app.openWorkspaceSettings(),
         openSessions,
         openTasks,
         openIntegrations,

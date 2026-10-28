@@ -24,13 +24,20 @@ agent workspace with a messaging-first interface.
 
 - OIDC Authorization Code + PKCE sign-in, logout, and same-origin sessions are available.
 - The sidebar contains the workspace list, sign-out action, and workspace creation button.
-- Workspace settings provide an editable brief and goals; each goal has a task board with comments and status changes.
-- Agents may append task comments and set a task's board status; other mutating tools remain behind the explicit policy gate.
+- Workspace settings provide an editable brief and goals; workspace home shows recent sessions and the four-state task board.
+- Workspace archive state and descriptions are stored in a `workspaces` table in `DATABASE_URL`; workspace files,
+  histories, goals, and task records remain under `DATA_PATH`.
+- The durable task queue claims tasks sequentially per workspace, records worker/reviewer sessions and retry state in
+  `task_queue`, and recovers expired leases. A separate reviewer call verifies completion; incomplete work returns to
+  `in-progress` with reviewer guidance and is sent back to a worker. Automatic cycles are capped at ten by default.
+- Autonomous task workers can modify workspace files and use shell/web/task tools. Their model tool allowlist excludes
+  dedicated deploy, git, database, and connector tools; ordinary chat remains behind the existing mutation approval policy.
+  `ShellExec` runs with the server process's OS permissions and is not a security sandbox, so only enable autonomous task
+  execution in an environment where that level of command access is acceptable.
 - Messaging supports separate drafts per workspace/session, browser dictation, and optional browser TTS.
 - Core agent tools include bounded numbered reads, glob, grep, public web fetch/search, and a policy-gated shell.
-- Delegation currently persists **queued task records only**. Running specialist agents, result aggregation, durable
-  multi-process locks, and planner-maintained workspace summaries are still required to reach the planner-led execution
-  goal.
+- Task statuses are `todo`, `in-progress`, `done`, and `verified`. Marking a task done schedules independent review;
+  humans can verify it directly. Reopening a done task requires a guidance comment and schedules another worker run.
 
 ## Workspace layout
 
@@ -45,17 +52,19 @@ Each workspace is stored below `DATA_PATH`:
 
 ## Required runtime configuration
 
-| Variable             | Purpose                                                      |
-| -------------------- | ------------------------------------------------------------ |
-| `OIDC_ISSUER`        | OpenID Connect issuer, normally `https://auth.api.apphor.de` |
-| `OIDC_CLIENT_ID`     | Confidential OIDC client ID                                  |
-| `OIDC_CLIENT_SECRET` | Confidential OIDC client secret                              |
-| `OIDC_REDIRECT_URI`  | Registered callback URL, ending in `/auth/callback`          |
-| `APP_ORIGIN`         | Canonical public HTTPS origin, used for CSRF origin checks   |
-| `DATA_PATH`          | Persistent workspace storage root                            |
-| `PORT`               | HTTP listener port                                           |
+| Variable             | Purpose                                                       |
+| -------------------- | ------------------------------------------------------------- |
+| `OIDC_ISSUER`        | OpenID Connect issuer, normally `https://auth.api.apphor.de`  |
+| `OIDC_CLIENT_ID`     | Confidential OIDC client ID                                   |
+| `OIDC_CLIENT_SECRET` | Confidential OIDC client secret                               |
+| `OIDC_REDIRECT_URI`  | Registered callback URL, ending in `/auth/callback`           |
+| `APP_ORIGIN`         | Canonical public HTTPS origin, used for CSRF origin checks    |
+| `DATA_PATH`          | Persistent workspace storage root                             |
+| `DATABASE_URL`       | Persistent SQL database for workspace registry and task queue |
+| `PORT`               | HTTP listener port                                            |
 
-Optional runtime configuration includes `MODEL`, `APP_MESSAGE_HUB_URL`, `WEB_SEARCH_URL`, and
+Optional runtime configuration includes `MODEL`, `TASK_REVIEW_MODEL`, `TASK_QUEUE_ENABLED`, `TASK_QUEUE_POLL_MS`, `TASK_QUEUE_LEASE_MS`, `TASK_QUEUE_MAX_ROUNDS`,
+`APP_MESSAGE_HUB_URL`, `WEB_SEARCH_URL`, and
 `WEB_SEARCH_API_KEY`. Mutating agent tools remain disabled unless `ALLOW_MUTATING_TOOLS=true` is deliberately set.
 The Integrations page supports team-shared Gemini/OpenAI API keys, multiple named Ollama servers, and ChatGPT Plus/Pro
 device authorization using the OpenCode-style device-code flow. ChatGPT credentials and provider keys are encrypted at
@@ -68,6 +77,7 @@ The PWA supports pull-down-to-refresh and revalidates app assets on reload.
 - `GET /api/me` — current authenticated user
 - `POST /connectors/chatgpt/login` and `GET /connectors/chatgpt/login/:id` — ChatGPT device authorization
 - `GET|POST|DELETE /workspaces` — workspace list and lifecycle
+- `POST /workspaces/:name/archive`, `POST /workspaces/:name/restore` — reversible workspace archiving
 - `GET|POST|DELETE /workspaces/:name/history` — conversations
 - `GET|PUT /workspaces/:name/settings` — durable description and goal settings
 - `GET|POST /workspaces/:name/tasks`, `GET /workspaces/:name/tasks/:id`, and `PATCH /workspaces/:name/tasks/:id` — task list/detail and status

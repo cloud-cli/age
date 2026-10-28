@@ -5,15 +5,17 @@ import { effect, hook, ref } from "@li3/web";
 export const useWorkspaces = defineStore("workspaces", function () {
   const [workspace, setWorkspace] = hook("");
   const workspaceList = ref([]);
+  const archivedWorkspaceList = ref([]);
   const tasks = ref([]);
   const settings = ref({ description: "", goals: [] });
   let workspaceListRequest = 0;
 
   async function reloadWorkspaceList() {
     const request = ++workspaceListRequest;
-    const list = await Workspaces.list();
+    const [list, archivedList] = await Promise.all([Workspaces.list(), Workspaces.list(true)]);
     if (request === workspaceListRequest) {
       workspaceList.value = Array.isArray(list) ? list : [];
+      archivedWorkspaceList.value = (Array.isArray(archivedList) ? archivedList : []).filter((item) => item.archived);
     }
   }
 
@@ -25,6 +27,21 @@ export const useWorkspaces = defineStore("workspaces", function () {
     const name = workspace.value;
     setWorkspace("");
     await Workspaces.delete(name);
+    await reloadWorkspaceList();
+    window.dispatchEvent(new window.Event("age:workspaces-changed"));
+  }
+
+  async function archiveWorkspace(name = workspace.value) {
+    await Workspaces.archive(name, true);
+    if (workspace.value === name) {
+      setWorkspace("");
+    }
+    await reloadWorkspaceList();
+    window.dispatchEvent(new window.Event("age:workspaces-changed"));
+  }
+
+  async function restoreWorkspace(name) {
+    await Workspaces.archive(name, false);
     await reloadWorkspaceList();
     window.dispatchEvent(new window.Event("age:workspaces-changed"));
   }
@@ -67,12 +84,15 @@ export const useWorkspaces = defineStore("workspaces", function () {
   return {
     workspace,
     workspaceList,
+    archivedWorkspaceList,
     tasks,
     settings,
     saveSettings,
     reloadWorkspaceList,
     reloadWorkspaceData,
     removeWorkspace,
+    archiveWorkspace,
+    restoreWorkspace,
     createWorkspace,
     setWorkspace,
   };

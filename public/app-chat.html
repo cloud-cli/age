@@ -465,7 +465,7 @@
           `Review the current state of the ${workspace} workspace and help me plan the next steps.`,
           `Workspace brief: ${$ws.settings.description?.trim() || "No brief provided."}`,
           `Goals:\n${goals.length ? goals.join("\n") : "No goals have been added yet."}`,
-          "Summarize what is currently known, propose a short prioritized plan, and identify any blockers or questions. Do not claim work has already been done.",
+          "Break concrete goal work into independently completable tasks. Use DelegateTask for each actionable task, include testable acceptance criteria in its context, and link it to a goalId when applicable. Avoid duplicate tasks and prioritize the work. Then summarize the task plan and blockers; do not claim work has already been done.",
         ].join("\n\n");
         $msg.setNewMessage(prompt);
         await $msg.sendMessage();

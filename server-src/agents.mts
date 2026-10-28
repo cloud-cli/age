@@ -49,10 +49,32 @@ export class Context {
   }
 }
 
-export async function getModelResponse(history: History, subject?: string) {
+export async function getModelResponse(history: History, subject?: string, taskMode = false, plannerMode = false) {
+  const taskAllowed = new Set([
+    "ReadFile",
+    "WriteFile",
+    "ListFiles",
+    "DeleteFile",
+    "CreateFolder",
+    "DeleteFolder",
+    "RenameFile",
+    "RenameFolder",
+    "GetFileStats",
+    "Glob",
+    "Grep",
+    "WebFetch",
+    "WebSearch",
+    "ShellExec",
+    "CommentOnTask",
+    "UpdateTaskStatus",
+  ]);
   const requestBody = {
     model: (await history.getModel()) || defaultModel,
-    tools,
+    tools: taskMode
+      ? tools.filter((tool) => taskAllowed.has(tool.function.name))
+      : plannerMode
+        ? tools.filter((tool) => readOnlyToolNames.has(tool.function.name) || tool.function.name === "DelegateTask")
+        : tools,
     stream: false,
     think: true,
     messages: [
@@ -67,6 +89,8 @@ export async function getModelResponse(history: History, subject?: string) {
   const m: any = await callModel(requestBody, subject);
   return m.message;
 }
+
+const readOnlyToolNames = new Set(["ReadFile", "ListFiles", "GetFileStats", "Glob", "Grep", "WebFetch", "WebSearch"]);
 
 function convertValue(value, type) {
   switch (type) {
@@ -132,21 +156,41 @@ export async function executeFunction(functionName: string, modelArgs: any[], co
   // The task board request explicitly authorizes only these bounded, non-destructive agent mutations.
   const taskBoardActions = ["CommentOnTask", "UpdateTaskStatus"];
   const safeTool = readOnly.includes(functionName) || taskBoardActions.includes(functionName);
-  if (!safeTool && process.env.ALLOW_MUTATING_TOOLS !== "true") {
+  const autonomousTaskTools = [
+    "WriteFile",
+    "DeleteFile",
+    "CreateFolder",
+    "DeleteFolder",
+    "RenameFile",
+    "RenameFolder",
+    "ShellExec",
+  ];
+  const taskAllowed = Boolean(
+    (context as any).taskId && [...readOnly, ...taskBoardActions, ...autonomousTaskTools].includes(functionName),
+  );
+  const plannerAllowed = Boolean((context as any).plannerMode && functionName === "DelegateTask");
+  if ((context as any).taskId && !taskAllowed) {
+    return { status: "approval_required", tool: functionName };
+  }
+  if ((context as any).plannerMode && !plannerAllowed && !readOnlyToolNames.has(functionName)) {
+    return { status: "approval_required", tool: functionName };
+  }
+  if (!safeTool && !taskAllowed && !plannerAllowed && process.env.ALLOW_MUTATING_TOOLS !== "true") {
     return { status: "approval_required", tool: functionName };
   }
   return await f.apply(context, foundArgs);
 }
 
-export async function runAgentLoop(workspace, sessionId, depth = 0, subject?: string) {
+export async function runAgentLoop(workspace, sessionId, depth = 0, subject?: string, task?: { taskId: string }) {
   if (depth >= Number(process.env.AGENT_MAX_TOOL_ROUNDS || 12)) {
     return;
   }
   const history = new History(workspace, sessionId);
+  const plannerMode = !task && (await history.read()).role === "planner";
   let aiResponse;
 
   try {
-    aiResponse = await getModelResponse(history, subject);
+    aiResponse = await getModelResponse(history, subject, Boolean(task), plannerMode);
 
     if (aiResponse.error) {
       console.error("aiResp", aiResponse);
@@ -177,7 +221,16 @@ export async function runAgentLoop(workspace, sessionId, depth = 0, subject?: st
       functionArgs =
         typeof call.function.arguments === "string" ? JSON.parse(call.function.arguments) : call.function.arguments;
       const context = new Context({ sessionId, workspace });
+      if (task) {
+        (context as any).taskId = task.taskId;
+      }
+      if (plannerMode) {
+        (context as any).plannerMode = true;
+      }
       const functionResponse = await executeFunction(functionName, functionArgs, context);
+      if ((task || plannerMode) && functionResponse?.status === "approval_required") {
+        throw new Error(`Restricted agent cannot perform out-of-scope action: ${functionName}`);
+      }
 
       await addMessage({
         role: "tool",
@@ -195,7 +248,7 @@ export async function runAgentLoop(workspace, sessionId, depth = 0, subject?: st
     }
   }
 
-  return runAgentLoop(workspace, sessionId, depth + 1, subject);
+  return runAgentLoop(workspace, sessionId, depth + 1, subject, task);
 }
 
 async function main() {

@@ -1,8 +1,8 @@
 import { adjectives, colors, names, uniqueNamesGenerator } from "unique-names-generator";
 import { randomUUID } from "node:crypto";
 import { createGzip } from "node:zlib";
-import { createReadStream, existsSync } from "node:fs";
-import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { createReadStream, existsSync, statSync } from "node:fs";
+import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { getModelList, pullModel } from "./backend/ollama.mjs";
 import { dataDir } from "./env.mjs";
@@ -19,6 +19,14 @@ import {
 } from "./connectors.mjs";
 import { addTeamMember, createTeam, readTeam, teamFor } from "./teams.mjs";
 import { mutateTaskFile } from "./task-store.mjs";
+import { enqueueTask, enqueueTaskReview, markTaskVerified, taskIsActive } from "./task-queue.mjs";
+import {
+  listWorkspaces,
+  removeWorkspace,
+  saveDescription,
+  setArchived,
+  workspaceDescription,
+} from "./workspace-registry.mjs";
 
 async function connectorScope(subject) {
   const teamId = await teamFor(subject);
@@ -116,26 +124,10 @@ const sanitize = (str) => str.replace(/[^a-zA-Z0-9-_]/g, "");
 // returns a list of directories in the dataDir
 async function onReadWorkspaceList(req, res) {
   try {
-    const files = await readdir(dataDir, {
-      withFileTypes: true,
-      encoding: "utf8",
-    });
-
-    const workspaces = files.filter(
-      (file) =>
-        file.isDirectory() &&
-        (existsSync(join(dataDir, file.name, "config", "workspace.json")) ||
-          existsSync(join(dataDir, file.name, "config", "project.json"))),
+    const params = new URL(req.url, "http://localhost").searchParams;
+    res.sendJson(
+      await listWorkspaces(dataDir, params.get("includeArchived") === "true" || params.get("archived") === "true"),
     );
-
-    const json = await Promise.all(
-      workspaces.map(async (file) => ({
-        name: file.name,
-        createdAt: await stat(join(dataDir, file.name)).then((stats) => stats.birthtime.getTime()),
-      })),
-    );
-
-    res.sendJson(json);
   } catch (err: any) {
     res.sendJson({ error: err.message }, 500);
   }
@@ -266,6 +258,7 @@ async function onUpdateWorkspaceSettings(req, res, params) {
       if (body.description !== undefined) {
         current.description = body.description;
         current.summary = body.description;
+        await saveDescription(name, body.description);
       }
       if (body.goals !== undefined) {
         current.goals = body.goals.map((goal) => ({
@@ -296,6 +289,10 @@ async function onReadWorkspaceSettings(_req, res, params) {
     const metadata = await serializeMutation(file, async () => {
       const current = JSON.parse(await readFile(file, "utf8"));
       const normalized = normalizeMetadata(current);
+      const description = await workspaceDescription(name);
+      if (description !== undefined) {
+        normalized.description = normalized.summary = description;
+      }
       if (JSON.stringify(normalized) !== JSON.stringify(current)) {
         await atomicJson(file, normalized);
       }
@@ -335,7 +332,7 @@ async function onCreateTask(req, res, params) {
       title: body.title.trim(),
       description: typeof body.description === "string" ? body.description : "",
       goalId: typeof body.goalId === "string" ? body.goalId : undefined,
-      status: "new",
+      status: "todo",
       comments: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -354,13 +351,58 @@ async function onUpdateTask(req, res, params) {
   const file = join(dataDir, name, "tasks", `${id}.json`);
   try {
     const body = JSON.parse(Buffer.concat(await req.toArray()).toString("utf8"));
-    if (!["new", "in-progress", "done"].includes(body.status)) {
+    if (!["todo", "new", "in-progress", "done", "verified"].includes(body.status)) {
       throw new Error("Invalid task status");
     }
+    if (await taskIsActive(name, id)) {
+      return res.sendJson({ error: "This task is currently being worked or reviewed" }, 409);
+    }
+    const status = body.status === "new" ? "todo" : body.status;
+    let previousStatus: string | undefined;
+    let previousExecutionPhase: string | undefined;
     const updated = await mutateTaskFile(file, (task) => {
-      task.status = body.status;
+      previousStatus = task.status;
+      previousExecutionPhase = task.execution?.phase;
+      if (
+        task.status === "done" &&
+        status === "in-progress" &&
+        (typeof body.guidance !== "string" || !body.guidance.trim() || body.guidance.length > 5_000)
+      ) {
+        throw new Error(
+          "Guidance comment (up to 5,000 characters) is required when returning a completed task to in progress",
+        );
+      }
+      if (status === "verified" && !["done", "verified"].includes(task.status)) {
+        throw new Error("Only a completed task can be verified");
+      }
+      task.status = status;
+      if (status === "done" && (previousStatus !== "done" || previousExecutionPhase === "error")) {
+        task.execution = { ...(task.execution || {}), phase: "reviewing", updatedAt: new Date().toISOString() };
+      }
+      if (status === "verified") {
+        task.execution = { ...(task.execution || {}), phase: "verified", updatedAt: new Date().toISOString() };
+      }
+      if (previousStatus === "done" && status === "in-progress") {
+        task.comments = Array.isArray(task.comments) ? task.comments : [];
+        task.comments.push({
+          id: randomUUID(),
+          author: req.authSubject,
+          content: body.guidance.trim(),
+          createdAt: new Date().toISOString(),
+        });
+        task.execution = { ...(task.execution || {}), phase: "queued", updatedAt: new Date().toISOString() };
+      }
       return task;
     });
+    if (status === "todo" || (status === "in-progress" && previousStatus !== "in-progress")) {
+      await enqueueTask(name, id);
+    }
+    if (status === "done" && (previousStatus !== "done" || previousExecutionPhase === "error")) {
+      await enqueueTaskReview(name, id);
+    }
+    if (status === "verified") {
+      await markTaskVerified(name, id);
+    }
     res.sendJson(updated);
   } catch (error) {
     const missing = isMissingFile(error);
@@ -411,6 +453,7 @@ async function onCreateWorkspace(req, res) {
       await mkdir(join(workspacePath, folder), { recursive: true });
     }
     await atomicJson(join(workspacePath, "config", "workspace.json"), defaultWorkspaceMetadata(name)).catch(() => {});
+    await listWorkspaces(dataDir, true);
 
     res.sendJson({ name }, 201);
   } catch (err: any) {
@@ -429,7 +472,13 @@ async function onReadTasks(req, res, params) {
     await mkdir(directory, { recursive: true });
     const files = (await readdir(directory)).filter((file) => file.endsWith(".json")).slice(0, 1000);
     const tasks = await Promise.all(
-      files.map(async (file) => JSON.parse(await readFile(join(directory, file), "utf8"))),
+      files.map(async (file) => {
+        const task = JSON.parse(await readFile(join(directory, file), "utf8"));
+        if (["new", "queued"].includes(task.status)) {
+          task.status = "todo";
+        }
+        return task;
+      }),
     );
     const goalId = new URL(req.url, "http://localhost").searchParams.get("goalId");
     res.sendJson(goalId ? tasks.filter((task) => task.goalId === goalId) : tasks);
@@ -563,9 +612,35 @@ async function onDeleteWorkspace(req, res, params) {
 
   try {
     await rm(workspacePath, { recursive: true, force: true });
+    await removeWorkspace(name);
     res.writeHead(204).end();
   } catch (err: any) {
     res.sendJson({ error: err.message }, 500);
+  }
+}
+
+async function onArchiveWorkspace(_req, res, params) {
+  const name = sanitize(params.name);
+  if (!existsSync(join(dataDir, name))) {
+    return res.sendJson({ error: "Workspace not found" }, 404);
+  }
+  try {
+    await setArchived(name, true);
+    res.writeHead(204).end();
+  } catch (error) {
+    res.sendJson({ error: error instanceof Error ? error.message : "Could not archive workspace" }, 503);
+  }
+}
+async function onRestoreWorkspace(_req, res, params) {
+  const name = sanitize(params.name);
+  if (!existsSync(join(dataDir, name))) {
+    return res.sendJson({ error: "Workspace not found" }, 404);
+  }
+  try {
+    await setArchived(name, false);
+    res.writeHead(204).end();
+  } catch (error) {
+    res.sendJson({ error: error instanceof Error ? error.message : "Could not restore workspace" }, 503);
   }
 }
 
@@ -591,11 +666,11 @@ async function onReadWorkspaceHistoryList(_req, res, params) {
       const json = JSON.parse(content);
       // delete messages from list API to reduce response length
       json.messages = [];
-      return json;
+      const updatedAt = Number(json.updatedAt) || statSync(join(workspacePath, file.name)).mtimeMs;
+      return { ...json, updatedAt };
     }),
   );
-
-  res.sendJson(json);
+  res.sendJson(json.sort((a, b) => b.updatedAt - a.updatedAt));
 }
 
 async function onCreateWorkspaceHistory(req, res, params) {
@@ -772,6 +847,8 @@ export default {
 
   "GET /workspaces": onReadWorkspaceList,
   "POST /workspaces": onCreateWorkspace,
+  "POST /workspaces/:name/archive": onArchiveWorkspace,
+  "POST /workspaces/:name/restore": onRestoreWorkspace,
 
   "DELETE /workspaces/:name/history/:id/message/:uid": onDeleteMessage,
   "POST /workspaces/:name/history/:id/message": onMessage,
