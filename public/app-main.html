@@ -27,8 +27,24 @@
             button.className =
               "w-full break-all rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-white focus-visible:outline focus-visible:outline-2";
             button.textContent = workspace.name;
+            if (workspace.name === $ws.workspace && element.closest("dialog")) {
+              button.setAttribute("aria-current", "true");
+              button.classList.add("bg-white", "text-[#547d42]");
+            }
             button.addEventListener("click", () => {
               $app.openWorkspace(workspace.name);
+              if (element.closest("dialog")) {
+                for (const workspaceButton of items.querySelectorAll("button")) {
+                  if (workspaceButton === button) {
+                    workspaceButton.setAttribute("aria-current", "true");
+                    workspaceButton.classList.add("bg-white", "text-[#547d42]");
+                  } else {
+                    workspaceButton.removeAttribute("aria-current");
+                    workspaceButton.classList.remove("bg-white", "text-[#547d42]");
+                  }
+                }
+              }
+              window.dispatchEvent(new Event("age:workspace-selected"));
             });
             return button;
           }),
@@ -72,7 +88,98 @@
 
 <template component="app-main">
   <div class="bg-[#eef2ec] text-slate-900 font-sans h-dvh flex flex-col md:flex-row">
+    <style>
+      @keyframes workspace-drawer-in {
+        from {
+          transform: translateX(-100%);
+        }
+        to {
+          transform: translateX(0);
+        }
+      }
+      dialog[data-mobile-drawer][open] [data-drawer-panel] {
+        animation: workspace-drawer-in 200ms ease-out;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        dialog[data-mobile-drawer][open] [data-drawer-panel] {
+          animation: none;
+        }
+      }
+    </style>
     <template if="$p.profile">
+      <header class="flex h-14 shrink-0 items-center gap-3 border-b border-[#dce3dc] bg-white px-3 md:hidden">
+        <button
+          data-mobile-menu
+          type="button"
+          aria-label="Open workspace menu"
+          aria-controls="mobile-workspace-drawer"
+          aria-expanded="false"
+          class="grid h-11 w-11 place-items-center rounded-lg hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#547d42]"
+          on-click="openMobileDrawer()"
+        >
+          <lucide-icon icon="menu" size="22" aria-hidden="true"></lucide-icon>
+        </button>
+        <span class="text-xl font-bold tracking-tight" aria-label="age."
+          ><span style="color: var(--age-wordmark)">age</span><span style="color: var(--age-period)">.</span></span
+        >
+      </header>
+      <dialog
+        data-mobile-drawer
+        id="mobile-workspace-drawer"
+        aria-labelledby="mobile-drawer-heading"
+        class="m-0 h-full max-h-none w-full max-w-none overflow-hidden bg-transparent p-0 text-zinc-900 backdrop:bg-zinc-950/50"
+      >
+        <div class="flex h-full w-full">
+          <section
+            class="flex h-full w-[min(20rem,85vw)] flex-col bg-[#eef2ec] shadow-xl transition-transform duration-200 motion-reduce:transition-none"
+            data-drawer-panel
+          >
+            <header class="flex shrink-0 items-center justify-between border-b border-[#dce3dc] p-4">
+              <h2 id="mobile-drawer-heading" class="text-lg font-semibold">Workspaces</h2>
+              <button
+                type="button"
+                data-close-mobile-drawer
+                aria-label="Close workspace menu"
+                class="grid h-11 w-11 place-items-center rounded-lg hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#547d42]"
+                on-click="closeMobileDrawer()"
+              >
+                <lucide-icon icon="x" size="22" aria-hidden="true"></lucide-icon>
+              </button>
+            </header>
+            <workspace-list class="flex min-h-0 flex-1 flex-col overflow-y-auto"></workspace-list>
+            <div class="shrink-0 space-y-3 border-t border-[#dce3dc] p-3">
+              <button
+                class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#547d42] px-3 py-3 text-sm font-semibold text-white hover:opacity-90"
+                on-click="onCreateWorkspace()"
+              >
+                <lucide-icon icon="plus" size="16" aria-hidden="true"></lucide-icon> Create workspace
+              </button>
+              <button
+                type="button"
+                aria-label="Open Settings"
+                on-click="openProfileSettings()"
+                class="flex w-full items-center gap-3 rounded-full border border-slate-200 bg-white p-2 text-left shadow-sm hover:shadow-md"
+              >
+                <span
+                  class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#547d42] text-xl font-semibold text-white"
+                  bind-inner-text="profileInitial()"
+                ></span>
+                <span class="min-w-0 flex-1"
+                  ><span class="block truncate font-semibold" bind-inner-text="profileName()"></span
+                  ><span class="block truncate text-sm text-slate-500" bind-inner-text="profileEmail()"></span
+                ></span>
+              </button>
+            </div>
+          </section>
+          <button
+            type="button"
+            tabindex="-1"
+            aria-label="Close workspace menu"
+            class="min-w-0 flex-1 cursor-default"
+            on-click="closeMobileDrawer()"
+          ></button>
+        </div>
+      </dialog>
       <aside class="hidden md:flex md:w-72 h-dvh shrink-0 bg-[#eef2ec] flex-col">
         <header class="p-5">
           <span class="text-2xl font-bold tracking-tight" aria-label="age.">
@@ -279,7 +386,7 @@
       <main
         data-overview-main
         hidden
-        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-[#eef2ec] p-3 text-zinc-900 md:p-5"
+        class="flex-1 min-w-0 h-[calc(100dvh-8.5rem)] md:h-dvh overflow-y-auto bg-[#eef2ec] p-3 text-zinc-900 md:p-5"
       >
         <div
           data-empty-workspace
@@ -360,7 +467,7 @@
       <main
         data-settings-main
         hidden
-        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-[#eef2ec] p-3 text-zinc-900 md:p-5"
+        class="flex-1 min-w-0 h-[calc(100dvh-8.5rem)] md:h-dvh overflow-y-auto bg-[#eef2ec] p-3 text-zinc-900 md:p-5"
       >
         <div class="min-h-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-10">
           <div class="w-full space-y-5">
@@ -456,7 +563,7 @@
       <main
         data-user-settings-main
         hidden
-        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] overflow-y-auto bg-[#eef2ec] p-5 text-zinc-900 md:h-dvh md:p-10"
+        class="flex-1 min-w-0 h-[calc(100dvh-8.5rem)] overflow-y-auto bg-[#eef2ec] p-5 text-zinc-900 md:h-dvh md:p-10"
       >
         <div class="w-full space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-10">
           <header class="flex items-start justify-between">
@@ -504,7 +611,7 @@
       <main
         data-goal-main
         hidden
-        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
+        class="flex-1 min-w-0 h-[calc(100dvh-8.5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
       >
         <div class="w-full">
           <button
@@ -620,7 +727,7 @@
       <main
         data-sessions-main
         hidden
-        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
+        class="flex-1 min-w-0 h-[calc(100dvh-8.5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
       >
         <div class="w-full">
           <button
@@ -670,7 +777,7 @@
       <main
         data-tasks-main
         hidden
-        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
+        class="flex-1 min-w-0 h-[calc(100dvh-8.5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
       >
         <div class="w-full">
           <button
@@ -702,7 +809,7 @@
           </div>
         </div>
       </main>
-      <main data-chat-main hidden class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh">
+      <main data-chat-main hidden class="flex-1 min-w-0 h-[calc(100dvh-8.5rem)] md:h-dvh">
         <app-chat class="h-full block"></app-chat>
       </main>
       <nav aria-label="Primary navigation" class="h-20 shrink-0 border-t border-zinc-200 bg-white md:hidden">
@@ -776,6 +883,31 @@
       let activeTask = null;
       let appReady = false;
       let displayedWorkspace = "";
+      let displayedPage = $app.page;
+      let mobileDrawer;
+      let mobileMenuButton;
+
+      function closeMobileDrawer({ restoreFocus = true } = {}) {
+        const wasOpen = Boolean(mobileDrawer?.open);
+        if (wasOpen) {
+          mobileDrawer.close();
+        }
+        mobileMenuButton?.setAttribute("aria-expanded", "false");
+        if (wasOpen && restoreFocus && mobileMenuButton && window.matchMedia("(max-width: 767px)").matches) {
+          mobileMenuButton.focus();
+        }
+      }
+
+      function openMobileDrawer() {
+        if (!mobileDrawer || !window.matchMedia("(max-width: 767px)").matches || mobileDrawer.open) {
+          return;
+        }
+        mobileMenuButton.setAttribute("aria-expanded", "true");
+        mobileDrawer.showModal();
+        element.querySelector("[data-close-mobile-drawer]").focus();
+      }
+
+      window.addEventListener("age:workspace-selected", () => closeMobileDrawer());
 
       async function refreshTeam() {
         const team = await Teams.current();
@@ -1234,6 +1366,10 @@
         element.querySelector("[data-task-dialog]").close();
       }
       function syncPages() {
+        if (mobileDrawer?.open && $app.page !== displayedPage) {
+          closeMobileDrawer();
+        }
+        displayedPage = $app.page;
         const sidebar = element.querySelector("aside");
         if (!sidebar) {
           return;
@@ -1282,7 +1418,65 @@
       onInit(async () => {
         await $p.reloadProfile();
         if ($p.profile) {
-          await new Promise((resolve) => requestAnimationFrame(resolve));
+          while (!mobileDrawer || !mobileMenuButton) {
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+            mobileDrawer = element.querySelector("[data-mobile-drawer]");
+            mobileMenuButton = element.querySelector("[data-mobile-menu]");
+          }
+          mobileDrawer.addEventListener("close", () => mobileMenuButton.setAttribute("aria-expanded", "false"));
+          mobileDrawer.addEventListener("click", (event) => {
+            if (event.target === mobileDrawer) {
+              closeMobileDrawer();
+            }
+          });
+          mobileDrawer.addEventListener("cancel", () => mobileMenuButton.setAttribute("aria-expanded", "false"));
+          document.addEventListener("keydown", (event) => {
+            if (!mobileDrawer.open || event.key !== "Tab") {
+              return;
+            }
+            const focusable = [
+              ...mobileDrawer.querySelectorAll(
+                'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+              ),
+            ].filter((node) => node.tabIndex >= 0 && node.getClientRects().length > 0);
+            if (focusable.length === 0) {
+              event.preventDefault();
+              return;
+            }
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (
+              event.shiftKey &&
+              (document.activeElement === first || !mobileDrawer.contains(document.activeElement))
+            ) {
+              event.preventDefault();
+              last.focus();
+            } else if (
+              !event.shiftKey &&
+              (document.activeElement === last || !mobileDrawer.contains(document.activeElement))
+            ) {
+              event.preventDefault();
+              first.focus();
+            }
+          });
+          window.matchMedia("(min-width: 768px)").addEventListener("change", (event) => {
+            if (event.matches) {
+              const drawerWasOpen = mobileDrawer.open;
+              if (drawerWasOpen) {
+                mobileDrawer.addEventListener(
+                  "close",
+                  () => {
+                    requestAnimationFrame(() => {
+                      const target = element.querySelector("aside button");
+                      target?.focus({ preventScroll: true });
+                    });
+                  },
+                  { once: true },
+                );
+              }
+              closeMobileDrawer({ restoreFocus: false });
+            }
+          });
           mountConnectorPage();
           await $ws.reloadWorkspaceList();
           if ($ws.workspace) {
@@ -1326,6 +1520,7 @@
         if (!name?.trim()) return;
         try {
           await $ws.createWorkspace(name.trim());
+          closeMobileDrawer();
           $app.openOverview();
         } catch (error) {
           alert(`Could not create the workspace: ${error instanceof Error ? error.message : "Unknown error"}`);
@@ -1333,6 +1528,7 @@
       }
 
       function openWorkspaces() {
+        closeMobileDrawer();
         $app.openSidebar();
       }
 
@@ -1354,6 +1550,7 @@
       }
       function openProfileSettings() {
         const alreadyInSettings = $app.page === "user-settings";
+        closeMobileDrawer();
         $app.openUserSettings();
         if (alreadyInSettings) openConnectors().catch(console.error);
       }
@@ -1661,6 +1858,8 @@
         onDeleteSession,
         openConnectors,
         openWorkspaces,
+        openMobileDrawer,
+        closeMobileDrawer,
         selectWorkspace,
         openOverview,
         openProfileSettings,
