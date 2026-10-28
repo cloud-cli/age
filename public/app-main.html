@@ -25,7 +25,7 @@
             const button = document.createElement("button");
             button.type = "button";
             button.className =
-              "w-full break-all rounded px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2";
+              "w-full break-all rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-white focus-visible:outline focus-visible:outline-2";
             button.textContent = workspace.name;
             button.addEventListener("click", () => {
               $app.openWorkspace(workspace.name);
@@ -71,18 +71,35 @@
 </template>
 
 <template component="app-main">
-  <div class="bg-zinc-950 text-zinc-100 font-sans h-dvh flex flex-col md:flex-row">
+  <div class="bg-[#eef2ec] text-slate-900 font-sans h-dvh flex flex-col md:flex-row">
     <template if="$p.profile">
-      <aside class="hidden md:flex md:w-72 h-dvh shrink-0 border-r border-zinc-200 bg-white flex-col">
-        <header class="p-4 border-b border-zinc-200"><strong class="text-zinc-900">Workspaces</strong></header>
+      <aside class="hidden md:flex md:w-72 h-dvh shrink-0 border-r border-[#dce3dc] bg-[#eef2ec] flex-col">
+        <header class="p-5">
+          <strong class="text-xl text-[#203b31]">age<span class="text-emerald-500">.</span></strong>
+        </header>
         <workspace-list></workspace-list>
-        <div class="mt-auto p-3 border-t border-zinc-200 flex flex-col gap-3">
-          <button class="text-left text-sm text-zinc-600" on-click="signOut()">Sign out</button>
+        <div class="mt-auto p-3 border-t border-[#dce3dc] flex flex-col gap-3">
           <button
-            class="w-full rounded-lg bg-emerald-700 px-3 py-3 text-sm font-semibold text-white"
+            class="w-full rounded-lg bg-[#203b31] px-3 py-3 text-sm font-semibold text-white hover:bg-[#294b3d]"
             on-click="onCreateWorkspace()"
           >
             ＋ Create workspace
+          </button>
+          <button
+            type="button"
+            aria-label="Open Settings"
+            on-click="openProfileSettings()"
+            class="flex w-full items-center gap-3 rounded-full border border-slate-200 bg-white p-2 text-left shadow-sm hover:shadow-md"
+          >
+            <span
+              class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#203b31] text-xl font-semibold text-white"
+              bind-inner-text="profileInitial()"
+            ></span>
+            <span class="min-w-0 flex-1"
+              ><span class="block truncate font-semibold" bind-inner-text="profileName()"></span
+              ><span class="block truncate text-sm text-slate-500" bind-inner-text="profileEmail()"></span
+            ></span>
+            <span aria-hidden="true" class="mr-1 rounded-lg border border-amber-200 px-2 py-1 text-amber-500">♛</span>
           </button>
         </div>
       </aside>
@@ -268,7 +285,7 @@
       <main
         data-overview-main
         hidden
-        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
+        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-[#eef2ec] p-3 text-zinc-900 md:p-5"
       >
         <div
           data-empty-workspace
@@ -349,88 +366,98 @@
       <main
         data-settings-main
         hidden
-        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-zinc-50 p-5 text-zinc-900 md:p-10"
+        class="flex-1 min-w-0 h-[calc(100dvh-5rem)] md:h-dvh overflow-y-auto bg-[#eef2ec] p-3 text-zinc-900 md:p-5"
       >
-        <div class="mx-auto max-w-3xl space-y-5">
-          <header class="flex items-start justify-between">
-            <div>
-              <button class="mb-4 text-sm font-medium text-emerald-700" on-click="openOverview()">
-                ← Back to workspace
+        <div class="min-h-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-10">
+          <div class="max-w-3xl space-y-5">
+            <section class="rounded-xl border border-slate-100 bg-[#f7f9f7] p-5">
+              <h2 class="font-semibold">Your account</h2>
+              <p class="mt-1 text-sm text-slate-500" bind-inner-text="profileName()"></p>
+              <p class="text-sm text-slate-500" bind-inner-text="profileEmail()"></p>
+              <button class="mt-4 rounded-lg border border-red-200 px-3 py-2 text-sm text-red-700" on-click="signOut()">
+                Sign out
               </button>
-              <p class="text-sm font-medium text-emerald-700">WORKSPACE SETTINGS</p>
-              <h1 class="mt-1 break-all text-3xl font-semibold" bind-inner-text="$ws.workspace"></h1>
-            </div>
-            <button
-              aria-label="Workspace home"
-              title="Workspace home"
-              class="rounded border px-3 py-2"
-              on-click="openOverview()"
-            >
-              ⌂
-            </button>
-          </header>
-          <section data-workspace-settings class="space-y-5">
-            <section class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-              <h2 class="font-semibold">Workspace brief</h2>
-              <button
-                type="button"
-                data-description-text
-                class="mt-3 block w-full whitespace-pre-wrap text-left text-zinc-600"
-                on-click="editWorkspaceDescription()"
-              ></button>
-              <button
-                data-description-empty
-                class="mt-3 w-full rounded-lg bg-zinc-50 p-8 text-center text-zinc-500"
-                on-click="editWorkspaceDescription()"
-              >
-                + Add a short description to this workspace.
-              </button>
-              <div data-description-editor hidden class="mt-3">
-                <label class="block text-sm font-medium"
-                  >Description<textarea
-                    data-workspace-description
-                    rows="4"
-                    class="mt-1 w-full rounded-lg border border-zinc-300 p-3"
-                  ></textarea>
-                </label>
-                <div class="mt-2 flex gap-2">
-                  <button
-                    class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white"
-                    on-click="saveWorkspaceDescription()"
-                  >
-                    Save</button
-                  ><button class="rounded-lg border px-4 py-2 text-sm" on-click="cancelWorkspaceDescription()">
-                    Cancel
-                  </button>
-                </div>
+            </section>
+            <header class="flex items-start justify-between">
+              <div>
+                <button class="mb-4 text-sm font-medium text-emerald-700" on-click="openOverview()">
+                  ← Back to workspace
+                </button>
+                <p class="text-sm font-medium text-emerald-700">WORKSPACE SETTINGS</p>
+                <h1 class="mt-1 break-all text-3xl font-semibold" bind-inner-text="$ws.workspace"></h1>
               </div>
               <button
-                data-description-edit
-                class="mt-3 rounded-lg border px-3 py-2 text-sm"
-                on-click="editWorkspaceDescription()"
+                aria-label="Workspace home"
+                title="Workspace home"
+                class="rounded border px-3 py-2"
+                on-click="openOverview()"
               >
-                Edit description
+                ⌂
               </button>
-              <section class="mt-6">
-                <header class="mb-3 flex items-center justify-between">
-                  <h3 class="font-semibold">Goals</h3>
-                  <button class="rounded-lg border border-zinc-300 px-3 py-2 text-sm" on-click="editGoal()">
-                    ＋ Add goal
-                  </button>
-                </header>
-                <div data-goals-list class="space-y-2"></div>
-                <p data-goals-empty class="text-sm text-zinc-500">No goals yet. Add a goal to get started.</p>
+            </header>
+            <section data-workspace-settings class="space-y-5">
+              <section class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+                <h2 class="font-semibold">Workspace brief</h2>
+                <button
+                  type="button"
+                  data-description-text
+                  class="mt-3 block w-full whitespace-pre-wrap text-left text-zinc-600"
+                  on-click="editWorkspaceDescription()"
+                ></button>
+                <button
+                  data-description-empty
+                  class="mt-3 w-full rounded-lg bg-zinc-50 p-8 text-center text-zinc-500"
+                  on-click="editWorkspaceDescription()"
+                >
+                  + Add a short description to this workspace.
+                </button>
+                <div data-description-editor hidden class="mt-3">
+                  <label class="block text-sm font-medium"
+                    >Description<textarea
+                      data-workspace-description
+                      rows="4"
+                      class="mt-1 w-full rounded-lg border border-zinc-300 p-3"
+                    ></textarea>
+                  </label>
+                  <div class="mt-2 flex gap-2">
+                    <button
+                      class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white"
+                      on-click="saveWorkspaceDescription()"
+                    >
+                      Save</button
+                    ><button class="rounded-lg border px-4 py-2 text-sm" on-click="cancelWorkspaceDescription()">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+                <button
+                  data-description-edit
+                  class="mt-3 rounded-lg border px-3 py-2 text-sm"
+                  on-click="editWorkspaceDescription()"
+                >
+                  Edit description
+                </button>
+                <section class="mt-6">
+                  <header class="mb-3 flex items-center justify-between">
+                    <h3 class="font-semibold">Goals</h3>
+                    <button class="rounded-lg border border-zinc-300 px-3 py-2 text-sm" on-click="editGoal()">
+                      ＋ Add goal
+                    </button>
+                  </header>
+                  <div data-goals-list class="space-y-2"></div>
+                  <p data-goals-empty class="text-sm text-zinc-500">No goals yet. Add a goal to get started.</p>
+                </section>
               </section>
+              <div class="flex flex-wrap gap-2">
+                <button class="rounded-lg border px-3 py-2 text-sm" on-click="archiveWorkspace()">
+                  Archive workspace
+                </button>
+                <button class="rounded-lg border px-3 py-2 text-sm text-red-700" on-click="deleteWorkspace()">
+                  Permanently delete workspace
+                </button>
+              </div>
             </section>
-            <div class="flex flex-wrap gap-2">
-              <button class="rounded-lg border px-3 py-2 text-sm" on-click="archiveWorkspace()">
-                Archive workspace
-              </button>
-              <button class="rounded-lg border px-3 py-2 text-sm text-red-700" on-click="deleteWorkspace()">
-                Permanently delete workspace
-              </button>
-            </div>
-          </section>
+          </div>
         </div>
       </main>
       <main
@@ -1144,6 +1171,15 @@
       function openOverview() {
         $app.openOverview();
       }
+      function profileName() {
+        return $p.profile?.name || $p.profile?.email || "Account";
+      }
+      function profileEmail() {
+        return $p.profile?.email || "Signed in";
+      }
+      function profileInitial() {
+        return profileName().trim().charAt(0).toUpperCase() || "A";
+      }
 
       function openSessions() {
         $app.openSessions();
@@ -1423,6 +1459,10 @@
         openWorkspaces,
         selectWorkspace,
         openOverview,
+        openProfileSettings: () => $app.openWorkspaceSettings(),
+        profileName,
+        profileEmail,
+        profileInitial,
         openWorkspaceSettings: () => $app.openWorkspaceSettings(),
         openSessions,
         openTasks,
