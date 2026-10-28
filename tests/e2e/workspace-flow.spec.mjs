@@ -36,8 +36,8 @@ test.describe("authenticated workspace flow", () => {
       await page.locator("#agent-token").fill(agentKey);
       await page.getByRole("button", { name: "Sign in" }).click();
       await expect(page).toHaveURL(/agents\.lab\.apphor\.de\/(?:#.*)?$/);
-      await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
       await page.setViewportSize({ width: 1280, height: 900 });
+      await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
       const sidebar = page.locator("aside");
       await expect(sidebar.getByRole("button", { name: "Sign out" })).toBeVisible();
       await expect(sidebar.getByRole("button", { name: /Create workspace/ })).toBeVisible();
@@ -83,7 +83,7 @@ test.describe("authenticated workspace flow", () => {
       );
       page.once("dialog", (dialog) => dialog.accept(workspaceName));
       await page
-        .getByRole("button", { name: /Create a workspace/ })
+        .getByRole("button", { name: /Create workspace/ })
         .first()
         .click();
       workspaceCreated = true;

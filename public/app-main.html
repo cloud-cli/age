@@ -1167,8 +1167,21 @@
       }
 
       async function createPlannerSession() {
+        await $ws.reloadWorkspaceData();
         await $s.createSession({ role: "planner", title: "Planner" });
         $app.openChat();
+        await $msg.reloadMessages();
+        const goals = ($ws.settings.goals || []).map(
+          (goal) => `- ${goal.title}: ${goal.description || "No description"}`,
+        );
+        const prompt = [
+          `Review the current state of the ${$ws.workspace} workspace and help me plan its goal work.`,
+          `Workspace brief: ${$ws.settings.description?.trim() || "No brief provided."}`,
+          `Goals:\n${goals.length ? goals.join("\n") : "No goals have been added yet."}`,
+          "Break concrete goal work into independently completable tasks. Use DelegateTask for each actionable task, include testable acceptance criteria in its context, and link it to a goalId when applicable. Avoid duplicate tasks and prioritize the work. Then summarize the task plan and blockers; do not claim work has already been done.",
+        ].join("\n\n");
+        $msg.setNewMessage(prompt);
+        await $msg.sendMessage();
       }
 
       async function openSession(id) {
