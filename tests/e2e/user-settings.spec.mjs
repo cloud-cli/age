@@ -8,6 +8,7 @@ const models = [
 test("user settings show account, provider management, and API models separately from workspace settings", async ({
   page,
 }) => {
+  let modelsAvailable = false;
   page.on("console", (message) => console.log("browser", message.type(), message.text()));
   page.on("pageerror", (error) => console.log("page error", error.stack));
   await page.addInitScript(() => {
@@ -26,13 +27,16 @@ test("user settings show account, provider management, and API models separately
     const { pathname } = new URL(route.request().url());
     let body = [];
     if (pathname === "/models") {
-      body = { models };
+      body = { models: modelsAvailable ? models : [] };
     } else if (pathname === "/teams/current") {
       body = { id: "", role: "", members: [] };
     } else if (pathname === "/workspaces") {
       body = [];
     } else if (pathname === "/connectors") {
       body = [];
+    } else if (pathname === "/connectors/gemini/models") {
+      modelsAvailable = true;
+      body = { models };
     }
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
   });
@@ -47,7 +51,10 @@ test("user settings show account, provider management, and API models separately
   const settings = page.locator("[data-user-settings-main]");
   await expect(settings.getByRole("heading", { name: "Account and models" })).toBeVisible();
   await expect(settings).toContainText("Test User");
-  await settings.getByRole("button", { name: "Reload models" }).click();
+  await expect(settings.locator("[data-user-model-empty]")).toBeVisible();
+  const modelReload = page.waitForResponse((response) => new URL(response.url()).pathname === "/models");
+  await settings.locator('[data-provider-form="gemini"]').getByRole("button", { name: "Test connection" }).click();
+  await modelReload;
   await expect(settings.locator("[data-user-model-groups]")).toContainText("gemini-2.5-flash");
   await expect(settings.locator("[data-user-model-groups]")).toContainText("qwen3:14b");
   await expect(settings.locator("[data-user-model-groups] input[type=checkbox]").first()).not.toBeChecked();
