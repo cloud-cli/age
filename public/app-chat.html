@@ -1,5 +1,5 @@
 <template component="app-chat">
-  <section class="flex flex-col bg-zinc-950 h-full">
+  <section class="flex flex-col bg-zinc-950 h-full" on-click="dismissModelPopover($event)">
     <header class="h-14 border-b border-zinc-800 flex items-center px-4 gap-3">
       <button class="md:hidden" aria-label="Back to sessions" on-click="$app.openSessions()">←</button>
       <div
@@ -86,17 +86,75 @@
         ></textarea>
         <div class="flex justify-between items-center px-2">
           <div class="flex gap-3">
-            <select
-              aria-label="Model"
-              class="bg-zinc-800 rounded px-2 py-1 text-xs"
-              bind-value="$msg.model"
-              on-change="$msg.setModel($event.target.value)"
-            >
-              <option value="">Default model</option>
-              <template for="m of modelListMapped"
-                ><option bind-value="m.value" bind-inner-text="m.label"></option
-              ></template></select
-            ><button
+            <div class="relative" data-model-picker>
+              <button
+                type="button"
+                class="bg-zinc-800 rounded px-2 py-1 text-xs max-w-48 truncate"
+                aria-label="Model"
+                aria-haspopup="listbox"
+                bind-aria-expanded="modelOpen"
+                on-click="toggleModelPopover()"
+                bind-inner-text="selectedModelLabel"
+              ></button>
+              <div
+                class="absolute bottom-full left-0 z-20 mb-2 w-64 max-w-[calc(100vw-2rem)] rounded-lg border border-zinc-700 bg-zinc-900 p-2 shadow-xl"
+                class-hidden="!modelOpen"
+                role="dialog"
+                aria-label="Choose a model"
+                on-keydown="onModelKeyDown($event)"
+              >
+                <input
+                  type="search"
+                  aria-label="Search models"
+                  placeholder="Search models…"
+                  class="mb-2 w-full rounded bg-zinc-800 px-2 py-2 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-emerald-600"
+                  bind-value="modelQuery"
+                  on-input="filterModels($event.target.value)"
+                />
+                <div class="max-h-60 overflow-y-auto" role="listbox" aria-label="Models">
+                  <button
+                    type="button"
+                    role="option"
+                    bind-aria-selected="$msg.model === ''"
+                    class="block w-full rounded px-2 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                    class-hidden="modelQuery.trim() && !'default model'.includes(modelQuery.trim().toLowerCase())"
+                    on-click="chooseModel('')"
+                  >
+                    Default model
+                  </button>
+                  <template for="group of modelGroups"
+                    ><section role="group" bind-aria-label="group.provider">
+                      <h3
+                        class="px-2 pt-2 text-xs font-semibold uppercase tracking-wide text-zinc-500"
+                        bind-inner-text="group.provider"
+                      ></h3>
+                      <template for="m of group.models"
+                        ><button
+                          type="button"
+                          role="option"
+                          class="block w-full rounded px-2 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                          bind-aria-selected="$msg.model === m.id"
+                          bind-inner-text="m.name"
+                          on-click="chooseModel(m.id)"
+                        ></button
+                      ></template></section
+                  ></template>
+                  <p class="px-2 py-2 text-sm text-zinc-500" class-hidden="modelGroups.length > 0">
+                    No matching models
+                  </p>
+                </div>
+                <div class="mt-2 border-t border-zinc-700 pt-2">
+                  <button
+                    type="button"
+                    class="w-full rounded px-2 py-2 text-left text-xs font-medium text-emerald-400 hover:bg-zinc-800"
+                    on-click="openModelSettings()"
+                  >
+                    Manage models and providers…
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button
               type="button"
               aria-label="Start voice dictation"
               title="Start voice dictation"
@@ -116,8 +174,61 @@
           </button>
         </div>
       </form>
+      <p
+        class="mx-auto mt-2 max-w-3xl text-xs text-zinc-400"
+        role="status"
+        aria-live="polite"
+        bind-inner-text="$msg.agentStatusLabel"
+      ></p>
       <p class="text-xs text-center text-zinc-500 mt-1" role="status" bind-inner-text="voiceStatus"></p>
     </div>
+    <dialog
+      data-model-settings
+      class="max-h-[85dvh] w-[min(36rem,calc(100%-2rem))] overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900 p-0 text-zinc-100 shadow-2xl backdrop:bg-zinc-950/70"
+      on-cancel.prevent="closeModelSettings()"
+    >
+      <header class="flex items-start justify-between gap-4 border-b border-zinc-700 p-4">
+        <div>
+          <h2 class="text-lg font-semibold">Models and providers</h2>
+          <p class="mt-1 text-xs text-zinc-400">
+            Choose what appears in this model picker. This does not disable providers elsewhere.
+          </p>
+        </div>
+        <button
+          type="button"
+          aria-label="Close model settings"
+          class="rounded px-2 py-1 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+          on-click="closeModelSettings()"
+        >
+          ✕
+        </button>
+      </header>
+      <div class="max-h-[65dvh] space-y-4 overflow-y-auto p-4">
+        <template for="group of providerGroups"
+          ><section class="rounded-lg border border-zinc-700 p-3">
+            <label class="flex items-center gap-3 font-medium">
+              <input
+                type="checkbox"
+                bind-checked="group.enabled"
+                on-change="setProviderEnabled(group.provider, $event.target.checked)"
+              />
+              <span bind-inner-text="group.label"></span>
+              <span class="ml-auto text-xs text-zinc-500" bind-inner-text="`${group.models.length} models`"></span>
+            </label>
+            <div class="mt-2 space-y-1 border-l border-zinc-700 pl-6">
+              <template for="model of group.models"
+                ><label class="flex items-center gap-3 rounded px-2 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800">
+                  <input
+                    type="checkbox"
+                    bind-checked="model.enabled"
+                    on-change="setModelEnabled(model.id, $event.target.checked)" />
+                  <span class="min-w-0 truncate" bind-inner-text="model.displayLabel"></span></label
+              ></template>
+            </div></section
+        ></template>
+        <p class="text-sm text-zinc-400" class-hidden="providerGroups.length > 0">No models are currently available.</p>
+      </div>
+    </dialog>
   </section>
   <script setup>
     import { computed, effect, ref } from "@li3/web";
@@ -130,9 +241,148 @@
         $s = useSessions(),
         $msg = useMessages(),
         $app = useApp();
-      const modelListMapped = computed(() =>
-        ($msg.modelList || []).map((m) => ({ label: `${m.name} · ${m.serverName || m.provider}`, value: m.id })),
+      const modelOpen = ref(false),
+        modelQuery = ref(""),
+        modelPreferences = ref(loadModelPreferences());
+      function loadModelPreferences() {
+        try {
+          const stored = JSON.parse(localStorage.getItem("age-model-picker-preferences") || "{}");
+          return {
+            providers: stored.providers && typeof stored.providers === "object" ? stored.providers : {},
+            models: stored.models && typeof stored.models === "object" ? stored.models : {},
+          };
+        } catch {
+          return { providers: {}, models: {} };
+        }
+      }
+      const normalizedModels = computed(() =>
+        (Array.isArray($msg.modelList.value) ? $msg.modelList.value : [])
+          .map((model) => {
+            const id = String(model.id || "");
+            if (!id) return null;
+            const name = String(model.name || id);
+            const provider = String(model.provider || model.serverName || "Other");
+            const label = String(model.serverName || model.provider || "Other");
+            return {
+              id,
+              name,
+              provider,
+              label,
+              displayLabel:
+                model.serverName && model.serverName !== model.provider ? `${name} · ${model.serverName}` : name,
+            };
+          })
+          .filter(Boolean),
       );
+      const providerGroups = computed(() => {
+        const groups = new Map();
+        for (const model of normalizedModels.value) {
+          if (!groups.has(model.provider)) {
+            groups.set(model.provider, { provider: model.provider, label: model.provider, models: [] });
+          }
+          groups.get(model.provider).models.push({
+            ...model,
+            enabled: modelPreferences.value.models[model.id] !== false,
+          });
+        }
+        return [...groups.values()].map((group) => ({
+          ...group,
+          enabled: modelPreferences.value.providers[group.provider] !== false,
+        }));
+      });
+      const modelGroups = computed(() => {
+        const query = modelQuery.value.trim().toLocaleLowerCase();
+        const visible = normalizedModels.value.filter(
+          (model) =>
+            modelPreferences.value.providers[model.provider] !== false &&
+            modelPreferences.value.models[model.id] !== false &&
+            (!query || `${model.name} ${model.label} ${model.provider}`.toLocaleLowerCase().includes(query)),
+        );
+        const groups = new Map();
+        for (const model of visible) {
+          if (!groups.has(model.label)) groups.set(model.label, []);
+          groups.get(model.label).push(model);
+        }
+        return [...groups].map(([provider, models]) => ({ provider, models }));
+      });
+      const selectedModelLabel = computed(() => {
+        const id = $msg.model.value;
+        if (!id) return "Default model";
+        const record = normalizedModels.value.find((item) => item.id === id);
+        return record ? `${record.name} · ${record.label}` : id;
+      });
+      function toggleModelPopover() {
+        modelOpen.value = !modelOpen.value;
+        if (modelOpen.value) {
+          modelQuery.value = "";
+          requestAnimationFrame(() => document.querySelector('[aria-label="Search models"]')?.focus());
+        }
+      }
+      function closeModelPopover() {
+        modelOpen.value = false;
+        document.querySelector('[aria-label="Model"]')?.focus();
+      }
+      function dismissModelPopover(event) {
+        if (modelOpen.value && !event.target.closest("[data-model-picker]")) {
+          modelOpen.value = false;
+        }
+      }
+      function filterModels(value) {
+        modelQuery.value = value;
+      }
+      function saveModelPreferences(preferences) {
+        modelPreferences.value = preferences;
+        try {
+          localStorage.setItem("age-model-picker-preferences", JSON.stringify(preferences));
+        } catch (error) {
+          console.warn("Could not save model picker preferences", error);
+        }
+      }
+      function setProviderEnabled(provider, enabled) {
+        saveModelPreferences({
+          ...modelPreferences.value,
+          providers: { ...modelPreferences.value.providers, [provider]: enabled },
+        });
+      }
+      function setModelEnabled(id, enabled) {
+        saveModelPreferences({
+          ...modelPreferences.value,
+          models: { ...modelPreferences.value.models, [id]: enabled },
+        });
+      }
+      function openModelSettings() {
+        modelOpen.value = false;
+        document.querySelector("[data-model-settings]")?.showModal();
+      }
+      function closeModelSettings() {
+        document.querySelector("[data-model-settings]")?.close();
+        requestAnimationFrame(() => document.querySelector('[aria-label="Model"]')?.focus());
+      }
+      function chooseModel(id) {
+        $msg.setModel(id);
+        modelOpen.value = false;
+        modelQuery.value = "";
+        requestAnimationFrame(() => document.querySelector('[aria-label="Model"]')?.focus());
+      }
+      function onModelKeyDown(event) {
+        if (event.key === "Escape") {
+          closeModelPopover();
+        }
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+          event.preventDefault();
+          const options = [...event.currentTarget.querySelectorAll('[role="option"]')].filter(
+            (option) => option.getClientRects().length > 0,
+          );
+          const index = options.indexOf(document.activeElement);
+          options[Math.max(0, Math.min(options.length - 1, index + (event.key === "ArrowDown" ? 1 : -1)))]?.focus();
+        }
+        if (event.key === "Enter") {
+          event.preventDefault();
+          const activeOption = document.activeElement?.closest('[role="option"]');
+          const firstOption = event.currentTarget.querySelector('[role="option"]');
+          (activeOption || firstOption)?.click();
+        }
+      }
       const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
       const speechAvailable = Boolean(Speech),
         voiceStatus = ref(""),
@@ -202,15 +452,44 @@
         }
       }
       async function createPlannerSession() {
+        const workspace = $ws.workspace;
+        if (!workspace) return;
+        await $ws.reloadWorkspaceData();
         await $s.createSession({ role: "planner", title: "Planner" });
         $app.openChat();
+        await $msg.reloadMessages();
+        const goals = ($ws.settings.goals || []).map(
+          (goal) => `- ${goal.title}: ${goal.description || "No description"}`,
+        );
+        const prompt = [
+          `Review the current state of the ${workspace} workspace and help me plan the next steps.`,
+          `Workspace brief: ${$ws.settings.description?.trim() || "No brief provided."}`,
+          `Goals:\n${goals.length ? goals.join("\n") : "No goals have been added yet."}`,
+          "Summarize what is currently known, propose a short prioritized plan, and identify any blockers or questions. Do not claim work has already been done.",
+        ].join("\n\n");
+        $msg.setNewMessage(prompt);
+        await $msg.sendMessage();
       }
       return {
         $ws,
         $s,
         $msg,
         $app,
-        modelListMapped,
+        modelOpen,
+        modelQuery,
+        modelGroups,
+        providerGroups,
+        selectedModelLabel,
+        toggleModelPopover,
+        closeModelPopover,
+        dismissModelPopover,
+        filterModels,
+        setProviderEnabled,
+        setModelEnabled,
+        openModelSettings,
+        closeModelSettings,
+        chooseModel,
+        onModelKeyDown,
         speechAvailable,
         voiceStatus,
         autoRead,

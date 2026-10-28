@@ -703,10 +703,17 @@ async function onRetry(req, res, params) {
 }
 
 async function tryAgentLoop(name, sessionId, subject) {
+  publish("agent-status", { sessionId, status: "working" });
   try {
-    return await runAgentLoop(name, sessionId, 0, subject);
+    await runAgentLoop(name, sessionId, 0, subject);
+    publish("agent-status", { sessionId, status: "complete" });
   } catch (e) {
     console.log("Agent loop error", e);
+    publish("agent-status", {
+      sessionId,
+      status: "error",
+      error: "The agent could not complete the request. Check the provider configuration and try again.",
+    });
   }
 }
 

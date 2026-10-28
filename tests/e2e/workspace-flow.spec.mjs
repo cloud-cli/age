@@ -17,6 +17,16 @@ test.describe("authenticated workspace flow", () => {
     }
 
     try {
+      await page.route("**/models", (route) =>
+        route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify([
+            { id: "gpt-4o-mini", default: true },
+            { id: "gemini/gemini-2.5-flash", name: "gemini-2.5-flash", provider: "gemini" },
+            { id: "ollama:lg/qwen3:14b", name: "qwen3:14b", provider: "ollama", serverName: "LG" },
+          ]),
+        }),
+      );
       await page.goto("/", { waitUntil: "networkidle" });
       await page.getByRole("button", { name: "Sign in" }).click();
       await expect(page).toHaveURL(/auth\.api\.apphor\.de\/login/);
@@ -107,6 +117,25 @@ test.describe("authenticated workspace flow", () => {
       await goalDialog.getByLabel("Title").fill("Ship workspace flow");
       await goalDialog.getByLabel("Description").fill("Finish, review, and verify the workspace features.");
       await goalDialog.getByRole("button", { name: "Save goal" }).click();
+      let plannerMessage;
+      const plannerMessageRoute = `**/workspaces/${workspaceName}/history/*/message`;
+      await page.route(plannerMessageRoute, async (route) => {
+        plannerMessage = JSON.parse(route.request().postData() || "{}");
+        await route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify({ role: "user", content: plannerMessage.message, meta: { uid: "planner-test" } }),
+        });
+      });
+      const plannerSession = page.waitForResponse(
+        (response) =>
+          response.request().method() === "POST" && response.url().endsWith(`/workspaces/${workspaceName}/history`),
+      );
+      await page.getByRole("button", { name: "Start planning with AI" }).click();
+      expect((await plannerSession).status()).toBe(201);
+      expect(plannerMessage.message).toContain("Finish, review, and verify the workspace features.");
+      await expect(page.getByText("Working on a response…", { exact: true })).toBeVisible();
+      await page.unroute(plannerMessageRoute);
+      await page.locator("aside").getByRole("button", { name: workspaceName }).click();
       await page
         .locator("[data-goals-list] article")
         .filter({ hasText: "Ship workspace flow" })
@@ -162,6 +191,36 @@ test.describe("authenticated workspace flow", () => {
       await page.getByRole("button", { name: "New chat" }).click();
       const session = await (await sessionResponse).json();
       await expect(page.getByRole("textbox", { name: "Message draft" })).toBeEnabled();
+      const modelPicker = page.getByRole("dialog", { name: "Choose a model" });
+      const modelTrigger = page.getByRole("button", { name: "Model" });
+      await modelTrigger.click();
+      await expect(modelPicker.getByRole("group", { name: "gemini" })).toBeVisible();
+      await expect(modelPicker.getByRole("group", { name: "LG" })).toBeVisible();
+      await expect(modelPicker.getByText("undefined", { exact: true })).toHaveCount(0);
+      await modelPicker.getByRole("button", { name: "Manage models and providers" }).click();
+      const settingsDialog = page.locator("dialog[data-model-settings]");
+      await expect(settingsDialog.getByRole("heading", { name: "Models and providers" })).toBeVisible();
+      await settingsDialog.getByRole("checkbox", { name: /ollama.*models/ }).uncheck();
+      await settingsDialog.getByRole("checkbox", { name: /qwen3:14b/ }).uncheck();
+      await expect
+        .poll(() => page.evaluate(() => JSON.parse(window.localStorage.getItem("age-model-picker-preferences"))))
+        .toMatchObject({ providers: { ollama: false }, models: { "ollama:lg/qwen3:14b": false } });
+      await settingsDialog.getByRole("button", { name: "Close model settings" }).click();
+      await modelTrigger.click();
+      await modelPicker.getByRole("searchbox", { name: "Search models" }).fill("qwen3");
+      await expect(modelPicker.getByRole("option", { name: "qwen3:14b" })).toHaveCount(0);
+      await modelPicker.getByRole("button", { name: "Manage models and providers" }).click();
+      await settingsDialog.getByRole("checkbox", { name: /ollama.*models/ }).check();
+      await settingsDialog.getByRole("checkbox", { name: /qwen3:14b/ }).check();
+      await settingsDialog.getByRole("button", { name: "Close model settings" }).click();
+      await modelTrigger.click();
+      const modelSearch = modelPicker.getByRole("searchbox", { name: "Search models" });
+      await modelSearch.fill("qwen3");
+      await expect(modelPicker.getByRole("option", { name: "qwen3:14b" })).toBeVisible();
+      await expect(modelPicker.getByRole("option", { name: "gemini-2.5-flash" })).toHaveCount(0);
+      await modelPicker.getByRole("option", { name: "qwen3:14b" }).click();
+      await expect(modelTrigger).toHaveText("qwen3:14b · LG");
+      await expect(modelPicker).toBeHidden();
       await screenshot("08-session-created");
       expect(session.id).toBeTruthy();
     } finally {

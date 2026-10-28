@@ -11,6 +11,22 @@ export const useMessages = defineStore("messages", function () {
   const [model, setModel] = hook("");
   const [modelList, setModelList] = hook("");
   const [sending, setSending] = hook(false);
+  const agentStatus = ref({ sessionId: "", status: "idle", error: "" });
+  const agentStatusLabel = computed(() => {
+    if (agentStatus.value.sessionId !== $session.sessionId) {
+      return "";
+    }
+    if (agentStatus.value.status === "working") {
+      return "Working on a response…";
+    }
+    if (agentStatus.value.status === "complete") {
+      return "Response complete";
+    }
+    if (agentStatus.value.status === "error") {
+      return `Could not get a response: ${agentStatus.value.error}`;
+    }
+    return "";
+  });
   const newMessage = ref("");
   const sendDisabled = computed(
     () => sending.value || !$ws.workspace || !$session.sessionId || !newMessage.value.trim(),
@@ -54,6 +70,7 @@ export const useMessages = defineStore("messages", function () {
 
     try {
       setSending(true);
+      agentStatus.value = { sessionId, status: "working", error: "" };
       setNewMessage("");
       const response = await Sessions.sendMessage(workspace, sessionId, {
         message,
@@ -65,6 +82,7 @@ export const useMessages = defineStore("messages", function () {
     } catch (e) {
       if ($ws.workspace === workspace && $session.sessionId === sessionId) {
         setNewMessage(message);
+        agentStatus.value = { sessionId, status: "error", error: e instanceof Error ? e.message : "Request failed" };
       }
       console.log(e);
     } finally {
@@ -73,7 +91,17 @@ export const useMessages = defineStore("messages", function () {
   }
 
   async function retryMessage() {
-    Sessions.retry($ws.workspace, $session.sessionId);
+    const sessionId = $session.sessionId;
+    agentStatus.value = { sessionId, status: "working", error: "" };
+    try {
+      await Sessions.retry($ws.workspace, sessionId);
+    } catch (error) {
+      agentStatus.value = {
+        sessionId,
+        status: "error",
+        error: error instanceof Error ? error.message : "Request failed",
+      };
+    }
   }
 
   async function pullModel(name) {
@@ -101,6 +129,12 @@ export const useMessages = defineStore("messages", function () {
       messages.value = [...messages.value, message];
     }
   });
+  events.addEventListener("agent-status", (event) => {
+    const { sessionId, status, error = "" } = event.detail;
+    if (sessionId === $session.sessionId) {
+      agentStatus.value = { sessionId, status, error };
+    }
+  });
 
   return {
     messages,
@@ -108,6 +142,8 @@ export const useMessages = defineStore("messages", function () {
     newMessage,
     setNewMessage,
     sending,
+    agentStatus,
+    agentStatusLabel,
     sendDisabled,
     reloadMessages,
     deleteMessage,
