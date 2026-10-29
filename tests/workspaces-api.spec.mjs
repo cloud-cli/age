@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { pathToFileURL, URLSearchParams } from "node:url";
 import { after, test } from "node:test";
 
 const dataPath = await mkdtemp(join(tmpdir(), "age-workspaces-"));
@@ -155,7 +155,8 @@ test("workspace repository linking clones into files and persists the connected 
     await writeFile(join(staging, "README.md"), "cloned repository");
     return { url: repositoryUrl, output: "clone succeeded" };
   };
-  const handler = (req, res, params) => routes["POST /workspaces/:name/repository"](req, res, params, clone);
+  const handler = (req, res, params) =>
+    routes["POST /workspaces/:name/repository"](req, res, params, new URLSearchParams(), clone);
   const { value, status } = await invoke(
     handler,
     { repositoryUrl: "https://github.com/cloud-cli/age.git" },
@@ -180,7 +181,8 @@ test("workspace repository linking hides clone failures and removes its owned st
   const failedClone = async () => {
     throw Object.assign(new Error("Git clone failed"), { statusCode: 502, details: "internal path detail" });
   };
-  const handler = (req, res, params) => routes["POST /workspaces/:name/repository"](req, res, params, failedClone);
+  const handler = (req, res, params) =>
+    routes["POST /workspaces/:name/repository"](req, res, params, new URLSearchParams(), failedClone);
   const previousError = console.error;
   console.error = () => {};
   try {

@@ -332,7 +332,7 @@ async function onReadWorkspaceSettings(_req, res, params) {
   }
 }
 
-async function onLinkWorkspaceRepository(req, res, params, cloneRepo = clonePublicRepository) {
+async function onLinkWorkspaceRepository(req, res, params, _searchParams, cloneRepo = clonePublicRepository) {
   const originalName = String(params.name || "");
   const name = sanitize(originalName);
   if (!name || name !== originalName) {
