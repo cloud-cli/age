@@ -842,9 +842,9 @@
           </button>
           <button
             class="flex flex-col items-center justify-center gap-1 text-xs"
-            bind-class="{ 'text-[#547d42]': $app.page === 'integrations', 'text-zinc-500': $app.page !== 'integrations' }"
-            bind-aria-current="$app.page === 'integrations' ? 'page' : null"
-            on-click="openConnectors()"
+            bind-class="{ 'text-[#547d42]': $app.page === 'user-settings' || $app.page === 'integrations', 'text-zinc-500': $app.page !== 'user-settings' && $app.page !== 'integrations' }"
+            bind-aria-current="$app.page === 'user-settings' || $app.page === 'integrations' ? 'page' : null"
+            on-click="openIntegrations()"
           >
             <lucide-icon icon="plug" size="20" aria-hidden="true"></lucide-icon><span>Integrations</span>
           </button>
@@ -1404,7 +1404,7 @@
           if (appReady && ($app.page === "overview" || $app.page === "workspaces")) await renderWorkspaceHome();
           if (appReady && $app.page === "sessions") await renderSessionList();
           if (appReady && ($app.page === "user-settings" || $app.page === "integrations")) {
-            openConnectors().catch(console.error);
+            openConnectors({ scrollToIntegrations: $app.page === "integrations" }).catch(console.error);
           }
         },
       );
@@ -1553,9 +1553,9 @@
       }
 
       function openIntegrations() {
-        const alreadyInSettings = $app.page === "user-settings";
-        $app.openUserSettings();
-        if (alreadyInSettings) openConnectors().catch(console.error);
+        const alreadyOnIntegrations = $app.page === "integrations";
+        $app.openIntegrations();
+        if (alreadyOnIntegrations) openConnectors({ scrollToIntegrations: true }).catch(console.error);
       }
 
       function openChatPage() {
@@ -1613,10 +1613,14 @@
         }
         return true;
       }
-      async function openConnectors() {
+      async function openConnectors({ scrollToIntegrations = false } = {}) {
         mountConnectorPage();
         await reloadUserModels();
+        const integrationsPage = element.querySelector("[data-connectors-page]");
         mountConnectorPage();
+        if (scrollToIntegrations) {
+          integrationsPage?.scrollIntoView({ block: "start" });
+        }
         const page = element.querySelector("[data-user-settings-main]");
         const status = page?.querySelector("[data-page-status]");
         if (!status) {

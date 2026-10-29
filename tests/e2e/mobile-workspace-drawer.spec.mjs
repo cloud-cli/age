@@ -28,6 +28,7 @@ test("mobile workspace drawer supports keyboard, backdrop, selection, and deskto
     await route.fulfill({ contentType: "application/json", body: JSON.stringify(body) });
   });
   await page.route("**/models", (route) => route.fulfill({ contentType: "application/json", body: "[]" }));
+  await page.route("**/connectors", (route) => route.fulfill({ contentType: "application/json", body: "[]" }));
   await page.route("**/teams/current", (route) =>
     route.fulfill({ contentType: "application/json", body: JSON.stringify({ id: "", role: "", members: [] }) }),
   );
@@ -77,6 +78,17 @@ test("mobile workspace drawer supports keyboard, backdrop, selection, and deskto
   await drawer.getByRole("button", { name: "Create workspace" }).click();
   await expect(drawer).toBeHidden();
   await expect(page).toHaveURL(/#\/overview\?workspace=Gamma$/);
+  const integrations = page.getByRole("navigation", { name: "Primary navigation" }).getByRole("button", {
+    name: "Integrations",
+  });
+  await integrations.click();
+  await expect(page).toHaveURL(/#\/integrations\?workspace=Gamma$/);
+  await expect(integrations).toHaveAttribute("aria-current", "page");
+  await expect(page.locator("[data-user-settings-main]")).toBeVisible();
+  const providerHeading = page.locator("[data-connectors-page] h2", { hasText: "Provider connections" });
+  await expect(providerHeading).toBeVisible();
+  await expect(providerHeading).toBeInViewport();
+  await page.screenshot({ path: testInfo.outputPath("mobile-integrations.png") });
   for (const width of [320, 540, 767]) {
     await page.setViewportSize({ width, height: 844 });
     await expect(toggle).toBeVisible();

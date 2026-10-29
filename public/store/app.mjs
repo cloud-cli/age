@@ -89,7 +89,7 @@ export const useApp = defineStore("app", function () {
   }
   const openChat = () => navigate("chat");
   const openSidebar = () => navigate("workspaces");
-  const openIntegrations = () => navigate("user-settings");
+  const openIntegrations = () => navigate("integrations");
   const openOverview = () => navigate("overview");
   const openWorkspaceSettings = () => navigate("settings");
   const openUserSettings = () => navigate("user-settings");
