@@ -82,7 +82,15 @@ test("user settings show account, provider management, and API models separately
 
   await page.goto("/#/chat");
   const modelPicker = page.getByRole("dialog", { name: "Choose a model" });
+  await page.evaluate(() =>
+    window.localStorage.setItem(
+      "age-model-picker-preferences",
+      JSON.stringify({ providers: { gemini: false, ollama: false }, models: {} }),
+    ),
+  );
   await page.getByRole("button", { name: "Model" }).click();
+  await expect(modelPicker).toContainText("No models match the current search or filters.");
+  await modelPicker.getByRole("button", { name: "Show all available models" }).click();
   await expect(modelPicker.getByRole("option", { name: "qwen3:14b" })).toBeVisible();
   await modelPicker.getByRole("searchbox", { name: "Search models" }).fill("gemini");
   await expect(modelPicker.getByRole("option", { name: "gemini-2.5-flash" })).toBeVisible();
