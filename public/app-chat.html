@@ -19,14 +19,15 @@
           ></h1>
           <p
             class="mt-4 text-zinc-300"
-            bind-inner-text="$ws.workspace ? 'Start a planning session or open one of your existing conversations.' : 'Open Workspaces, choose a workspace, then start a planning session.'"
+            bind-inner-text="$ws.workspace ? ($ws.settings.goals?.length ? 'Start a planning session or open one of your existing conversations.' : 'Add a goal before starting a planning session, or open an existing conversation.') : 'Open Workspaces, choose a workspace, then start a planning session.'"
           ></p>
           <template if="$ws.workspace">
             <button
-              class="mt-6 inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium"
+              class="mt-6 inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white"
               on-click="createPlannerSession()"
             >
-              Start planning <lucide-icon icon="arrow-right" size="16" aria-hidden="true"></lucide-icon>
+              <span bind-inner-text="$ws.settings.goals?.length ? 'Start planning' : 'Define your first goal'"></span>
+              <lucide-icon icon="arrow-right" size="16" aria-hidden="true"></lucide-icon>
             </button>
             <button
               class="ml-3 mt-6 rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium"
@@ -172,7 +173,7 @@
           <button
             type="submit"
             aria-label="Send message"
-            class="bg-emerald-700 rounded-lg px-4 py-2 focus-visible:outline focus-visible:outline-2"
+            class="bg-emerald-700 rounded-lg px-4 py-2 text-white focus-visible:outline focus-visible:outline-2"
             bind-disabled="$msg.sendDisabled"
           >
             Send
@@ -228,10 +229,13 @@
             const name = String(model.name || id);
             const provider = String(model.provider || model.serverName || "Other");
             const label = String(model.serverName || model.provider || "Other");
+            const connectionKey =
+              provider === "ollama" ? `ollama:${id.match(/^ollama:([^/]+)\//)?.[1] || "local"}` : provider;
             return {
               id,
               name,
               provider,
+              connectionKey,
               label,
             };
           })
@@ -241,7 +245,11 @@
         const query = modelQuery.value.trim().toLocaleLowerCase();
         const visible = normalizedModels.value.filter(
           (model) =>
-            modelPreferences.value.providers[model.provider] !== false &&
+            (model.provider === "ollama"
+              ? modelPreferences.value.providers[model.connectionKey] !== false &&
+                (modelPreferences.value.providers[model.connectionKey] !== undefined ||
+                  modelPreferences.value.providers.ollama !== false)
+              : modelPreferences.value.providers[model.provider] !== false) &&
             modelPreferences.value.models[model.id] !== false &&
             (!query || `${model.name} ${model.label} ${model.provider}`.toLocaleLowerCase().includes(query)),
         );
@@ -391,6 +399,10 @@
         const workspace = $ws.workspace;
         if (!workspace) return;
         await $ws.reloadWorkspaceData();
+        if (!($ws.settings.goals || []).length) {
+          $app.openOverview();
+          return;
+        }
         await $s.createSession({ role: "planner", title: "Planner" });
         $app.openChat();
         await $msg.reloadMessages();
