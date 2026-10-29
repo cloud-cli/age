@@ -942,15 +942,20 @@
       function renderWorkspaceSettings() {
         const description = $ws.settings.description || "";
         const descriptionInput = element.querySelector("[data-workspace-description]");
-        if (descriptionInput) {
-          descriptionInput.value = description;
+        const descriptionText = element.querySelector("[data-description-text]");
+        const descriptionEmpty = element.querySelector("[data-description-empty]");
+        const descriptionEditor = element.querySelector("[data-description-editor]");
+        const descriptionEdit = element.querySelector("[data-description-edit]");
+        if (descriptionInput) descriptionInput.value = description;
+        if (descriptionText) {
+          descriptionText.textContent = description;
+          descriptionText.hidden = !description;
         }
-        element.querySelector("[data-description-text]").textContent = description;
-        element.querySelector("[data-description-text]").hidden = !description;
-        element.querySelector("[data-description-empty]").hidden = !!description;
-        element.querySelector("[data-description-editor]").hidden = true;
-        element.querySelector("[data-description-edit]").hidden = !description;
+        if (descriptionEmpty) descriptionEmpty.hidden = !!description;
+        if (descriptionEditor) descriptionEditor.hidden = true;
+        if (descriptionEdit) descriptionEdit.hidden = !description;
         const list = element.querySelector("[data-goals-list]");
+        if (!list) return;
         const goals = $ws.settings.goals || [];
         list.replaceChildren(
           ...goals.map((goal) => {
@@ -982,7 +987,8 @@
             return card;
           }),
         );
-        element.querySelector("[data-goals-empty]").hidden = goals.length > 0;
+        const goalsEmpty = element.querySelector("[data-goals-empty]");
+        if (goalsEmpty) goalsEmpty.hidden = goals.length > 0;
       }
       function renderUserModels() {
         const host = element.querySelector("[data-user-model-groups]");
