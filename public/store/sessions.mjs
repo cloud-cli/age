@@ -30,9 +30,13 @@ export const useSessions = defineStore("sessions", function () {
   }
 
   async function deleteSessionById(id) {
-    if (!$.workspace || !id) return;
+    if (!$.workspace || !id) {
+      return;
+    }
     await Sessions.delete($.workspace, id);
-    if (sessionId.value === id) setSession(null);
+    if (sessionId.value === id) {
+      setSession(null);
+    }
     await reloadSessionList();
   }
 

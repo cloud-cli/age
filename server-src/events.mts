@@ -1,11 +1,13 @@
 const messageHub = process.env.APP_MESSAGE_HUB_URL;
 
 export function publish(eventName, data) {
-  if (!messageHub) return;
+  if (!messageHub) {
+    return;
+  }
 
-  const url = new URL('/publish', messageHub);
+  const url = new URL("/publish", messageHub);
   fetch(url, {
-    method: 'POST',
-    body: JSON.stringify({ sessionId: 'agents', data: { eventName, data } }),
+    method: "POST",
+    body: JSON.stringify({ sessionId: "agents", data: { eventName, data } }),
   });
 }
