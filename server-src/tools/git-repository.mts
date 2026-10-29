@@ -76,7 +76,7 @@ export async function clonePublicRepository(
       url.href,
       destination,
     ],
-    { ...options, timeout: 120_000 },
+    { ...options, signal: AbortSignal.timeout(120_000) },
   );
   if (!result.ok) {
     const details = String(result.stderr || result.error?.message || `exit code ${result.code}`)

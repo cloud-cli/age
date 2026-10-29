@@ -228,7 +228,8 @@ test("repository clone helper pins public HTTPS destinations and rejects failed 
   assert.equal(gitArgs.includes("http.followRedirects=false"), true);
   assert.equal(gitArgs.includes("--depth=1"), true);
   assert.equal(gitArgs.includes("https://github.com/cloud-cli/age.git"), true);
-  assert.equal(gitOptions.timeout, 120_000);
+  assert.ok(gitOptions.signal);
+  assert.equal(gitOptions.signal.aborted, false);
   await assert.rejects(
     clonePublicRepository.call(context, "https://github.com/cloud-cli/age.git", "repository", {
       ...dependencies,
