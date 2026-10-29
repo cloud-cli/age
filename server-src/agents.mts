@@ -15,6 +15,7 @@ export class Context {
   workspace!: string;
   sessionId!: string;
   taskId?: string;
+  subject?: string;
   plannerMode?: boolean;
 
   constructor(p: Partial<Context>) {
@@ -246,7 +247,7 @@ export async function runAgentLoop(workspace, sessionId, depth = 0, subject?: st
     try {
       functionArgs =
         typeof call.function.arguments === "string" ? JSON.parse(call.function.arguments) : call.function.arguments;
-      const context = new Context({ sessionId, workspace });
+      const context = new Context({ sessionId, workspace, subject });
       if (task) {
         context.taskId = task.taskId;
       }

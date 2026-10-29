@@ -92,3 +92,9 @@ The PWA supports pull-down-to-refresh and revalidates app assets on reload.
 Before calling an iteration complete, verify OIDC login/logout, desktop and mobile workspace/session navigation,
 workspace settings, goal and task flows, multi-phrase dictation-to-draft, opt-in TTS, queued-task labels, tool approval behavior,
 and stale-request handling while switching conversations.
+
+# GitMini repository storage
+
+Age can connect a team to GitMini as its default remote while retaining each workspace's local checkout. In team integrations, connect a GitMini PAT explicitly granted `repo:write` and access to the selected organization. Age verifies the organization before storing the credential encrypted; the PAT is never returned to the browser. GitMini's origin is configured by the server's `GITMINI_URL` environment variable (default `https://git.api.apphor.de`).
+
+In workspace settings, create/link the repository using a valid repository name. This adds a credential-free `gitmini` HTTPS remote and stores only organization/repository metadata. It does not commit or push; subsequent agent pushes use GitMini by default for linked workspaces, sending the current `HEAD` to GitMini's `main` branch when no branch is specified. Existing `origin` remotes are not replaced.

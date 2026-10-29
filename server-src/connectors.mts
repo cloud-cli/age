@@ -202,6 +202,9 @@ async function readConnectors(subject: string) {
 export async function listConnectors(subject: string) {
   const stored = await readConnectors(subject);
   return [
+    ...(stored.gitmini
+      ? [{ provider: "gitmini", configured: true, org: stored.gitmini.org }]
+      : [{ provider: "gitmini", configured: false, org: "" }]),
     ...providers
       .filter((provider) => provider !== "ollama")
       .map((provider) => ({
@@ -218,6 +221,105 @@ export async function listConnectors(subject: string) {
       configured: true,
     })),
   ];
+}
+
+function gitMiniBaseUrl() {
+  const value = process.env.GITMINI_URL || "https://git.api.apphor.de";
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error("GitMini URL configuration is invalid");
+  }
+  if (
+    url.protocol !== "https:" ||
+    url.username ||
+    url.password ||
+    url.pathname !== "/" ||
+    url.search ||
+    url.hash ||
+    !url.hostname ||
+    (url.port && (!/^\d+$/.test(url.port) || Number(url.port) < 1 || Number(url.port) > 65535))
+  ) {
+    throw new Error("GitMini URL must be a safe HTTPS origin");
+  }
+  return url.origin;
+}
+
+export async function saveGitMiniConnector(subject: string, input: any) {
+  const org = typeof input?.org === "string" ? input.org.trim() : "";
+  const token = typeof input?.token === "string" ? input.token.trim() : "";
+  if (!/^[a-z0-9](?:[a-z0-9._-]{0,61}[a-z0-9])?$/.test(org) || !/^gmpat_[A-Za-z0-9_-]{43}$/.test(token)) {
+    throw new Error("Enter a valid GitMini organization and PAT");
+  }
+  const base = gitMiniBaseUrl();
+  let response: Response;
+  try {
+    response = await fetch(`${base}/api/v1/orgs`, {
+      headers: { authorization: `Bearer ${token}` },
+      redirect: "error",
+      signal: AbortSignal.timeout(10000),
+    });
+  } catch {
+    throw Object.assign(new Error("Could not verify GitMini credentials"), { statusCode: 502 });
+  }
+  if (!response.ok) {
+    const statusCode = response.status >= 400 && response.status < 500 ? response.status : 502;
+    throw Object.assign(new Error("GitMini credential verification failed"), { statusCode });
+  }
+  let data: any;
+  try {
+    data = await response.json();
+  } catch {
+    throw Object.assign(new Error("GitMini returned an invalid response"), { statusCode: 502 });
+  }
+  if (!Array.isArray(data?.orgs) || !data.orgs.some((item: any) => item?.slug === org)) {
+    throw Object.assign(new Error("GitMini token cannot access the requested organization"), { statusCode: 403 });
+  }
+  const stored = await readConnectors(subject);
+  stored.gitmini = { org, token };
+  await writeConnectors(subject, stored);
+  return { configured: true, org };
+}
+
+export async function getGitMiniConnector(subject: string) {
+  const stored = await readConnectors(subject);
+  return stored.gitmini ? { ...stored.gitmini, baseUrl: gitMiniBaseUrl() } : null;
+}
+
+export async function createGitMiniRepository(
+  credential: { baseUrl: string; org: string; token: string },
+  repo: string,
+) {
+  let response: Response;
+  try {
+    response = await fetch(
+      `${credential.baseUrl}/api/v1/orgs/${encodeURIComponent(credential.org)}/repos/${encodeURIComponent(repo)}`,
+      {
+        method: "POST",
+        headers: { authorization: `Bearer ${credential.token}` },
+        redirect: "error",
+        signal: AbortSignal.timeout(10000),
+      },
+    );
+  } catch {
+    throw Object.assign(new Error("Could not contact GitMini repository API"), { statusCode: 502 });
+  }
+  if (!response.ok) {
+    if (response.status === 403) {
+      throw Object.assign(new Error("GitMini PAT needs repo:write permission for this organization"), {
+        statusCode: 403,
+      });
+    }
+    const statusCode = response.status >= 400 && response.status < 500 ? response.status : 502;
+    throw Object.assign(new Error(`GitMini could not create the repository (${response.status})`), { statusCode });
+  }
+}
+
+export async function deleteGitMiniConnector(subject: string) {
+  const stored = await readConnectors(subject);
+  delete stored.gitmini;
+  await writeConnectors(subject, stored);
 }
 
 export async function deleteConnector(subject: string, provider: string, id?: string) {

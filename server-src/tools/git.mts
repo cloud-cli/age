@@ -1,8 +1,23 @@
 import { exec } from "@cloud-cli/exec";
 import type { Context } from "../agents.mjs";
 import { clonePublicRepository as cloneRepository } from "./git-repository.mjs";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { authenticatedPullPlan, gitRemoteArgs, pushDestinationRef, remoteOptions } from "./gitmini-auth.mjs";
+const execFileAsync = promisify(execFile);
 
-type WorkspaceContext = Pick<Context, "getPath" | "workspacePath">;
+type WorkspaceContext = Pick<Context, "getPath" | "workspacePath" | "subject" | "taskId">;
+
+async function runGit(remote: { options: any; authenticated: boolean }, args: string[]) {
+  if (!remote.authenticated) {
+    return exec("git", args, remote.options);
+  }
+  try {
+    return await execFileAsync("git", args, { ...remote.options, timeout: 120000, maxBuffer: 1_000_000 });
+  } catch {
+    throw new Error("Authenticated GitMini operation failed");
+  }
+}
 
 function repositoryPath(context: WorkspaceContext, path: string) {
   return context.getPath(path);
@@ -43,29 +58,47 @@ export async function CommitChanges(this: WorkspaceContext, /*string*/ repoPath:
 export async function PushChanges(
   this: WorkspaceContext,
   /*string*/ repoPath: string,
-  /*string*/ remote = "origin",
-  /*string*/ branch = "main",
+  /*string*/ remote = "",
+  /*string*/ branch = "",
 ) {
-  "## Pushes committed changes from the specified repository path to the given remote and branch. ##";
-  const options = { cwd: this.getPath(".") };
-  validateRemote(remote);
-  await validateBranch(branch, options);
+  "## Pushes committed changes; defaults to the GitMini remote when linked, otherwise origin. Without a branch, pushes HEAD to GitMini main (or main for another remote). ##";
+  if (this.taskId) {
+    throw new Error("Task agents cannot push or pull");
+  }
+  const selected = await remoteOptions(this, remote);
+  validateRemote(selected.remote);
+  const options = selected.options;
+  const targetBranch = branch || "main";
+  await validateBranch(targetBranch, { cwd: options.cwd });
   const path = repositoryPath(this, repoPath);
-  const sh = await exec("git", ["-C", path, "push", remote, branch], options);
+  const pushRef = pushDestinationRef(selected.remote, branch);
+  const args = gitRemoteArgs(path, "push", selected.remote, pushRef, selected.authenticated);
+  const sh = await runGit(selected, args);
   return sh.stdout;
 }
 
 export async function PullChanges(
   this: WorkspaceContext,
   /*string*/ repoPath: string,
-  /*string*/ remote = "origin",
+  /*string*/ remote = "",
   /*string*/ branch = "main",
 ) {
-  "## Pulls the latest changes from the specified remote and branch into the given repository path. ##";
-  const options = { cwd: this.getPath(".") };
-  validateRemote(remote);
-  await validateBranch(branch, options);
+  "## Pulls the latest changes into the repository path; defaults to the GitMini remote when linked, otherwise origin. ##";
+  if (this.taskId) {
+    throw new Error("Task agents cannot push or pull");
+  }
+  const selected = await remoteOptions(this, remote);
+  validateRemote(selected.remote);
+  const options = selected.options;
+  await validateBranch(branch, { cwd: options.cwd });
   const path = repositoryPath(this, repoPath);
-  const sh = await exec("git", ["-C", path, "pull", remote, branch], options);
+  if (selected.authenticated) {
+    const plan = authenticatedPullPlan(path, selected.remote, branch);
+    const fetched = await runGit(selected, plan.fetchArgs);
+    const merged = await exec("git", plan.mergeArgs, plan.mergeOptions);
+    return `${fetched.stdout}${fetched.stdout && merged.stdout ? "\n" : ""}${merged.stdout}`;
+  }
+  const args = gitRemoteArgs(path, "pull", selected.remote, branch, selected.authenticated);
+  const sh = await runGit(selected, args);
   return sh.stdout;
 }

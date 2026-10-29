@@ -1,5 +1,6 @@
 import { adjectives, colors, names, uniqueNamesGenerator } from "unique-names-generator";
 import { randomUUID } from "node:crypto";
+import { exec } from "@cloud-cli/exec";
 import { createGzip } from "node:zlib";
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
@@ -12,10 +13,14 @@ import { runAgentLoop } from "./agents.mjs";
 import { publish } from "./events.mjs";
 import {
   deleteConnector,
+  deleteGitMiniConnector,
+  createGitMiniRepository,
+  getGitMiniConnector,
   getConfiguredModels,
   listConnectors,
   pollChatgptLogin,
   saveConnector,
+  saveGitMiniConnector,
   startChatgptLogin,
 } from "./connectors.mjs";
 import { addTeamMember, createTeam, readTeam, teamFor } from "./teams.mjs";
@@ -74,6 +79,118 @@ async function onSaveConnector(req, res) {
     const message = error instanceof Error ? error.message : "Could not save connector settings";
     const status = /^(Unsupported|Invalid|Enter|Ollama)/.test(message) ? 400 : 500;
     res.sendJson({ error: message }, status);
+  }
+}
+
+async function onGitMiniConnector(req, res) {
+  try {
+    const input = JSON.parse(Buffer.concat(await req.toArray()).toString("utf8"));
+    res.sendJson(await saveGitMiniConnector(await connectorScope(req.authSubject), input));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not configure GitMini";
+    const status =
+      Number((error as { statusCode?: number }).statusCode) ||
+      (/^Enter a valid GitMini/.test(message) ? 400 : /^GitMini URL/.test(message) ? 500 : 502);
+    res.sendJson({ error: message }, status);
+  }
+}
+async function onDeleteGitMini(req, res) {
+  try {
+    await deleteGitMiniConnector(await connectorScope(req.authSubject));
+    res.writeHead(204).end();
+  } catch {
+    res.sendJson({ error: "Could not disconnect GitMini" }, 500);
+  }
+}
+
+async function onLinkGitMiniRepository(req, res, params) {
+  const rawName = String(params.name || "");
+  const name = sanitize(rawName);
+  if (!name || name !== rawName) {
+    return res.sendJson({ error: "Invalid workspace name" }, 400);
+  }
+  const workspace = join(dataDir, name);
+  if (!existsSync(workspace)) {
+    return res.sendJson({ error: "Workspace not found" }, 404);
+  }
+  try {
+    const input = JSON.parse(await readLimitedRequestBody(req, repositoryRequestLimit));
+    const repo = typeof input.repo === "string" ? input.repo.trim() : name;
+    if (!/^(?=.{1,100}$)[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/.test(repo)) {
+      return res.sendJson({ error: "Invalid repository name" }, 400);
+    }
+    const credential = await getGitMiniConnector(await connectorScope(req.authSubject));
+    if (!credential) {
+      return res.sendJson({ error: "Connect GitMini in team settings first" }, 409);
+    }
+    const remoteUrl = `${credential.baseUrl}/git/${encodeURIComponent(credential.org)}/${encodeURIComponent(repo)}.git`;
+    const files = join(workspace, "files");
+    await mkdir(files, { recursive: true });
+    const result = await serializeMutation(join(workspace, "config", "workspace.json"), async () => {
+      const metadataFile = join(workspace, "config", "workspace.json");
+      const metadata = (await readMetadata(workspace, name)).metadata;
+      const previouslyLinked = Boolean(metadata.gitmini);
+      const pendingMatches = metadata.gitminiPending?.org === credential.org && metadata.gitminiPending?.repo === repo;
+      const current = await exec("git", ["-C", files, "remote", "get-url", "gitmini"], { cwd: files })
+        .then((r) => r.stdout.trim())
+        .catch(() => "");
+      if (current && current !== remoteUrl) {
+        throw Object.assign(new Error("A conflicting gitmini remote already exists"), { statusCode: 409 });
+      }
+      if (metadata.gitmini && (metadata.gitmini.org !== credential.org || metadata.gitmini.repo !== repo)) {
+        throw Object.assign(new Error("Workspace is already linked to a different GitMini repository"), {
+          statusCode: 409,
+        });
+      }
+      if (metadata.gitminiPending && !pendingMatches) {
+        throw Object.assign(new Error("Workspace has a pending GitMini setup for a different repository"), {
+          statusCode: 409,
+        });
+      }
+      if (!previouslyLinked && !pendingMatches && current !== remoteUrl) {
+        const listed = await fetch(`${credential.baseUrl}/api/v1/orgs/${encodeURIComponent(credential.org)}/repos`, {
+          headers: { authorization: `Bearer ${credential.token}` },
+          redirect: "error",
+          signal: AbortSignal.timeout(10000),
+        }).catch(() => null);
+        if (!listed?.ok) {
+          throw Object.assign(new Error("Could not verify whether the GitMini repository already exists"), {
+            statusCode: 502,
+          });
+        }
+        const repoList: any = await listed.json().catch(() => null);
+        if (!Array.isArray(repoList?.repos)) {
+          throw Object.assign(new Error("GitMini returned an invalid repository list"), { statusCode: 502 });
+        }
+        if (repoList.repos.some((item: any) => item?.repo === repo)) {
+          throw Object.assign(new Error("GitMini repository already exists and is not linked to this workspace"), {
+            statusCode: 409,
+          });
+        }
+      }
+      if (!current) {
+        const isRepo = await exec("git", ["-C", files, "rev-parse", "--is-inside-work-tree"], { cwd: files })
+          .then((r) => r.stdout.trim() === "true")
+          .catch(() => false);
+        if (!isRepo) {
+          await exec("git", ["-C", files, "init", "-b", "main"], { cwd: files });
+        }
+        await exec("git", ["-C", files, "remote", "add", "gitmini", remoteUrl], { cwd: files });
+      }
+      if (!previouslyLinked && !pendingMatches) {
+        metadata.gitminiPending = { org: credential.org, repo };
+        await atomicJson(metadataFile, metadata);
+      }
+      await createGitMiniRepository(credential, repo);
+      metadata.gitmini = { org: credential.org, repo };
+      delete metadata.gitminiPending;
+      await atomicJson(metadataFile, metadata);
+      return { org: credential.org, repo, remote: "gitmini", ready: true };
+    });
+    res.sendJson(result);
+  } catch (error) {
+    const status = Number((error as any)?.statusCode) || (error instanceof SyntaxError ? 400 : 500);
+    res.sendJson({ error: error instanceof Error ? error.message : "Could not link GitMini repository" }, status);
   }
 }
 
@@ -979,6 +1096,8 @@ export default {
   "POST /teams/members": onAddTeamMember,
   "GET /connectors": onListConnectors,
   "PUT /connectors": onSaveConnector,
+  "PUT /connectors/gitmini": onGitMiniConnector,
+  "DELETE /connectors/gitmini": onDeleteGitMini,
   "POST /connectors/chatgpt/login": onStartChatgptLogin,
   "GET /connectors/chatgpt/login/:id": onPollChatgptLogin,
   "DELETE /connectors/:provider": onDeleteConnector,
@@ -1010,6 +1129,7 @@ export default {
   "GET /workspaces/:name/settings": onReadWorkspaceSettings,
   "PUT /workspaces/:name/settings": onUpdateWorkspaceSettings,
   "POST /workspaces/:name/repository": onLinkWorkspaceRepository,
+  "POST /workspaces/:name/gitmini": onLinkGitMiniRepository,
   "GET /workspaces/:name/tasks": onReadTasks,
   "POST /workspaces/:name/tasks": onCreateTask,
   "GET /workspaces/:name/tasks/:id": onReadTask,

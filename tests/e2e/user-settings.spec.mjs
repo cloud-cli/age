@@ -9,6 +9,8 @@ test("user settings show account, provider management, and API models separately
   page,
 }) => {
   let modelsAvailable = false;
+  let workspaceName = "";
+  let gitminiRepo = "";
   page.on("console", (message) => console.log("browser", message.type(), message.text()));
   page.on("pageerror", (error) => console.log("page error", error.stack));
   await page.addInitScript(() => {
@@ -30,10 +32,29 @@ test("user settings show account, provider management, and API models separately
       body = { models: modelsAvailable ? models : [] };
     } else if (pathname === "/teams/current") {
       body = { id: "", role: "", members: [] };
+    } else if (pathname === "/workspaces" && route.request().method() === "POST") {
+      workspaceName = route.request().postDataJSON().name;
+      body = { name: workspaceName };
     } else if (pathname === "/workspaces") {
+      body = workspaceName ? [{ name: workspaceName }] : [];
+    } else if (pathname.endsWith("/settings") && pathname.startsWith("/workspaces/")) {
+      body = {
+        name: workspaceName,
+        description: "",
+        summary: "",
+        goals: [],
+        revision: 0,
+        ...(gitminiRepo ? { gitmini: { org: "test-org", repo: gitminiRepo } } : {}),
+      };
+    } else if (pathname.endsWith("/tasks") && pathname.startsWith("/workspaces/")) {
       body = [];
+    } else if (pathname.endsWith("/gitmini") && route.request().method() === "POST") {
+      gitminiRepo = route.request().postDataJSON().repo;
+      body = { org: "test-org", repo: gitminiRepo, remote: "gitmini", ready: true };
     } else if (pathname === "/connectors") {
-      body = [];
+      body = [{ provider: "gitmini", configured: true, org: "test-org" }];
+    } else if (pathname === "/connectors/gitmini" && route.request().method() === "PUT") {
+      body = { configured: true, org: "test-org" };
     } else if (pathname === "/connectors/gemini/models") {
       modelsAvailable = true;
       body = { models };
@@ -51,6 +72,14 @@ test("user settings show account, provider management, and API models separately
   const settings = page.locator("[data-user-settings-main]");
   await expect(settings.getByRole("heading", { name: "Account and models" })).toBeVisible();
   await expect(settings).toContainText("Test User");
+  const gitminiForm = page
+    .locator("[data-connectors-page] form")
+    .filter({ has: page.locator("[data-gitmini-status]") });
+  await expect(page.locator("[data-gitmini-status]")).toContainText("test-org");
+  await gitminiForm.getByLabel("Organization").fill("test-org");
+  await gitminiForm.getByLabel("GitMini PAT").fill(`gmpat_${"x".repeat(43)}`);
+  await gitminiForm.getByRole("button", { name: "Connect / replace" }).click();
+  await expect(page.locator("[data-gitmini-status]")).toContainText("Connected to test-org");
   await expect(settings.locator("[data-user-model-empty]")).toBeVisible();
   const modelReload = page.waitForResponse((response) => new URL(response.url()).pathname === "/models");
   await settings.locator('[data-provider-form="gemini"]').getByRole("button", { name: "Test connection" }).click();
@@ -74,6 +103,9 @@ test("user settings show account, provider management, and API models separately
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(settings.getByRole("heading", { name: "Account and models" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Primary navigation" })).toBeVisible();
+  await gitminiForm.scrollIntoViewIfNeeded();
+  await expect(page.locator("[data-gitmini-status]")).toBeInViewport();
+  await page.screenshot({ path: "test-results/gitmini-integrations-mobile.png" });
 
   await page.goto("/#/settings");
   await expect(page.locator("[data-settings-main]")).toBeVisible();
@@ -98,4 +130,27 @@ test("user settings show account, provider management, and API models separately
   await modelPicker.getByRole("searchbox", { name: "Search models" }).fill("qwen3");
   await modelPicker.getByRole("option", { name: "qwen3:14b" }).click();
   await expect(page.getByRole("button", { name: "Model" })).toHaveText("qwen3:14b · LG");
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  page.once("dialog", (dialog) => dialog.accept("repo-default"));
+  await sidebar
+    .getByRole("button", { name: /Create workspace/ })
+    .first()
+    .click();
+  await expect(page.locator("[data-overview-main]")).toBeVisible();
+  await page.getByRole("button", { name: "Workspace settings" }).click();
+  await expect(page.locator("[data-gitmini-repo]")).toHaveValue("repo-default");
+  const linkRequest = page.waitForRequest(
+    (request) => request.method() === "POST" && new URL(request.url()).pathname === "/workspaces/repo-default/gitmini",
+  );
+  await page.getByRole("button", { name: "Create / link" }).click();
+  const request = await linkRequest;
+  expect(request.postDataJSON()).toEqual({ repo: "repo-default" });
+  await expect(page.locator("[data-workspace-gitmini-status]")).toContainText("Remote ready");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  await expect(page.locator("[data-workspace-gitmini-status]")).toContainText("Linked to test-org/repo-default");
+  await page.locator("[data-gitmini-workspace-link]").scrollIntoViewIfNeeded();
+  await expect(page.locator("[data-gitmini-workspace-link]")).toBeInViewport();
+  await page.screenshot({ path: "test-results/gitmini-workspace-mobile.png" });
 });

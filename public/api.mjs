@@ -86,6 +86,18 @@ export const Workspaces = {
     return res.json();
   },
 
+  async linkGitMini(name, repo) {
+    const res = await fetch(
+      new URL(`/workspaces/${encodeURIComponent(name)}/gitmini`, baseUrl),
+      authOptions({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ repo }) }),
+    );
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(result.error || `Failed to link GitMini: ${res.status}`);
+    }
+    return result;
+  },
+
   async linkRepository(name, repositoryUrl) {
     const res = await fetch(
       new URL(`/workspaces/${encodeURIComponent(name)}/repository`, baseUrl),
@@ -287,6 +299,21 @@ export const Models = {
 };
 
 export const Connectors = {
+  async saveGitMini(org, token) {
+    const res = await fetch(
+      new URL("/connectors/gitmini", baseUrl),
+      authOptions({
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ org, token }),
+      }),
+    );
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(result.error || `Failed to connect GitMini: ${res.status}`);
+    }
+    return result;
+  },
   async list() {
     const res = await fetch(new URL("/connectors", baseUrl), authOptions());
     if (!res.ok) {
@@ -343,7 +370,11 @@ export const Connectors = {
 
   async remove(provider, id) {
     const path =
-      provider === "ollama" && id ? `/connectors/ollama/${encodeURIComponent(id)}` : `/connectors/${provider}`;
+      provider === "gitmini"
+        ? "/connectors/gitmini"
+        : provider === "ollama" && id
+          ? `/connectors/ollama/${encodeURIComponent(id)}`
+          : `/connectors/${provider}`;
     const res = await fetch(new URL(path, baseUrl), authOptions({ method: "DELETE" }));
     if (!res.ok) {
       throw new Error(`Failed to disconnect ${provider}: ${res.status}`);
