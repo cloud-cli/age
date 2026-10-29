@@ -420,9 +420,6 @@ async function onLinkWorkspaceRepository(req, res, params, cloneRepo = clonePubl
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not link repository";
     const statusCode = (error as { statusCode?: number }).statusCode;
-    if (statusCode === 502) {
-      console.error("Workspace repository clone failed", (error as { details?: string }).details || message);
-    }
     const status =
       statusCode ||
       (error instanceof SyntaxError
@@ -434,6 +431,15 @@ async function onLinkWorkspaceRepository(req, res, params, cloneRepo = clonePubl
               )
             ? 400
             : 502);
+    if (status >= 500) {
+      const details = String((error as { details?: string }).details || message)
+        .replace(/https?:\/\/\S+/gi, "[repository URL]")
+        .replace(/\/data\/[^\s,:'"]+/g, "[workspace path]")
+        .replace(/[\r\n\t]+/g, " ")
+        .slice(0, 500);
+      const errorName = error instanceof Error ? error.name : "UnknownError";
+      console.error(`Workspace repository link failed (${errorName}): ${details}`);
+    }
     const publicMessage =
       status === 502 ? "Could not clone repository. Verify the public HTTPS URL and try again." : message;
     res.sendJson({ error: publicMessage.slice(0, 600) }, status);
