@@ -5,6 +5,8 @@ test("mobile workspace drawer supports keyboard, backdrop, selection, and deskto
 }, testInfo) => {
   page.on("console", (message) => console.log("browser", message.type(), message.text()));
   page.on("pageerror", (error) => console.log("page error", error.stack));
+  const pageErrors = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
   await page.route("**/api/me", (route) =>
     route.fulfill({
       contentType: "application/json",
@@ -109,4 +111,5 @@ test("mobile workspace drawer supports keyboard, backdrop, selection, and deskto
   await expect(page.locator("aside")).toBeVisible();
   await expect(toggle).toBeHidden();
   await expect(page.locator("aside button").first()).toBeFocused();
+  expect(pageErrors).toEqual([]);
 });

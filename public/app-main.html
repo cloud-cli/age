@@ -941,7 +941,10 @@
       }
       function renderWorkspaceSettings() {
         const description = $ws.settings.description || "";
-        element.querySelector("[data-workspace-description]").value = description;
+        const descriptionInput = element.querySelector("[data-workspace-description]");
+        if (descriptionInput) {
+          descriptionInput.value = description;
+        }
         element.querySelector("[data-description-text]").textContent = description;
         element.querySelector("[data-description-text]").hidden = !description;
         element.querySelector("[data-description-empty]").hidden = !!description;
