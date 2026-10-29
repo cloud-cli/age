@@ -1489,8 +1489,8 @@
         if ($app.page === "goal") {
           await renderGoal();
         }
-        element.querySelector("[data-task-status]").addEventListener("change", changeTaskStatus);
-        element.querySelector("[data-comment-form]").addEventListener("submit", addTaskComment);
+        element.querySelector("[data-task-status]")?.addEventListener("change", changeTaskStatus);
+        element.querySelector("[data-comment-form]")?.addEventListener("submit", addTaskComment);
         if ($p.profile) {
           refreshTeam().catch(console.error);
           $msg.reloadModelList().catch(console.error);
