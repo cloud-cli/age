@@ -230,19 +230,19 @@ test("GitMini setup rejects invalid names, aliases, conflicting local remotes, a
   assert.equal(JSON.parse(await readFile(join(fresh, "config", "workspace.json"), "utf8")).gitmini, undefined);
 
   const failedRoot = await prepareWorkspace("failed-create");
-  let ambiguousCreate = false;
+  let repositoryCreated = false;
   let createAttempts = 0;
   globalThis.fetch = async (url) => {
     const path = new URL(String(url)).pathname;
     if (path.endsWith("/repos")) {
-      return globalThis.Response.json({ repos: ambiguousCreate ? [{ repo: "failed" }] : [] });
+      return globalThis.Response.json({ repos: repositoryCreated ? [{ repo: "failed" }] : [] });
     }
     if (path.endsWith("/repos/failed")) {
       createAttempts += 1;
       if (createAttempts === 1) {
-        ambiguousCreate = true;
         return globalThis.Response.json({ error: "opaque" }, { status: 500 });
       }
+      repositoryCreated = true;
       return globalThis.Response.json({ repo: "failed" }, { status: 201 });
     }
     return globalThis.Response.json({ orgs: [{ slug: "test.org" }] });
@@ -260,9 +260,43 @@ test("GitMini setup rejects invalid names, aliases, conflicting local remotes, a
   );
   const retried = await invoke(routes["POST /workspaces/:name/gitmini"], { repo: "failed" }, { name: "failed-create" });
   assert.equal(retried.status, 200, JSON.stringify(retried.value));
+  assert.equal(createAttempts, 2);
   const repairedMetadata = JSON.parse(await readFile(join(failedRoot, "config", "workspace.json"), "utf8"));
   assert.deepEqual(repairedMetadata.gitmini, { org: "test.org", repo: "failed" });
   assert.equal(repairedMetadata.gitminiPending, undefined);
+
+  const lostResponseRoot = await prepareWorkspace("lost-response");
+  let repositoryExists = false;
+  let lostResponseCreateAttempts = 0;
+  globalThis.fetch = async (url) => {
+    const path = new URL(String(url)).pathname;
+    if (path.endsWith("/repos")) {
+      return globalThis.Response.json({ repos: repositoryExists ? [{ repo: "lost-response" }] : [] });
+    }
+    if (path.endsWith("/repos/lost-response")) {
+      lostResponseCreateAttempts += 1;
+      repositoryExists = true;
+      return globalThis.Response.json({ error: "response lost after creation" }, { status: 500 });
+    }
+    return globalThis.Response.json({ orgs: [{ slug: "test.org" }] });
+  };
+  const ambiguous = await invoke(
+    routes["POST /workspaces/:name/gitmini"],
+    { repo: "lost-response" },
+    { name: "lost-response" },
+  );
+  assert.equal(ambiguous.status, 502);
+  const recovered = await invoke(
+    routes["POST /workspaces/:name/gitmini"],
+    { repo: "lost-response" },
+    { name: "lost-response" },
+  );
+  assert.equal(recovered.status, 200, JSON.stringify(recovered.value));
+  assert.equal(lostResponseCreateAttempts, 1);
+  assert.deepEqual(JSON.parse(await readFile(join(lostResponseRoot, "config", "workspace.json"), "utf8")).gitmini, {
+    org: "test.org",
+    repo: "lost-response",
+  });
 });
 
 test("Git operations select defaults safely and require credentials for GitMini", async () => {

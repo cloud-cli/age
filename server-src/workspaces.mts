@@ -147,7 +147,8 @@ async function onLinkGitMiniRepository(req, res, params) {
           statusCode: 409,
         });
       }
-      if (!previouslyLinked && !pendingMatches && current !== remoteUrl) {
+      let repositoryAlreadyExists = false;
+      if (!previouslyLinked && (pendingMatches || current !== remoteUrl)) {
         const listed = await fetch(`${credential.baseUrl}/api/v1/orgs/${encodeURIComponent(credential.org)}/repos`, {
           headers: { authorization: `Bearer ${credential.token}` },
           redirect: "error",
@@ -162,7 +163,8 @@ async function onLinkGitMiniRepository(req, res, params) {
         if (!Array.isArray(repoList?.repos)) {
           throw Object.assign(new Error("GitMini returned an invalid repository list"), { statusCode: 502 });
         }
-        if (repoList.repos.some((item: any) => item?.repo === repo)) {
+        repositoryAlreadyExists = repoList.repos.some((item: any) => item?.repo === repo);
+        if (repositoryAlreadyExists && !pendingMatches) {
           throw Object.assign(new Error("GitMini repository already exists and is not linked to this workspace"), {
             statusCode: 409,
           });
@@ -181,7 +183,9 @@ async function onLinkGitMiniRepository(req, res, params) {
         metadata.gitminiPending = { org: credential.org, repo };
         await atomicJson(metadataFile, metadata);
       }
-      await createGitMiniRepository(credential, repo);
+      if (!repositoryAlreadyExists) {
+        await createGitMiniRepository(credential, repo);
+      }
       metadata.gitmini = { org: credential.org, repo };
       delete metadata.gitminiPending;
       await atomicJson(metadataFile, metadata);
