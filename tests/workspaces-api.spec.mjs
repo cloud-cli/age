@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -16,7 +16,8 @@ if (process.env.AGE_TEST_DATABASE_URL) {
 const hasTestDatabase = Boolean(process.env.AGE_TEST_DATABASE_URL);
 const { default: routes } = await import(pathToFileURL(join(process.cwd(), "server/workspaces.mjs")));
 const { CommentOnTask, UpdateTaskStatus } = await import(pathToFileURL(join(process.cwd(), "server/tools/core.mjs")));
-const { executeFunction } = await import(pathToFileURL(join(process.cwd(), "server/agents.mjs")));
+const { Context, executeFunction } = await import(pathToFileURL(join(process.cwd(), "server/agents.mjs")));
+const { clonePublicRepository } = await import(pathToFileURL(join(process.cwd(), "server/tools/git-repository.mjs")));
 const { processTask, initializeTaskQueue } = await import(pathToFileURL(join(process.cwd(), "server/task-queue.mjs")));
 after(() => rm(dataPath, { recursive: true, force: true }));
 
@@ -111,6 +112,138 @@ test("workspace settings migrate legacy goals without discarding existing fields
     { name: "sample" },
   );
   assert.equal(invalid.status, 400);
+});
+
+test("workspace repository linking rejects invalid HTTPS URLs and non-empty files roots", async () => {
+  await mkdir(join(dataPath, "repo-test", "files"), { recursive: true });
+  const { value: invalid, status: invalidStatus } = await invoke(
+    routes["POST /workspaces/:name/repository"],
+    { repositoryUrl: "http://example.com/repo.git" },
+    { name: "repo-test" },
+  );
+  assert.equal(invalidStatus, 400);
+  assert.match(invalid.error, /HTTPS/);
+
+  await writeFile(join(dataPath, "repo-test", "files", "keep.txt"), "preserve");
+  const { value, status } = await invoke(
+    routes["POST /workspaces/:name/repository"],
+    { repositoryUrl: "https://github.com/cloud-cli/age.git" },
+    { name: "repo-test" },
+  );
+  assert.equal(status, 409);
+  assert.match(value.error, /empty workspace files folder/);
+  assert.equal(await readFile(join(dataPath, "repo-test", "files", "keep.txt"), "utf8"), "preserve");
+
+  const oversized = await invoke(
+    routes["POST /workspaces/:name/repository"],
+    { repositoryUrl: `https://github.com/${"a".repeat(5000)}` },
+    { name: "repo-test" },
+  );
+  assert.equal(oversized.status, 413);
+});
+
+test("workspace repository linking clones into files and persists the connected remote", async () => {
+  const workspace = join(dataPath, "repo-success");
+  const files = join(workspace, "files");
+  await mkdir(files, { recursive: true });
+  let cloneCall;
+  const clone = async function (repositoryUrl, targetPath) {
+    cloneCall = { repositoryUrl, targetPath, workspacePath: this.workspacePath };
+    const staging = this.getPath(targetPath);
+    await mkdir(join(staging, ".git"), { recursive: true });
+    await writeFile(join(staging, ".git/config"), `[remote "origin"]\n\turl = ${repositoryUrl}\n`);
+    await writeFile(join(staging, "README.md"), "cloned repository");
+    return { url: repositoryUrl, output: "clone succeeded" };
+  };
+  const handler = (req, res, params) => routes["POST /workspaces/:name/repository"](req, res, params, clone);
+  const { value, status } = await invoke(
+    handler,
+    { repositoryUrl: "https://github.com/cloud-cli/age.git" },
+    { name: "repo-success" },
+  );
+  assert.equal(status, 200);
+  assert.deepEqual(value, { repositoryUrl: "https://github.com/cloud-cli/age.git" });
+  assert.equal(cloneCall.repositoryUrl, "https://github.com/cloud-cli/age.git");
+  assert.match(cloneCall.targetPath, /^\.age-repository-/);
+  assert.equal(cloneCall.workspacePath, workspace);
+  assert.equal(await readFile(join(files, "README.md"), "utf8"), "cloned repository");
+  assert.match(await readFile(join(files, ".git/config"), "utf8"), /github\.com\/cloud-cli\/age\.git/);
+  const { value: settings } = await invoke(routes["GET /workspaces/:name/settings"], {}, { name: "repo-success" });
+  assert.equal(settings.repositoryUrl, "https://github.com/cloud-cli/age.git");
+  assert.deepEqual((await readdir(files)).sort(), [".git", "README.md"]);
+});
+
+test("workspace repository linking hides clone failures and removes its owned staging folder", async () => {
+  const workspace = join(dataPath, "repo-failure");
+  const files = join(workspace, "files");
+  await mkdir(files, { recursive: true });
+  const failedClone = async () => {
+    throw Object.assign(new Error("Git clone failed"), { statusCode: 502, details: "internal path detail" });
+  };
+  const handler = (req, res, params) => routes["POST /workspaces/:name/repository"](req, res, params, failedClone);
+  const previousError = console.error;
+  console.error = () => {};
+  try {
+    const { value, status } = await invoke(
+      handler,
+      { repositoryUrl: "https://github.com/cloud-cli/age.git" },
+      { name: "repo-failure" },
+    );
+    assert.equal(status, 502);
+    assert.match(value.error, /Could not clone repository/);
+    assert.doesNotMatch(value.error, /internal path detail/);
+  } finally {
+    console.error = previousError;
+  }
+  assert.deepEqual(await readdir(files), []);
+  assert.deepEqual(await readdir(workspace), ["files"]);
+});
+
+test("repository clone helper pins public HTTPS destinations and rejects failed git clones", async () => {
+  const workspace = "repo-helper";
+  const files = join(dataPath, workspace, "files");
+  await mkdir(files, { recursive: true });
+  const context = new Context({ workspace });
+  let gitArgs;
+  let gitOptions;
+  const dependencies = {
+    resolvePublicHost: async (hostname) => {
+      assert.equal(hostname, "github.com");
+      return [{ address: "93.184.216.34", family: 4 }];
+    },
+    runGit: async (command, args, options) => {
+      assert.equal(command, "git");
+      gitArgs = args;
+      gitOptions = options;
+      return { ok: true, code: 0, stdout: "Cloning into repository", stderr: "" };
+    },
+  };
+  const result = await clonePublicRepository.call(
+    context,
+    "https://github.com/cloud-cli/age.git",
+    "repository",
+    dependencies,
+  );
+  assert.equal(result.url, "https://github.com/cloud-cli/age.git");
+  assert.equal(gitArgs.includes("http.followRedirects=false"), true);
+  assert.equal(gitArgs.includes("--depth=1"), true);
+  assert.equal(gitArgs.includes("https://github.com/cloud-cli/age.git"), true);
+  assert.equal(gitOptions.timeout, 120_000);
+  await assert.rejects(
+    clonePublicRepository.call(context, "https://github.com/cloud-cli/age.git", "repository", {
+      ...dependencies,
+      runGit: async () => ({ ok: false, code: 128, stdout: "", stderr: "repository not found" }),
+    }),
+    (error) => error.message === "Git clone failed" && error.details === "repository not found",
+  );
+  await assert.rejects(
+    clonePublicRepository.call(context, "https://user:secret@github.com/cloud-cli/age.git", "repository", dependencies),
+    /without embedded credentials/,
+  );
+  await assert.rejects(
+    clonePublicRepository.call(context, "https://github.com:8443/cloud-cli/age.git", "repository", dependencies),
+    /port 443/,
+  );
 });
 
 test("workspace history preserves planner role without changing normal sessions", async () => {

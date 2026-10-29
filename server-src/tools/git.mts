@@ -1,7 +1,6 @@
 import { exec } from "@cloud-cli/exec";
-import { isIP } from "node:net";
 import type { Context } from "../agents.mjs";
-import { resolvePublicHost } from "./network-safety.mjs";
+import { clonePublicRepository as cloneRepository } from "./git-repository.mjs";
 
 type WorkspaceContext = Pick<Context, "getPath" | "workspacePath">;
 
@@ -29,62 +28,7 @@ export async function CloneRepository(
   /*string*/ targetPath: string,
 ) {
   "## Clones a public HTTPS Git repository into the specified workspace path. ##";
-  let url: URL;
-  try {
-    url = new URL(repoUrl);
-  } catch {
-    throw new Error("Repository URL must be an HTTPS URL");
-  }
-  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {
-    throw new Error("Repository URL must use HTTPS without embedded credentials or query parameters");
-  }
-  const hostname = url.hostname.replace(/^\[|\]$/g, "");
-  if (isIP(hostname) === 6) {
-    throw new Error("IPv6 literal repository URLs are not supported");
-  }
-  const addresses = await resolvePublicHost(hostname);
-  const address = addresses.find(({ family }) => family === 4);
-  if (!address) {
-    throw new Error("Git clone requires a public IPv4 destination");
-  }
-  const port = url.port || "443";
-  const destination = repositoryPath(this, targetPath);
-  const options = {
-    cwd: this.getPath("."),
-    env: {
-      PATH: process.env.PATH || "/usr/bin:/bin",
-      HOME: this.workspacePath,
-      LANG: "C.UTF-8",
-      GIT_ALLOW_PROTOCOL: "https",
-      GIT_CONFIG_GLOBAL: "/dev/null",
-      GIT_CONFIG_NOSYSTEM: "1",
-      GIT_TERMINAL_PROMPT: "0",
-    },
-  };
-  const resolveConfig = `${hostname}:${port}:${address.address}`;
-  const sh = await exec(
-    "git",
-    [
-      "-c",
-      `http.curloptResolve=${resolveConfig}`,
-      "-c",
-      "http.followRedirects=false",
-      "-c",
-      "http.sslVerify=true",
-      "-c",
-      "protocol.file.allow=never",
-      "-c",
-      "protocol.ext.allow=never",
-      "-c",
-      "core.hooksPath=/dev/null",
-      "clone",
-      "--",
-      url.href,
-      destination,
-    ],
-    options,
-  );
-  return sh.stdout;
+  return (await cloneRepository.call(this, repoUrl, targetPath)).output;
 }
 
 export async function CommitChanges(this: WorkspaceContext, /*string*/ repoPath: string, /*string*/ message: string) {

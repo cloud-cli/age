@@ -26,6 +26,8 @@ agent workspace with a messaging-first interface.
 - The sidebar contains the workspace list, account-settings card, and workspace creation button. Account settings include
   sign-out, provider connections, and model-picker filters; workspace settings remain a separate page.
 - Workspace settings provide an editable brief and goals; workspace home shows recent sessions and the four-state task board.
+- Workspace settings can clone one public HTTPS Git repository into an empty workspace files folder; this is a local clone,
+  not automatic remote synchronization.
 - Workspace archive state and descriptions are stored in a `workspaces` table in `DATABASE_URL`; workspace files,
   histories, goals, and task records remain under `DATA_PATH`.
 - The durable task queue claims tasks sequentially per workspace, records worker/reviewer sessions and retry state in
@@ -44,12 +46,12 @@ agent workspace with a messaging-first interface.
 
 Each workspace is stored below `DATA_PATH`:
 
-| Path                    | Purpose                                            |
-| ----------------------- | -------------------------------------------------- |
-| `history/`              | JSON conversation histories, one per session       |
-| `files/`                | Agent workspace files (not exposed through the UI) |
-| `config/workspace.json` | Workspace brief and goal records                   |
-| `tasks/`                | Delegated-task records and status                  |
+| Path                    | Purpose                                                                       |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| `history/`              | JSON conversation histories, one per session                                  |
+| `files/`                | Server-disk working tree, optionally a Git clone (not exposed through the UI) |
+| `config/workspace.json` | Workspace brief and goal records                                              |
+| `tasks/`                | Delegated-task records and status                                             |
 
 ## Required runtime configuration
 
@@ -81,6 +83,7 @@ The PWA supports pull-down-to-refresh and revalidates app assets on reload.
 - `POST /workspaces/:name/archive`, `POST /workspaces/:name/restore` — reversible workspace archiving
 - `GET|POST|DELETE /workspaces/:name/history` — conversations
 - `GET|PUT /workspaces/:name/settings` — durable description and goal settings
+- `POST /workspaces/:name/repository` — clone a public HTTPS Git repository into an empty `files/` directory
 - `GET|POST /workspaces/:name/tasks`, `GET /workspaces/:name/tasks/:id`, and `PATCH /workspaces/:name/tasks/:id` — task list/detail and status
 - `POST /workspaces/:name/tasks/:id/comments` — authenticated user comments; the server derives the author from the session
 

@@ -529,6 +529,31 @@
                   Edit description
                 </button>
                 <section class="mt-6">
+                  <section class="mb-6 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                    <h3 class="font-semibold">Git repository</h3>
+                    <p class="mt-1 text-sm text-zinc-600">
+                      Workspace files are stored on this server's disk. Linking clones the public repository into those
+                      files; the folder must be empty, and changes are not synced automatically.
+                    </p>
+                    <p data-repository-current role="status" class="mt-2 break-all text-sm text-zinc-600"></p>
+                    <label class="mt-3 block text-sm"
+                      >Public HTTPS repository URL
+                      <input
+                        data-repository-url
+                        type="url"
+                        placeholder="https://github.com/owner/repository.git"
+                        class="mt-1 w-full rounded-lg border border-zinc-300 p-2"
+                      />
+                    </label>
+                    <button
+                      data-repository-link
+                      type="button"
+                      class="mt-3 rounded-lg bg-[#547d42] px-4 py-2 text-sm font-semibold text-white"
+                      on-click="linkWorkspaceRepository()"
+                    >
+                      Clone into workspace
+                    </button>
+                  </section>
                   <header class="mb-3 flex items-center justify-between">
                     <h3 class="font-semibold">Goals</h3>
                     <button
@@ -954,6 +979,18 @@
         if (descriptionEmpty) descriptionEmpty.hidden = !!description;
         if (descriptionEditor) descriptionEditor.hidden = true;
         if (descriptionEdit) descriptionEdit.hidden = !description;
+        const repositoryInput = element.querySelector("[data-repository-url]");
+        const repositoryCurrent = element.querySelector("[data-repository-current]");
+        const repositoryButton = element.querySelector("[data-repository-link]");
+        const repositoryUrl = $ws.settings.repositoryUrl || "";
+        if (repositoryInput) {
+          repositoryInput.value = repositoryUrl || repositoryInput.value;
+          repositoryInput.readOnly = Boolean(repositoryUrl);
+          repositoryInput.required = !repositoryUrl;
+        }
+        if (repositoryButton) repositoryButton.hidden = Boolean(repositoryUrl);
+        if (repositoryCurrent)
+          repositoryCurrent.textContent = repositoryUrl ? `Connected: ${repositoryUrl}` : "No repository linked";
         const list = element.querySelector("[data-goals-list]");
         if (!list) return;
         const goals = $ws.settings.goals || [];
@@ -1186,6 +1223,32 @@
         editor.hidden = false;
         element.querySelector("[data-description-edit]").hidden = true;
         element.querySelector("[data-workspace-description]").focus();
+      }
+      async function linkWorkspaceRepository() {
+        const input = element.querySelector("[data-repository-url]");
+        const button = element.querySelector("[data-repository-link]");
+        const repositoryUrl = input.value.trim();
+        if (!repositoryUrl) {
+          input.reportValidity();
+          return;
+        }
+        if (
+          !confirm(
+            "Clone this public repository into the workspace's files folder? This only works while the folder is empty, and future changes will not sync automatically.",
+          )
+        )
+          return;
+        button.disabled = true;
+        try {
+          await Workspaces.linkRepository($ws.workspace, repositoryUrl);
+          await $ws.reloadWorkspaceData();
+          renderWorkspaceSettings();
+          alert("Repository cloned into workspace files.");
+        } catch (error) {
+          alert(error.message);
+        } finally {
+          button.disabled = false;
+        }
       }
       function cancelWorkspaceDescription() {
         const description = $ws.settings.description || "";
@@ -1836,6 +1899,7 @@
       return {
         createTeam,
         addTeamMember,
+        linkWorkspaceRepository,
         $ws,
         $s,
         $p,

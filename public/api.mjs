@@ -86,6 +86,22 @@ export const Workspaces = {
     return res.json();
   },
 
+  async linkRepository(name, repositoryUrl) {
+    const res = await fetch(
+      new URL(`/workspaces/${encodeURIComponent(name)}/repository`, baseUrl),
+      authOptions({
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ repositoryUrl }),
+      }),
+    );
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(result.error || `Failed to link repository: ${res.status}`);
+    }
+    return result;
+  },
+
   async createTask(name, values) {
     const res = await fetch(
       new URL(`/workspaces/${encodeURIComponent(name)}/tasks`, baseUrl),

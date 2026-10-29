@@ -6,6 +6,7 @@ import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promise
 import { join, resolve } from "node:path";
 import { getModelList, pullModel } from "./backend/ollama.mjs";
 import { dataDir } from "./env.mjs";
+import { clonePublicRepository } from "./tools/git-repository.mjs";
 import { History } from "./history.mjs";
 import { runAgentLoop } from "./agents.mjs";
 import { publish } from "./events.mjs";
@@ -211,6 +212,33 @@ function normalizeMetadata(metadata: any) {
   return metadata;
 }
 
+const repositoryRequestLimit = 4096;
+async function readLimitedRequestBody(req, limit: number) {
+  const declaredLength = Number(req.headers?.["content-length"]);
+  if (Number.isFinite(declaredLength) && declaredLength > limit) {
+    req.resume?.();
+    throw Object.assign(new Error("Repository request is too large"), { statusCode: 413 });
+  }
+  const chunks: Buffer[] = [];
+  let size = 0;
+  const source =
+    typeof req[Symbol.asyncIterator] === "function"
+      ? req
+      : (async function* () {
+          yield* await req.toArray();
+        })();
+  for await (const chunk of source) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    size += buffer.length;
+    if (size > limit) {
+      req.resume?.();
+      throw Object.assign(new Error("Repository request is too large"), { statusCode: 413 });
+    }
+    chunks.push(buffer);
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
 class WorkspaceConflictError extends Error {}
 
 function validGoal(goal: any) {
@@ -301,6 +329,114 @@ async function onReadWorkspaceSettings(_req, res, params) {
     res.sendJson(metadata);
   } catch (error) {
     res.sendJson({ error: error instanceof Error ? error.message : "Could not read workspace settings" }, 500);
+  }
+}
+
+async function onLinkWorkspaceRepository(req, res, params, cloneRepo = clonePublicRepository) {
+  const originalName = String(params.name || "");
+  const name = sanitize(originalName);
+  if (!name || name !== originalName) {
+    return res.sendJson({ error: "Invalid workspace name" }, 400);
+  }
+  const workspace = join(dataDir, name);
+  const files = join(workspace, "files");
+  if (!existsSync(workspace)) {
+    return res.sendJson({ error: "Workspace not found" }, 404);
+  }
+  try {
+    const body = JSON.parse(await readLimitedRequestBody(req, repositoryRequestLimit));
+    if (!body || typeof body.repositoryUrl !== "string" || body.repositoryUrl.length > 2048) {
+      throw new Error("Enter a public HTTPS repository URL");
+    }
+    const result = await serializeMutation(join(workspace, "config", "workspace.json"), async () => {
+      await mkdir(files, { recursive: true });
+      const entries = await readdir(files);
+      if (entries.length) {
+        throw new Error("Repository linking requires an empty workspace files folder");
+      }
+      const stagingName = `.age-repository-${randomUUID()}`;
+      const stagingPath = join(workspace, stagingName);
+      if (existsSync(stagingPath)) {
+        const conflict = new Error("Repository staging path is already in use");
+        Object.assign(conflict, { statusCode: 409 });
+        throw conflict;
+      }
+      await mkdir(stagingPath, { mode: 0o700 });
+      const context = {
+        workspacePath: workspace,
+        getPath: (path: string) => {
+          if (path === ".") {
+            return files;
+          }
+          if (path === stagingName) {
+            return stagingPath;
+          }
+          throw new Error("Invalid repository staging path");
+        },
+      };
+      const movedEntries: string[] = [];
+      try {
+        const cloned = await cloneRepo.call(context, body.repositoryUrl, stagingName);
+        if ((await readdir(files)).length !== 0) {
+          const conflict = new Error("Workspace files changed while linking the repository");
+          Object.assign(conflict, { statusCode: 409 });
+          throw conflict;
+        }
+        const clonedEntries = await readdir(stagingPath);
+        for (const entry of clonedEntries) {
+          await rename(join(stagingPath, entry), join(files, entry));
+          movedEntries.push(entry);
+        }
+        await rm(stagingPath, { recursive: true, force: true });
+        const { file, metadata } = await readMetadata(workspace, name);
+        metadata.repositoryUrl = cloned.url;
+        await atomicJson(file, metadata);
+        return { repositoryUrl: cloned.url };
+      } catch (error) {
+        let rollbackComplete = true;
+        if (movedEntries.length) {
+          await mkdir(stagingPath, { recursive: true }).catch(() => {
+            rollbackComplete = false;
+          });
+          for (const entry of movedEntries.reverse()) {
+            await rename(join(files, entry), join(stagingPath, entry)).catch(() => {
+              rollbackComplete = false;
+            });
+          }
+        }
+        if (rollbackComplete) {
+          await rm(stagingPath, { recursive: true, force: true }).catch(() => {});
+        } else {
+          console.error(`Repository rollback incomplete; staged data preserved at ${stagingName}`);
+          throw Object.assign(
+            new Error("Repository linking failed; partial repository data was preserved for recovery"),
+            { statusCode: 500 },
+          );
+        }
+        throw error;
+      }
+    });
+    res.sendJson(result);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not link repository";
+    const statusCode = (error as { statusCode?: number }).statusCode;
+    if (statusCode === 502) {
+      console.error("Workspace repository clone failed", (error as { details?: string }).details || message);
+    }
+    const status =
+      statusCode ||
+      (error instanceof SyntaxError
+        ? 400
+        : /empty workspace/i.test(message)
+          ? 409
+          : /enter a public HTTPS|repository URL|Private network destinations|IPv6 literal|public IPv4|HTTPS port/i.test(
+                message,
+              )
+            ? 400
+            : 502);
+    const publicMessage =
+      status === 502 ? "Could not clone repository. Verify the public HTTPS URL and try again." : message;
+    res.sendJson({ error: publicMessage.slice(0, 600) }, status);
   }
 }
 
@@ -867,6 +1003,7 @@ export default {
   // Keep these specific routes above the generic workspace path; the router matches in declaration order.
   "GET /workspaces/:name/settings": onReadWorkspaceSettings,
   "PUT /workspaces/:name/settings": onUpdateWorkspaceSettings,
+  "POST /workspaces/:name/repository": onLinkWorkspaceRepository,
   "GET /workspaces/:name/tasks": onReadTasks,
   "POST /workspaces/:name/tasks": onCreateTask,
   "GET /workspaces/:name/tasks/:id": onReadTask,

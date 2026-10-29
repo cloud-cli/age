@@ -7,7 +7,7 @@ export const useWorkspaces = defineStore("workspaces", function () {
   const workspaceList = ref([]);
   const archivedWorkspaceList = ref([]);
   const tasks = ref([]);
-  const settings = ref({ description: "", goals: [] });
+  const settings = ref({ description: "", goals: [], repositoryUrl: "" });
   let workspaceListRequest = 0;
 
   async function reloadWorkspaceList() {
@@ -49,7 +49,7 @@ export const useWorkspaces = defineStore("workspaces", function () {
   async function reloadWorkspaceData() {
     const name = workspace.value;
     if (!name) {
-      settings.value = { description: "", goals: [] };
+      settings.value = { description: "", goals: [], repositoryUrl: "" };
       tasks.value = [];
       return;
     }
