@@ -1573,7 +1573,7 @@
         $app.openChat();
         await $msg.reloadMessages();
         const goals = ($ws.settings.goals || []).map(
-          (goal) => `- ${goal.title}: ${goal.description || "No description"}`,
+          (goal) => `- goalId: ${goal.id}; ${goal.title}: ${goal.description || "No description"}`,
         );
         const prompt = [
           `Review the current state of the ${$ws.workspace} workspace and help me plan its goal work.`,

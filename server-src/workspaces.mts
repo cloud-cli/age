@@ -688,6 +688,7 @@ async function onCreateWorkspaceHistory(req, res, params) {
     const json = {
       id: uid,
       title: body.title,
+      role: body.role,
       model: body.model,
       createdAt: new Date().getTime(),
       messages: [],

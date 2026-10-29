@@ -113,6 +113,31 @@ test("workspace settings migrate legacy goals without discarding existing fields
   assert.equal(invalid.status, 400);
 });
 
+test("workspace history preserves planner role without changing normal sessions", async () => {
+  await mkdir(join(dataPath, "session-test/history"), { recursive: true });
+
+  const planner = await invoke(
+    routes["POST /workspaces/:name/history"],
+    { role: "planner", title: "Planner" },
+    { name: "session-test" },
+  );
+  assert.equal(planner.status, 201);
+  assert.equal(planner.value.role, "planner");
+  const persistedPlanner = JSON.parse(
+    await readFile(join(dataPath, "session-test/history", `${planner.value.id}.json`), "utf8"),
+  );
+  assert.equal(persistedPlanner.role, "planner");
+
+  const normal = await invoke(routes["POST /workspaces/:name/history"], { title: "Chat" }, { name: "session-test" });
+  assert.equal(normal.status, 201);
+  assert.equal(normal.value.role, undefined);
+});
+
+test("planner prompt includes each exact goal ID", async () => {
+  const app = await readFile(join(process.cwd(), "public/app-main.html"), "utf8");
+  assert.match(app, /goalId: \$\{goal\.id\}/);
+});
+
 test(
   "task status and comments persist with authenticated author, retaining legacy task records",
   { skip: !hasTestDatabase },
